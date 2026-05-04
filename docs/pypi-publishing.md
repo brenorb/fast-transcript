@@ -20,7 +20,7 @@ Create a **pending publisher** on PyPI for the project name `fscript` with:
 - workflow name: `release.yml`
 - environment name: `pypi`
 
-After that, pushing a tag like `v0.2.3` will let GitHub Actions publish the built wheel(s) directly to PyPI.
+After that, pushing a tag like `v0.2.4` will let GitHub Actions publish the built wheel(s) directly to PyPI.
 
 ## Why pending publisher
 
