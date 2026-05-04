@@ -53,6 +53,14 @@ Or from a local clone:
 cargo install --path .
 ```
 
+### Install with Homebrew
+
+```bash
+brew install brenorb/fast-transcript/fast-transcript
+```
+
+This currently installs from the Homebrew tap and builds from source.
+
 ## Quick start
 
 ```bash
