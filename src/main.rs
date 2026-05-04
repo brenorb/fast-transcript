@@ -1,4 +1,5 @@
 use anyhow::{bail, Context, Result};
+use directories::ProjectDirs;
 use flate2::read::GzDecoder;
 use reqwest::blocking::Client;
 use serde::{Deserialize, Serialize};
@@ -16,8 +17,10 @@ use transcribe_rs::onnx::parakeet::{ParakeetModel, ParakeetParams, TimestampGran
 use transcribe_rs::onnx::Quantization;
 
 const SAMPLE_RATE: usize = 16_000;
-const DEFAULT_MODEL_DIR: &str = "models/parakeet/parakeet-tdt-0.6b-v3-int8";
-const DEFAULT_MODEL_PACKAGE: &str = "models/parakeet-v3-int8.tar.gz";
+const DEFAULT_DATA_DIR_FALLBACK: &str = ".fast-transcript";
+const DEFAULT_CACHE_DIR_FALLBACK: &str = ".fast-transcript-cache";
+const DEFAULT_MODEL_SUBDIR: &str = "models";
+const DEFAULT_MODEL_PACKAGE_NAME: &str = "parakeet-v3-int8.tar.gz";
 const DEFAULT_MODEL_URL: &str = "https://blob.handy.computer/parakeet-v3-int8.tar.gz";
 const DEFAULT_MODEL_BASENAME: &str = "parakeet-tdt-0.6b-v3-int8";
 const DEFAULT_CHUNK_SECONDS: f64 = 120.0;
@@ -91,25 +94,55 @@ struct BenchmarkResult {
     chunks: Vec<BenchmarkChunk>,
 }
 
-fn usage() -> &'static str {
-    "usage: fscript <audio> [output.json] [--model-dir PATH] [--model-package PATH] [--model-url URL] [--chunk-seconds N] [--chunk-overlap-seconds N]\n\
+fn usage() -> String {
+    format!(
+        "usage: fscript <audio> [output.json] [--model-dir PATH] [--model-package PATH] [--model-url URL] [--chunk-seconds N] [--chunk-overlap-seconds N]\n\
 defaults:\n\
-  --model-dir models/parakeet/parakeet-tdt-0.6b-v3-int8\n\
-  --model-package models/parakeet-v3-int8.tar.gz\n\
+  --model-dir {}\n\
+  --model-package {}\n\
   --chunk-seconds 120\n\
-  --chunk-overlap-seconds 2"
+  --chunk-overlap-seconds 2",
+        default_model_dir().display(),
+        default_model_package().display()
+    )
+}
+
+fn default_app_data_dir() -> PathBuf {
+    if let Some(project_dirs) = ProjectDirs::from("", "", "fast-transcript") {
+        return project_dirs.data_local_dir().to_path_buf();
+    }
+
+    env::var_os("HOME")
+        .map(PathBuf::from)
+        .map(|home| home.join(".local").join("share").join("fast-transcript"))
+        .unwrap_or_else(|| PathBuf::from(DEFAULT_DATA_DIR_FALLBACK))
+}
+
+fn default_app_cache_dir() -> PathBuf {
+    if let Some(project_dirs) = ProjectDirs::from("", "", "fast-transcript") {
+        return project_dirs.cache_dir().to_path_buf();
+    }
+
+    env::var_os("HOME")
+        .map(PathBuf::from)
+        .map(|home| home.join(".cache").join("fast-transcript"))
+        .unwrap_or_else(|| PathBuf::from(DEFAULT_CACHE_DIR_FALLBACK))
 }
 
 fn default_model_dir() -> PathBuf {
     env::var_os("FSCRIPT_MODEL_DIR")
         .map(PathBuf::from)
-        .unwrap_or_else(|| PathBuf::from(DEFAULT_MODEL_DIR))
+        .unwrap_or_else(|| {
+            default_app_data_dir()
+                .join(DEFAULT_MODEL_SUBDIR)
+                .join(DEFAULT_MODEL_BASENAME)
+        })
 }
 
 fn default_model_package() -> PathBuf {
     env::var_os("FSCRIPT_MODEL_PACKAGE")
         .map(PathBuf::from)
-        .unwrap_or_else(|| PathBuf::from(DEFAULT_MODEL_PACKAGE))
+        .unwrap_or_else(|| default_app_cache_dir().join(DEFAULT_MODEL_PACKAGE_NAME))
 }
 
 fn default_model_url() -> String {
@@ -300,6 +333,7 @@ fn extract_model_package(model_dir: &Path, package_path: &Path) -> Result<()> {
     archive
         .unpack(destination_root)
         .with_context(|| format!("failed to unpack {}", package_path.display()))?;
+    remove_appledouble_files(destination_root)?;
 
     let extracted_default_dir = destination_root.join(DEFAULT_MODEL_BASENAME);
     if extracted_default_dir != model_dir
@@ -314,6 +348,36 @@ fn extract_model_package(model_dir: &Path, package_path: &Path) -> Result<()> {
             )
         })?;
     }
+    Ok(())
+}
+
+fn remove_appledouble_files(root: &Path) -> Result<()> {
+    if !root.exists() {
+        return Ok(());
+    }
+
+    for entry in fs::read_dir(root).with_context(|| format!("failed to read {}", root.display()))? {
+        let entry = entry.with_context(|| format!("failed to inspect {}", root.display()))?;
+        let path = entry.path();
+        let file_type = entry
+            .file_type()
+            .with_context(|| format!("failed to inspect {}", path.display()))?;
+
+        if file_type.is_dir() {
+            remove_appledouble_files(&path)?;
+            continue;
+        }
+
+        let is_appledouble = path
+            .file_name()
+            .and_then(|value| value.to_str())
+            .is_some_and(|name| name.starts_with("._"));
+        if is_appledouble {
+            fs::remove_file(&path)
+                .with_context(|| format!("failed to remove {}", path.display()))?;
+        }
+    }
+
     Ok(())
 }
 
@@ -660,18 +724,28 @@ fn main() -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::{
-        build_chunk_ranges, default_output_path, is_supported_audio, merge_chunk_texts, parse_args,
-        FfprobeStream,
+        build_chunk_ranges, default_model_dir, default_model_package, default_output_path,
+        is_supported_audio, merge_chunk_texts, parse_args, remove_appledouble_files, FfprobeStream,
+        DEFAULT_MODEL_BASENAME, DEFAULT_MODEL_PACKAGE_NAME,
     };
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
+    use tempfile::tempdir;
 
-    #[test]
-    fn build_chunk_ranges_splits_audio() {
-        let ranges = build_chunk_ranges(5 * 16_000, 16_000, 2.0, 0.0).unwrap();
-        assert_eq!(
-            ranges,
-            vec![(0, 32_000), (32_000, 64_000), (64_000, 80_000)]
-        );
+    fn path_ends_with(path: &Path, suffix: &[&str]) -> bool {
+        let mut current = path;
+        for expected in suffix.iter().rev() {
+            let Some(name) = current.file_name().and_then(|value| value.to_str()) else {
+                return false;
+            };
+            if name != *expected {
+                return false;
+            }
+            let Some(parent) = current.parent() else {
+                return false;
+            };
+            current = parent;
+        }
+        true
     }
 
     #[test]
@@ -682,10 +756,42 @@ mod tests {
         assert_eq!(parsed.output_path, PathBuf::from("audio.transcript.json"));
         assert_eq!(parsed.chunk_seconds, Some(120.0));
         assert_eq!(parsed.chunk_overlap_seconds, 2.0);
-        assert_eq!(
-            parsed.model_dir,
-            PathBuf::from("models/parakeet/parakeet-tdt-0.6b-v3-int8")
-        );
+        assert!(path_ends_with(
+            &parsed.model_dir,
+            &["models", DEFAULT_MODEL_BASENAME]
+        ));
+        assert!(path_ends_with(
+            &parsed.model_package,
+            &[DEFAULT_MODEL_PACKAGE_NAME]
+        ));
+    }
+
+    #[test]
+    fn default_model_paths_use_persistent_user_dirs() {
+        assert!(path_ends_with(
+            &default_model_dir(),
+            &["models", DEFAULT_MODEL_BASENAME]
+        ));
+        assert!(path_ends_with(
+            &default_model_package(),
+            &[DEFAULT_MODEL_PACKAGE_NAME]
+        ));
+    }
+
+    #[test]
+    fn remove_appledouble_files_cleans_resource_forks_only() {
+        let dir = tempdir().unwrap();
+        let nested = dir.path().join("nested");
+        std::fs::create_dir_all(&nested).unwrap();
+        let keep = nested.join("encoder-model.int8.onnx");
+        let remove = nested.join("._encoder-model.int8.onnx");
+        std::fs::write(&keep, "ok").unwrap();
+        std::fs::write(&remove, "junk").unwrap();
+
+        remove_appledouble_files(dir.path()).unwrap();
+
+        assert!(keep.exists());
+        assert!(!remove.exists());
     }
 
     #[test]
@@ -717,6 +823,15 @@ mod tests {
         let parsed = parse_args(&args).unwrap();
         assert_eq!(parsed.chunk_seconds, None);
         assert_eq!(parsed.chunk_overlap_seconds, 0.0);
+    }
+
+    #[test]
+    fn build_chunk_ranges_splits_audio() {
+        let ranges = build_chunk_ranges(5 * 16_000, 16_000, 2.0, 0.0).unwrap();
+        assert_eq!(
+            ranges,
+            vec![(0, 32_000), (32_000, 64_000), (64_000, 80_000)]
+        );
     }
 
     #[test]

@@ -27,7 +27,8 @@ The existing options I tested had clear problems for this use case:
 ## What it does
 
 - downloads the default **Parakeet TDT 0.6B v3 int8** model automatically if it is missing
-- reuses a local model cache after the first run
+- stores the extracted model in a persistent per-user application data directory
+- keeps the downloaded tarball in the user cache directory
 - accepts `mp3`, `wav`, and other audio formats supported by `ffmpeg`
 - auto-converts unsupported audio to **16 kHz mono PCM16 WAV**
 - uses **120s chunks** with **2s overlap** by default
@@ -37,11 +38,20 @@ The existing options I tested had clear problems for this use case:
 
 ### Requirements
 
-- Rust
 - `ffmpeg`
 - `ffprobe`
 
-### Install the CLI
+### Install with Homebrew
+
+```bash
+brew install brenorb/fast-transcript/fast-transcript
+```
+
+### Install a prebuilt binary directly
+
+Download the archive for your platform from the [GitHub Releases page](https://github.com/brenorb/fast-transcript/releases), then put `fscript` on your `PATH`.
+
+### Build from source
 
 ```bash
 cargo install --git https://github.com/brenorb/fast-transcript
@@ -52,14 +62,6 @@ Or from a local clone:
 ```bash
 cargo install --path .
 ```
-
-### Install with Homebrew
-
-```bash
-brew install brenorb/fast-transcript/fast-transcript
-```
-
-This currently installs from the Homebrew tap and builds from source.
 
 ## Quick start
 
@@ -99,8 +101,12 @@ Environment overrides:
 
 ## Defaults
 
-- model dir: `models/parakeet/parakeet-tdt-0.6b-v3-int8`
-- model package cache: `models/parakeet-v3-int8.tar.gz`
+- model dir:
+  - macOS: `~/Library/Application Support/fast-transcript/models/parakeet-tdt-0.6b-v3-int8`
+  - Linux: `~/.local/share/fast-transcript/models/parakeet-tdt-0.6b-v3-int8`
+- model package cache:
+  - macOS: `~/Library/Caches/fast-transcript/parakeet-v3-int8.tar.gz`
+  - Linux: `~/.cache/fast-transcript/parakeet-v3-int8.tar.gz`
 - model URL: `https://blob.handy.computer/parakeet-v3-int8.tar.gz`
 - chunk seconds: `120`
 - chunk overlap seconds: `2`
