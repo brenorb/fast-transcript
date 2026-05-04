@@ -17,3 +17,22 @@ jobs:
         run: cargo fmt --check
       - name: Test
         run: cargo test --locked
+
+  pypi-wheel:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v6
+      - name: Build release binary
+        run: cargo build --release --locked
+      - name: Python wrapper tests
+        run: uv run --no-project python -m unittest tests/test_pypi_wrapper.py
+      - name: Build wheel
+        run: uv run --no-project --with build python scripts/build_pypi_wheel.py --out-dir dist-pypi
+      - name: Smoke test wheel with uvx
+        shell: bash
+        run: uvx --from dist-pypi/*.whl fscript --help

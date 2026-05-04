@@ -52,6 +52,23 @@ brew install brenorb/fast-transcript/fast-transcript
 On Apple Silicon macOS, Homebrew now installs `fast-transcript` from a proper bottle.
 On Linux x86_64, the formula still installs from the published release binary.
 
+### PyPI / uv
+
+The PyPI package name for this project is **`fscript`** so the target UX is:
+
+```bash
+uvx fscript lecture.mp3
+uv tool install fscript
+```
+
+The repo already includes platform wheel builds and a trusted-publishing workflow for:
+
+- macOS arm64
+- Linux x86_64
+
+The remaining step is registering the PyPI project/publisher on the PyPI side.
+See [`docs/pypi-publishing.md`](./docs/pypi-publishing.md) for the exact fields.
+
 ### Install a prebuilt binary directly
 
 Download the archive for your platform from the [GitHub Releases page](https://github.com/brenorb/fast-transcript/releases), then put `fscript` on your `PATH`.

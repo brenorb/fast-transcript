@@ -1,4 +1,10 @@
 /target/
 /models/
 *.tar.gz
+*.whl
 .DS_Store
+dist-pypi/
+build/
+.venv/
+uv.lock
+__pycache__/
