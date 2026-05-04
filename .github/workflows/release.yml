@@ -17,13 +17,11 @@ jobs:
         include:
           - os: macos-latest
             asset_suffix: macos-arm64
-          - os: macos-13
-            asset_suffix: macos-x86_64
           - os: ubuntu-latest
             asset_suffix: linux-x86_64
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
       - name: Build release binary
         run: cargo build --release --locked
@@ -38,7 +36,7 @@ jobs:
           cp README.md LICENSE dist/staging/
           tar -C dist/staging -czf "dist/${archive}" fscript README.md LICENSE
           shasum -a 256 "dist/${archive}" > "dist/${archive}.sha256"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: ${{ matrix.asset_suffix }}
           path: dist/*
@@ -49,7 +47,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           path: dist
       - name: Publish GitHub release
