@@ -47,6 +47,9 @@ The existing options I tested had clear problems for this use case:
 brew install brenorb/fast-transcript/fast-transcript
 ```
 
+On Apple Silicon macOS, Homebrew now installs `fast-transcript` from a proper bottle.
+On Linux x86_64, the formula still installs from the published release binary.
+
 ### Install a prebuilt binary directly
 
 Download the archive for your platform from the [GitHub Releases page](https://github.com/brenorb/fast-transcript/releases), then put `fscript` on your `PATH`.
