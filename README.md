@@ -61,10 +61,14 @@ uvx fscript lecture.mp3
 uv tool install fscript
 ```
 
-The repo already includes platform wheel builds and a trusted-publishing workflow for:
+The repo already includes platform wheel builds for:
 
 - macOS arm64
 - Linux x86_64
+
+PyPI publishing is currently enabled for:
+
+- macOS arm64
 
 The remaining step is registering the PyPI project/publisher on the PyPI side.
 See [`docs/pypi-publishing.md`](./docs/pypi-publishing.md) for the exact fields.

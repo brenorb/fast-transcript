@@ -83,6 +83,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v5
         with:
+          name: pypi-macos-arm64
           path: dist-pypi
       - name: Collect wheels
         shell: bash
