@@ -21,7 +21,7 @@ const DEFAULT_DATA_DIR_FALLBACK: &str = ".fast-transcript";
 const DEFAULT_CACHE_DIR_FALLBACK: &str = ".fast-transcript-cache";
 const DEFAULT_MODEL_SUBDIR: &str = "models";
 const DEFAULT_MODEL_PACKAGE_NAME: &str = "parakeet-v3-int8.tar.gz";
-const DEFAULT_MODEL_URL: &str = "https://blob.handy.computer/parakeet-v3-int8.tar.gz";
+const DEFAULT_MODEL_URL: &str = "https://huggingface.co/brenorb/parakeet-tdt-0.6b-v3-int8-onnx-bundle/resolve/main/parakeet-v3-int8.tar.gz?download=1";
 const DEFAULT_MODEL_BASENAME: &str = "parakeet-tdt-0.6b-v3-int8";
 const DEFAULT_CHUNK_SECONDS: f64 = 120.0;
 const DEFAULT_CHUNK_OVERLAP_SECONDS: f64 = 2.0;

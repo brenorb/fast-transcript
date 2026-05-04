@@ -112,7 +112,7 @@ Environment overrides:
 - model package cache:
   - macOS: `~/Library/Caches/fast-transcript/parakeet-v3-int8.tar.gz`
   - Linux: `~/.cache/fast-transcript/parakeet-v3-int8.tar.gz`
-- model URL: `https://blob.handy.computer/parakeet-v3-int8.tar.gz`
+- model URL: `https://huggingface.co/brenorb/parakeet-tdt-0.6b-v3-int8-onnx-bundle/resolve/main/parakeet-v3-int8.tar.gz?download=1`
 - chunk seconds: `120`
 - chunk overlap seconds: `2`
 - output path: `<audio>.transcript.json`
@@ -179,6 +179,14 @@ This project was heavily informed by:
 - [transcribe-rs](https://github.com/cjpais/transcribe-rs)
 
 In particular, the ONNX Parakeet path here was shaped by the packaging and implementation ideas used in Handy and GLaDOS.
+
+## Default model bundle
+
+The default auto-download bundle is published in our own Hugging Face model repository:
+
+- [brenorb/parakeet-tdt-0.6b-v3-int8-onnx-bundle](https://huggingface.co/brenorb/parakeet-tdt-0.6b-v3-int8-onnx-bundle)
+
+This keeps the default install path tied to the exact validated tarball instead of an app-specific blob host.
 
 ## License
 

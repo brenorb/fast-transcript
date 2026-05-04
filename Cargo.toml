@@ -1,6 +1,6 @@
 [package]
 name = "fast-transcript"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2021"
 description = "Fast local transcription for large lectures with NVIDIA Parakeet ONNX"
 license = "MIT"
