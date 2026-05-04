@@ -35,6 +35,7 @@ The existing options I tested had clear problems for this use case:
 - auto-converts unsupported audio to **16 kHz mono PCM16 WAV**
 - uses **120s chunks** with **2s overlap** by default
 - writes `<audio>.transcript.json` next to the input unless you choose a different output path
+- stays quiet by default: concise progress in the terminal, transcript JSON on disk
 
 ## Install
 
@@ -106,12 +107,15 @@ This will:
 
 ```bash
 fscript <audio> [output.json]
+fscript <audio> --stdout
+fscript <audio> -
 ```
 
 Optional overrides:
 
 ```bash
 fscript lecture.wav custom-output.json
+fscript lecture.wav --stdout
 fscript lecture.wav --chunk-seconds 180 --chunk-overlap-seconds 3
 fscript lecture.wav --chunk-seconds 0
 fscript lecture.wav --model-dir ./models/parakeet/custom-copy

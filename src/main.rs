@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use std::env;
 use std::fs;
 use std::fs::File;
-use std::io;
+use std::io::{self, IsTerminal, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::{Duration, Instant};
@@ -38,7 +38,8 @@ struct CliArgs {
     model_package: PathBuf,
     model_url: String,
     audio_path: PathBuf,
-    output_path: PathBuf,
+    output_path: Option<PathBuf>,
+    output_to_stdout: bool,
     chunk_seconds: Option<f64>,
     chunk_overlap_seconds: f64,
 }
@@ -96,7 +97,7 @@ struct BenchmarkResult {
 
 fn usage() -> String {
     format!(
-        "usage: fscript <audio> [output.json] [--model-dir PATH] [--model-package PATH] [--model-url URL] [--chunk-seconds N] [--chunk-overlap-seconds N]\n\
+        "usage: fscript <audio> [output.json | - | --stdout] [--model-dir PATH] [--model-package PATH] [--model-url URL] [--chunk-seconds N] [--chunk-overlap-seconds N]\n\
 defaults:\n\
   --model-dir {}\n\
   --model-package {}\n\
@@ -172,6 +173,7 @@ fn parse_args(raw_args: &[String]) -> Result<CliArgs> {
     let mut model_url = default_model_url();
     let mut audio_path = None;
     let mut output_path = None;
+    let mut output_to_stdout = false;
     let mut chunk_seconds_override = None;
     let mut chunk_overlap_seconds_override = None;
     let mut index = 0usize;
@@ -198,6 +200,10 @@ fn parse_args(raw_args: &[String]) -> Result<CliArgs> {
                     .with_context(|| format!("missing value for --model-url\n{}", usage()))?;
                 model_url = value.to_string();
                 index += 2;
+            }
+            "--stdout" => {
+                output_to_stdout = true;
+                index += 1;
             }
             "--chunk-seconds" => {
                 let value = raw_args
@@ -232,8 +238,12 @@ fn parse_args(raw_args: &[String]) -> Result<CliArgs> {
             value => {
                 if audio_path.is_none() {
                     audio_path = Some(PathBuf::from(value));
-                } else if output_path.is_none() {
-                    output_path = Some(PathBuf::from(value));
+                } else if output_path.is_none() && !output_to_stdout {
+                    if value == "-" {
+                        output_to_stdout = true;
+                    } else {
+                        output_path = Some(PathBuf::from(value));
+                    }
                 } else {
                     bail!("unexpected positional argument {value:?}\n{}", usage());
                 }
@@ -243,7 +253,11 @@ fn parse_args(raw_args: &[String]) -> Result<CliArgs> {
     }
 
     let audio_path = audio_path.with_context(|| format!("missing audio path\n{}", usage()))?;
-    let output_path = output_path.unwrap_or_else(|| default_output_path(&audio_path));
+    let output_path = if output_to_stdout {
+        None
+    } else {
+        Some(output_path.unwrap_or_else(|| default_output_path(&audio_path)))
+    };
 
     let requested_chunk_seconds = chunk_seconds_override.unwrap_or(DEFAULT_CHUNK_SECONDS);
     let (chunk_seconds, chunk_overlap_seconds) = if requested_chunk_seconds == 0.0 {
@@ -266,6 +280,7 @@ fn parse_args(raw_args: &[String]) -> Result<CliArgs> {
         model_url,
         audio_path,
         output_path,
+        output_to_stdout,
         chunk_seconds,
         chunk_overlap_seconds,
     })
@@ -459,12 +474,13 @@ fn normalize_audio(input_path: &Path) -> Result<PreparedAudio> {
         .unwrap_or("audio");
     let normalized_path = tempdir.path().join(format!("{stem}.16k_mono.wav"));
 
-    eprintln!(
-        "normalizing {} to 16 kHz mono PCM WAV via ffmpeg",
-        input_path.display()
-    );
+    eprintln!("normalizing audio...");
     let status = Command::new("ffmpeg")
         .args([
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-nostats",
             "-y",
             "-i",
             input_path.to_string_lossy().as_ref(),
@@ -490,6 +506,21 @@ fn normalize_audio(input_path: &Path) -> Result<PreparedAudio> {
         normalized: true,
         _tempdir: Some(tempdir),
     })
+}
+
+fn report_chunk_progress(current: usize, total: usize) {
+    if io::stderr().is_terminal() {
+        eprint!("\rtranscribing chunk {current}/{total}");
+        let _ = io::stderr().flush();
+    } else {
+        eprintln!("transcribing chunk {current}/{total}");
+    }
+}
+
+fn finish_chunk_progress() {
+    if io::stderr().is_terminal() {
+        eprintln!();
+    }
 }
 
 fn build_chunk_ranges(
@@ -609,8 +640,10 @@ fn transcribe_chunked(
     let mut chunks = Vec::with_capacity(ranges.len());
     let mut merged_text = String::new();
     let mut total_transcribe_seconds = 0.0;
+    let total_chunks = ranges.len();
 
     for (index, (start, end)) in ranges.into_iter().enumerate() {
+        report_chunk_progress(index + 1, total_chunks);
         let transcribe_started = Instant::now();
         let transcription = model
             .transcribe_with(&samples[start..end], params)
@@ -631,6 +664,7 @@ fn transcribe_chunked(
         });
     }
 
+    finish_chunk_progress();
     Ok((merged_text, chunks, total_transcribe_seconds))
 }
 
@@ -654,6 +688,7 @@ fn main() -> Result<()> {
     let audio_seconds = samples.len() as f64 / SAMPLE_RATE as f64;
 
     let load_start = Instant::now();
+    eprintln!("loading model...");
     let mut model = ParakeetModel::load(&args.model_dir, &Quantization::Int8)
         .context("failed to load Parakeet model")?;
     let load_seconds = load_start.elapsed().as_secs_f64();
@@ -671,6 +706,7 @@ fn main() -> Result<()> {
             &params,
         )?
     } else {
+        eprintln!("transcribing...");
         let transcribe_start = Instant::now();
         let transcription = model
             .transcribe_with(&samples, &params)
@@ -708,16 +744,29 @@ fn main() -> Result<()> {
     };
 
     let json = serde_json::to_string_pretty(&result)?;
-    if let Some(parent) = args.output_path.parent() {
+    if args.output_to_stdout {
+        println!("{json}");
+        return Ok(());
+    }
+
+    let output_path = args
+        .output_path
+        .as_ref()
+        .context("missing output path for file output mode")?;
+    if let Some(parent) = output_path.parent() {
         if !parent.as_os_str().is_empty() {
             fs::create_dir_all(parent)
                 .with_context(|| format!("failed to create {}", parent.display()))?;
         }
     }
-    fs::write(&args.output_path, format!("{json}\n"))
-        .with_context(|| format!("failed to write {}", args.output_path.display()))?;
+    fs::write(output_path, format!("{json}\n"))
+        .with_context(|| format!("failed to write {}", output_path.display()))?;
 
-    println!("{json}");
+    eprintln!(
+        "done: wrote {} ({:.2}x real-time)",
+        output_path.display(),
+        result.realtime_speedup
+    );
     Ok(())
 }
 
@@ -753,7 +802,11 @@ mod tests {
         let args = vec!["audio.mp3".to_string()];
         let parsed = parse_args(&args).unwrap();
         assert_eq!(parsed.audio_path, PathBuf::from("audio.mp3"));
-        assert_eq!(parsed.output_path, PathBuf::from("audio.transcript.json"));
+        assert_eq!(
+            parsed.output_path,
+            Some(PathBuf::from("audio.transcript.json"))
+        );
+        assert!(!parsed.output_to_stdout);
         assert_eq!(parsed.chunk_seconds, Some(120.0));
         assert_eq!(parsed.chunk_overlap_seconds, 2.0);
         assert!(path_ends_with(
@@ -807,10 +860,26 @@ mod tests {
             "1.5".to_string(),
         ];
         let parsed = parse_args(&args).unwrap();
-        assert_eq!(parsed.output_path, PathBuf::from("out.json"));
+        assert_eq!(parsed.output_path, Some(PathBuf::from("out.json")));
         assert_eq!(parsed.model_dir, PathBuf::from("custom-model"));
         assert_eq!(parsed.chunk_seconds, Some(60.0));
         assert_eq!(parsed.chunk_overlap_seconds, 1.5);
+    }
+
+    #[test]
+    fn parse_args_supports_stdout_shortcut() {
+        let args = vec!["audio.wav".to_string(), "-".to_string()];
+        let parsed = parse_args(&args).unwrap();
+        assert!(parsed.output_to_stdout);
+        assert_eq!(parsed.output_path, None);
+    }
+
+    #[test]
+    fn parse_args_supports_stdout_flag() {
+        let args = vec!["audio.wav".to_string(), "--stdout".to_string()];
+        let parsed = parse_args(&args).unwrap();
+        assert!(parsed.output_to_stdout);
+        assert_eq!(parsed.output_path, None);
     }
 
     #[test]
