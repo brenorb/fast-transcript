@@ -36,6 +36,7 @@ The existing options I tested had clear problems for this use case:
 - uses **120s chunks** with **2s overlap** by default
 - writes `<audio>.transcript.json` next to the input unless you choose a different output path
 - stays quiet by default: concise progress in the terminal, transcript JSON on disk
+- shows a spinner and chunk progress bar on interactive terminals
 
 ## Install
 
