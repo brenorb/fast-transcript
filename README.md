@@ -120,6 +120,7 @@ For remote URLs, the default flow is:
 fscript <audio-or-url> [output.json]
 fscript <audio-or-url> --stdout
 fscript <audio-or-url> -
+fscript --version
 ```
 
 Optional overrides:

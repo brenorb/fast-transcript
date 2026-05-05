@@ -154,6 +154,10 @@ defaults:\n\
     )
 }
 
+fn version_string() -> String {
+    format!("fscript {}", env!("CARGO_PKG_VERSION"))
+}
+
 fn default_app_data_dir() -> PathBuf {
     if let Some(project_dirs) = ProjectDirs::from("", "", "fast-transcript") {
         return project_dirs.data_local_dir().to_path_buf();
@@ -1045,6 +1049,10 @@ fn main() -> Result<()> {
         println!("{}", usage());
         return Ok(());
     }
+    if raw_args.iter().any(|arg| arg == "--version" || arg == "-V") {
+        println!("{}", version_string());
+        return Ok(());
+    }
 
     let args = parse_args(&raw_args)?;
     let input_source = infer_input_source(&args.input);
@@ -1256,8 +1264,9 @@ mod tests {
         build_chunk_ranges, default_model_dir, default_model_package, default_output_path,
         default_output_path_for_input, infer_input_source, is_supported_audio, merge_chunk_texts,
         parse_args, parse_vtt_text, pick_manual_subtitle_language, remove_appledouble_files,
-        render_chunk_progress, render_chunk_progress_done, FfprobeStream, InputSource,
-        YtDlpSubtitleTrack, YtDlpVideoInfo, DEFAULT_MODEL_BASENAME, DEFAULT_MODEL_PACKAGE_NAME,
+        render_chunk_progress, render_chunk_progress_done, version_string, FfprobeStream,
+        InputSource, YtDlpSubtitleTrack, YtDlpVideoInfo, DEFAULT_MODEL_BASENAME,
+        DEFAULT_MODEL_PACKAGE_NAME,
     };
     use std::collections::BTreeMap;
     use std::path::{Path, PathBuf};
@@ -1370,6 +1379,14 @@ mod tests {
         ];
         let parsed = parse_args(&args).unwrap();
         assert!(parsed.prefer_local_for_remote);
+    }
+
+    #[test]
+    fn version_string_matches_package_version() {
+        assert_eq!(
+            version_string(),
+            format!("fscript {}", env!("CARGO_PKG_VERSION"))
+        );
     }
 
     #[test]
