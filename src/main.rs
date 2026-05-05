@@ -3,6 +3,7 @@ use directories::ProjectDirs;
 use flate2::read::GzDecoder;
 use reqwest::blocking::Client;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 use std::env;
 use std::fs;
 use std::fs::File;
@@ -42,9 +43,10 @@ struct CliArgs {
     model_dir: PathBuf,
     model_package: PathBuf,
     model_url: String,
-    audio_path: PathBuf,
+    input: String,
     output_path: Option<PathBuf>,
     output_to_stdout: bool,
+    prefer_local_for_remote: bool,
     chunk_seconds: Option<f64>,
     chunk_overlap_seconds: f64,
 }
@@ -54,6 +56,35 @@ struct PreparedAudio {
     wav_path: PathBuf,
     normalized: bool,
     _tempdir: Option<TempDir>,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+enum InputSource {
+    LocalPath(PathBuf),
+    RemoteUrl(String),
+}
+
+#[derive(Debug, Deserialize)]
+struct YtDlpVideoInfo {
+    id: Option<String>,
+    title: Option<String>,
+    subtitles: Option<BTreeMap<String, Vec<YtDlpSubtitleTrack>>>,
+}
+
+#[derive(Debug, Deserialize)]
+struct YtDlpSubtitleTrack {
+    ext: Option<String>,
+}
+
+#[derive(Debug)]
+struct DirectTranscript {
+    text: String,
+}
+
+#[derive(Debug)]
+struct DownloadedAudio {
+    audio_path: PathBuf,
+    _tempdir: TempDir,
 }
 
 #[derive(Debug, Deserialize)]
@@ -83,10 +114,13 @@ struct BenchmarkChunk {
 
 #[derive(Serialize)]
 struct BenchmarkResult {
+    input_source: String,
     model_dir: String,
     audio_path: String,
     prepared_audio_path: String,
     used_ffmpeg_normalization: bool,
+    used_local_model: bool,
+    transcript_source: String,
     audio_seconds: f64,
     load_seconds: f64,
     transcribe_seconds: f64,
@@ -109,7 +143,7 @@ struct ChunkProgressReporter {
 
 fn usage() -> String {
     format!(
-        "usage: fscript <audio> [output.json | - | --stdout] [--model-dir PATH] [--model-package PATH] [--model-url URL] [--chunk-seconds N] [--chunk-overlap-seconds N]\n\
+        "usage: fscript <audio-or-url> [output.json | - | --stdout] [--prefer-local-for-remote] [--model-dir PATH] [--model-package PATH] [--model-url URL] [--chunk-seconds N] [--chunk-overlap-seconds N]\n\
 defaults:\n\
   --model-dir {}\n\
   --model-package {}\n\
@@ -175,6 +209,261 @@ fn default_output_path(audio_path: &Path) -> PathBuf {
         .join(file_name)
 }
 
+fn is_remote_url(value: &str) -> bool {
+    value.starts_with("https://") || value.starts_with("http://")
+}
+
+fn infer_input_source(value: &str) -> InputSource {
+    if is_remote_url(value) {
+        InputSource::RemoteUrl(value.to_string())
+    } else {
+        InputSource::LocalPath(PathBuf::from(value))
+    }
+}
+
+fn sanitize_file_stem(value: &str) -> String {
+    let mut sanitized = String::new();
+    let mut last_was_separator = false;
+    for ch in value.chars() {
+        let normalized = if ch.is_ascii_alphanumeric() || matches!(ch, '.' | '-') {
+            last_was_separator = false;
+            ch
+        } else {
+            if last_was_separator {
+                continue;
+            }
+            last_was_separator = true;
+            '_'
+        };
+        sanitized.push(normalized);
+    }
+    let sanitized = sanitized.trim_matches('_').to_string();
+    if sanitized.is_empty() {
+        "transcript".to_string()
+    } else {
+        sanitized
+    }
+}
+
+fn default_output_path_for_input(source: &InputSource, video_title: Option<&str>) -> PathBuf {
+    match source {
+        InputSource::LocalPath(path) => default_output_path(path),
+        InputSource::RemoteUrl(url) => {
+            let stem = video_title
+                .filter(|value| !value.trim().is_empty())
+                .map(sanitize_file_stem)
+                .unwrap_or_else(|| sanitize_file_stem(url));
+            PathBuf::from(format!("{stem}.transcript.json"))
+        }
+    }
+}
+
+fn pick_manual_subtitle_language(info: &YtDlpVideoInfo) -> Option<String> {
+    let subtitles = info.subtitles.as_ref()?;
+    let preferred = ["pt-BR", "pt", "en", "en-US"];
+    for language in preferred {
+        if subtitles
+            .get(language)
+            .is_some_and(|tracks| !tracks.is_empty())
+        {
+            return Some(language.to_string());
+        }
+    }
+    subtitles
+        .iter()
+        .find(|(_, tracks)| !tracks.is_empty())
+        .map(|(language, _)| language.to_string())
+}
+
+fn choose_subtitle_extension(info: &YtDlpVideoInfo, language: &str) -> String {
+    let Some(subtitles) = info.subtitles.as_ref() else {
+        return "vtt".to_string();
+    };
+    let Some(tracks) = subtitles.get(language) else {
+        return "vtt".to_string();
+    };
+    if tracks
+        .iter()
+        .any(|track| track.ext.as_deref() == Some("vtt"))
+    {
+        "vtt".to_string()
+    } else {
+        "json3".to_string()
+    }
+}
+
+fn run_command(command: &mut Command, context: &str) -> Result<std::process::Output> {
+    command
+        .output()
+        .with_context(|| format!("failed to run {context}"))
+}
+
+fn yt_dlp_command() -> Command {
+    let mut direct = Command::new("yt-dlp");
+    direct.arg("--version");
+    if direct.output().is_ok_and(|output| output.status.success()) {
+        return Command::new("yt-dlp");
+    }
+
+    let mut fallback = Command::new("uvx");
+    fallback.args(["yt-dlp", "--version"]);
+    if fallback
+        .output()
+        .is_ok_and(|output| output.status.success())
+    {
+        let mut command = Command::new("uvx");
+        command.arg("yt-dlp");
+        return command;
+    }
+
+    Command::new("yt-dlp")
+}
+
+fn parse_vtt_text(contents: &str) -> String {
+    contents
+        .lines()
+        .map(str::trim)
+        .filter(|line| {
+            !line.is_empty()
+                && *line != "WEBVTT"
+                && !line.starts_with("NOTE")
+                && !line.starts_with("Kind:")
+                && !line.starts_with("Language:")
+                && !line.starts_with("Style:")
+                && !line.contains("-->")
+                && !line.chars().all(|ch| ch.is_ascii_digit())
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+fn load_remote_video_info(url: &str) -> Result<YtDlpVideoInfo> {
+    let output = run_command(
+        yt_dlp_command().args(["--dump-single-json", "--no-warnings", "--no-playlist", url]),
+        "yt-dlp to inspect remote media metadata",
+    )
+    .with_context(|| "install yt-dlp, or make `uvx yt-dlp` available, to transcribe remote URLs")?;
+    if !output.status.success() {
+        bail!(
+            "yt-dlp failed while inspecting {url}: {}",
+            String::from_utf8_lossy(&output.stderr).trim()
+        );
+    }
+    serde_json::from_slice(&output.stdout)
+        .with_context(|| format!("failed to parse yt-dlp metadata for {url}"))
+}
+
+fn download_manual_remote_transcript(
+    url: &str,
+    info: &YtDlpVideoInfo,
+) -> Result<Option<DirectTranscript>> {
+    let Some(language) = pick_manual_subtitle_language(info) else {
+        return Ok(None);
+    };
+    let extension = choose_subtitle_extension(info, &language);
+    let tempdir = tempfile::tempdir().context("failed to create temp dir for remote subtitles")?;
+    let output_template = tempdir.path().join("%(id)s.%(ext)s");
+    let output = run_command(
+        yt_dlp_command().args([
+            "--no-progress",
+            "--no-warnings",
+            "--skip-download",
+            "--write-subs",
+            "--sub-langs",
+            &language,
+            "--sub-format",
+            &extension,
+            "--no-playlist",
+            "--output",
+            output_template.to_string_lossy().as_ref(),
+            url,
+        ]),
+        "yt-dlp for manual subtitles",
+    )
+    .with_context(|| "install yt-dlp, or make `uvx yt-dlp` available, to transcribe remote URLs")?;
+    if !output.status.success() {
+        bail!(
+            "yt-dlp failed while downloading subtitles for {url}: {}",
+            String::from_utf8_lossy(&output.stderr).trim()
+        );
+    }
+
+    let subtitle_path = fs::read_dir(tempdir.path())
+        .with_context(|| format!("failed to inspect {}", tempdir.path().display()))?
+        .filter_map(|entry| entry.ok().map(|value| value.path()))
+        .find(|path| path.extension().and_then(|value| value.to_str()) == Some(extension.as_str()))
+        .with_context(|| {
+            format!("yt-dlp reported subtitles for {url} but did not write a .{extension} file")
+        })?;
+
+    let text = if extension == "vtt" {
+        parse_vtt_text(
+            &fs::read_to_string(&subtitle_path)
+                .with_context(|| format!("failed to read {}", subtitle_path.display()))?,
+        )
+    } else {
+        let value: serde_json::Value = serde_json::from_slice(
+            &fs::read(&subtitle_path)
+                .with_context(|| format!("failed to read {}", subtitle_path.display()))?,
+        )
+        .with_context(|| format!("failed to parse {}", subtitle_path.display()))?;
+        value["events"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(|event| event["segs"].as_array())
+            .flatten()
+            .filter_map(|segment| segment["utf8"].as_str())
+            .map(str::trim)
+            .filter(|segment| !segment.is_empty() && *segment != "\n")
+            .collect::<Vec<_>>()
+            .join(" ")
+    };
+
+    if text.trim().is_empty() {
+        return Ok(None);
+    }
+
+    Ok(Some(DirectTranscript { text }))
+}
+
+fn download_remote_audio(url: &str, _info: &YtDlpVideoInfo) -> Result<DownloadedAudio> {
+    let tempdir = tempfile::tempdir().context("failed to create temp dir for remote audio")?;
+    let output_template = tempdir.path().join("%(id)s.%(ext)s");
+    let output = run_command(
+        yt_dlp_command().args([
+            "--no-progress",
+            "--no-warnings",
+            "--no-playlist",
+            "-f",
+            "bestaudio/best",
+            "--output",
+            output_template.to_string_lossy().as_ref(),
+            "--print",
+            "after_move:filepath",
+            url,
+        ]),
+        "yt-dlp to download remote audio",
+    )
+    .with_context(|| "install yt-dlp, or make `uvx yt-dlp` available, to transcribe remote URLs")?;
+    if !output.status.success() {
+        bail!(
+            "yt-dlp failed while downloading audio for {url}: {}",
+            String::from_utf8_lossy(&output.stderr).trim()
+        );
+    }
+    let audio_path = String::from_utf8_lossy(&output.stdout)
+        .lines()
+        .rev()
+        .find(|line| !line.trim().is_empty())
+        .map(|line| PathBuf::from(line.trim()))
+        .with_context(|| format!("yt-dlp did not report the downloaded audio path for {url}"))?;
+    Ok(DownloadedAudio {
+        audio_path,
+        _tempdir: tempdir,
+    })
+}
+
 fn parse_args(raw_args: &[String]) -> Result<CliArgs> {
     if raw_args.is_empty() {
         bail!("{}", usage());
@@ -183,9 +472,10 @@ fn parse_args(raw_args: &[String]) -> Result<CliArgs> {
     let mut model_dir = default_model_dir();
     let mut model_package = default_model_package();
     let mut model_url = default_model_url();
-    let mut audio_path = None;
+    let mut input = None;
     let mut output_path = None;
     let mut output_to_stdout = false;
+    let mut prefer_local_for_remote = false;
     let mut chunk_seconds_override = None;
     let mut chunk_overlap_seconds_override = None;
     let mut index = 0usize;
@@ -215,6 +505,10 @@ fn parse_args(raw_args: &[String]) -> Result<CliArgs> {
             }
             "--stdout" => {
                 output_to_stdout = true;
+                index += 1;
+            }
+            "--prefer-local-for-remote" => {
+                prefer_local_for_remote = true;
                 index += 1;
             }
             "--chunk-seconds" => {
@@ -248,8 +542,8 @@ fn parse_args(raw_args: &[String]) -> Result<CliArgs> {
             }
             flag if flag.starts_with("--") => bail!("unknown argument {flag:?}\n{}", usage()),
             value => {
-                if audio_path.is_none() {
-                    audio_path = Some(PathBuf::from(value));
+                if input.is_none() {
+                    input = Some(value.to_string());
                 } else if output_path.is_none() && !output_to_stdout {
                     if value == "-" {
                         output_to_stdout = true;
@@ -264,12 +558,8 @@ fn parse_args(raw_args: &[String]) -> Result<CliArgs> {
         }
     }
 
-    let audio_path = audio_path.with_context(|| format!("missing audio path\n{}", usage()))?;
-    let output_path = if output_to_stdout {
-        None
-    } else {
-        Some(output_path.unwrap_or_else(|| default_output_path(&audio_path)))
-    };
+    let input = input.with_context(|| format!("missing audio path\n{}", usage()))?;
+    let output_path = if output_to_stdout { None } else { output_path };
 
     let requested_chunk_seconds = chunk_seconds_override.unwrap_or(DEFAULT_CHUNK_SECONDS);
     let (chunk_seconds, chunk_overlap_seconds) = if requested_chunk_seconds == 0.0 {
@@ -290,9 +580,10 @@ fn parse_args(raw_args: &[String]) -> Result<CliArgs> {
         model_dir,
         model_package,
         model_url,
-        audio_path,
+        input,
         output_path,
         output_to_stdout,
+        prefer_local_for_remote,
         chunk_seconds,
         chunk_overlap_seconds,
     })
@@ -522,11 +813,9 @@ fn normalize_audio(input_path: &Path) -> Result<PreparedAudio> {
 
 fn render_chunk_progress(prefix: &str, current: usize, total: usize) -> String {
     let completed_chunks = current.saturating_sub(1).min(total);
-    let filled = if total == 0 {
-        PROGRESS_BAR_WIDTH
-    } else {
-        (completed_chunks * PROGRESS_BAR_WIDTH) / total
-    };
+    let filled = (completed_chunks * PROGRESS_BAR_WIDTH)
+        .checked_div(total)
+        .unwrap_or(PROGRESS_BAR_WIDTH);
     let empty = PROGRESS_BAR_WIDTH.saturating_sub(filled);
     let bar = format!("{}{}", "█".repeat(filled), "▒".repeat(empty));
     format!("{prefix} {bar} transcribing chunk {current}/{total}")
@@ -758,8 +1047,115 @@ fn main() -> Result<()> {
     }
 
     let args = parse_args(&raw_args)?;
+    let input_source = infer_input_source(&args.input);
+    let output_path = if args.output_to_stdout {
+        None
+    } else {
+        Some(
+            args.output_path
+                .clone()
+                .unwrap_or_else(|| default_output_path_for_input(&input_source, None)),
+        )
+    };
+
+    if let InputSource::RemoteUrl(url) = &input_source {
+        let info = load_remote_video_info(url)?;
+        let resolved_output_path = if args.output_to_stdout {
+            None
+        } else {
+            Some(args.output_path.clone().unwrap_or_else(|| {
+                default_output_path_for_input(
+                    &input_source,
+                    info.title.as_deref().or(info.id.as_deref()),
+                )
+            }))
+        };
+
+        if !args.prefer_local_for_remote {
+            if let Some(transcript) = download_manual_remote_transcript(url, &info)? {
+                let result = BenchmarkResult {
+                    input_source: url.clone(),
+                    model_dir: String::new(),
+                    audio_path: url.clone(),
+                    prepared_audio_path: String::new(),
+                    used_ffmpeg_normalization: false,
+                    used_local_model: false,
+                    transcript_source: "remote-manual-subtitle".to_string(),
+                    audio_seconds: 0.0,
+                    load_seconds: 0.0,
+                    transcribe_seconds: 0.0,
+                    total_inside_seconds: 0.0,
+                    seconds_per_audio_second: 0.0,
+                    realtime_speedup: 0.0,
+                    text: transcript.text.clone(),
+                    chunk_seconds: None,
+                    chunk_overlap_seconds: 0.0,
+                    chunk_count: 1,
+                    chunks: vec![BenchmarkChunk {
+                        index: 0,
+                        start_s: 0.0,
+                        end_s: 0.0,
+                        audio_seconds: 0.0,
+                        transcribe_seconds: 0.0,
+                        text: transcript.text,
+                    }],
+                };
+                let json = serde_json::to_string_pretty(&result)?;
+                if args.output_to_stdout {
+                    println!("{json}");
+                    return Ok(());
+                }
+                let output_path = resolved_output_path
+                    .as_ref()
+                    .context("missing output path for file output mode")?;
+                if let Some(parent) = output_path.parent() {
+                    if !parent.as_os_str().is_empty() {
+                        fs::create_dir_all(parent)
+                            .with_context(|| format!("failed to create {}", parent.display()))?;
+                    }
+                }
+                fs::write(output_path, format!("{json}\n"))
+                    .with_context(|| format!("failed to write {}", output_path.display()))?;
+                eprintln!(
+                    "done: wrote {} (used manual subtitles via yt-dlp)",
+                    output_path.display()
+                );
+                return Ok(());
+            }
+        }
+
+        let downloaded_audio = download_remote_audio(url, &info)?;
+        return transcribe_audio_input(
+            &args,
+            url,
+            &downloaded_audio.audio_path,
+            resolved_output_path,
+            "downloaded-audio-local-model",
+        );
+    }
+
+    let local_path = match &input_source {
+        InputSource::LocalPath(path) => path.clone(),
+        InputSource::RemoteUrl(_) => unreachable!(),
+    };
+    transcribe_audio_input(
+        &args,
+        &args.input,
+        &local_path,
+        output_path,
+        "local-audio-local-model",
+    )
+}
+
+fn transcribe_audio_input(
+    args: &CliArgs,
+    input_source: &str,
+    audio_path: &Path,
+    output_path: Option<PathBuf>,
+    transcript_source: &str,
+) -> Result<()> {
     ensure_model_dir(&args.model_dir, &args.model_package, &args.model_url)?;
-    let prepared_audio = normalize_audio(&args.audio_path)?;
+    let prepared_audio = normalize_audio(audio_path)?;
 
     let samples = read_wav_samples(&prepared_audio.wav_path).with_context(|| {
         format!(
@@ -808,10 +1204,13 @@ fn main() -> Result<()> {
 
     let total_inside_seconds = load_seconds + transcribe_seconds;
     let result = BenchmarkResult {
+        input_source: input_source.to_string(),
         model_dir: args.model_dir.display().to_string(),
-        audio_path: args.audio_path.display().to_string(),
+        audio_path: audio_path.display().to_string(),
         prepared_audio_path: prepared_audio.wav_path.display().to_string(),
         used_ffmpeg_normalization: prepared_audio.normalized,
+        used_local_model: true,
+        transcript_source: transcript_source.to_string(),
         audio_seconds,
         load_seconds,
         transcribe_seconds,
@@ -831,8 +1230,7 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
-    let output_path = args
-        .output_path
+    let output_path = output_path
         .as_ref()
         .context("missing output path for file output mode")?;
     if let Some(parent) = output_path.parent() {
@@ -856,10 +1254,12 @@ fn main() -> Result<()> {
 mod tests {
     use super::{
         build_chunk_ranges, default_model_dir, default_model_package, default_output_path,
-        is_supported_audio, merge_chunk_texts, parse_args, remove_appledouble_files,
-        render_chunk_progress, render_chunk_progress_done, FfprobeStream,
-        DEFAULT_MODEL_BASENAME, DEFAULT_MODEL_PACKAGE_NAME,
+        default_output_path_for_input, infer_input_source, is_supported_audio, merge_chunk_texts,
+        parse_args, parse_vtt_text, pick_manual_subtitle_language, remove_appledouble_files,
+        render_chunk_progress, render_chunk_progress_done, FfprobeStream, InputSource,
+        YtDlpSubtitleTrack, YtDlpVideoInfo, DEFAULT_MODEL_BASENAME, DEFAULT_MODEL_PACKAGE_NAME,
     };
+    use std::collections::BTreeMap;
     use std::path::{Path, PathBuf};
     use tempfile::tempdir;
 
@@ -884,11 +1284,8 @@ mod tests {
     fn parse_args_defaults_to_easy_mode() {
         let args = vec!["audio.mp3".to_string()];
         let parsed = parse_args(&args).unwrap();
-        assert_eq!(parsed.audio_path, PathBuf::from("audio.mp3"));
-        assert_eq!(
-            parsed.output_path,
-            Some(PathBuf::from("audio.transcript.json"))
-        );
+        assert_eq!(parsed.input, "audio.mp3");
+        assert_eq!(parsed.output_path, None);
         assert!(!parsed.output_to_stdout);
         assert_eq!(parsed.chunk_seconds, Some(120.0));
         assert_eq!(parsed.chunk_overlap_seconds, 2.0);
@@ -963,6 +1360,16 @@ mod tests {
         let parsed = parse_args(&args).unwrap();
         assert!(parsed.output_to_stdout);
         assert_eq!(parsed.output_path, None);
+    }
+
+    #[test]
+    fn parse_args_supports_prefer_local_for_remote() {
+        let args = vec![
+            "https://www.youtube.com/watch?v=QSdh8Gj0mEg".to_string(),
+            "--prefer-local-for-remote".to_string(),
+        ];
+        let parsed = parse_args(&args).unwrap();
+        assert!(parsed.prefer_local_for_remote);
     }
 
     #[test]
@@ -1054,5 +1461,62 @@ mod tests {
             output,
             PathBuf::from("/tmp/folder/audio.file.transcript.json")
         );
+    }
+
+    #[test]
+    fn infer_input_source_detects_remote_urls() {
+        assert_eq!(
+            infer_input_source("https://www.youtube.com/watch?v=QSdh8Gj0mEg"),
+            InputSource::RemoteUrl("https://www.youtube.com/watch?v=QSdh8Gj0mEg".to_string())
+        );
+        assert_eq!(
+            infer_input_source("lecture.mp3"),
+            InputSource::LocalPath(PathBuf::from("lecture.mp3"))
+        );
+    }
+
+    #[test]
+    fn default_output_path_for_remote_url_uses_video_title() {
+        let output = default_output_path_for_input(
+            &InputSource::RemoteUrl("https://youtu.be/demo".to_string()),
+            Some("TED Talk: Future / Now"),
+        );
+        assert_eq!(output, PathBuf::from("TED_Talk_Future_Now.transcript.json"));
+    }
+
+    #[test]
+    fn pick_manual_subtitle_language_prefers_manual_tracks() {
+        let mut subtitles = BTreeMap::new();
+        subtitles.insert(
+            "en".to_string(),
+            vec![YtDlpSubtitleTrack {
+                ext: Some("vtt".to_string()),
+            }],
+        );
+        subtitles.insert(
+            "pt-BR".to_string(),
+            vec![YtDlpSubtitleTrack {
+                ext: Some("json3".to_string()),
+            }],
+        );
+
+        let info = YtDlpVideoInfo {
+            id: Some("abc123".to_string()),
+            title: Some("Demo".to_string()),
+            subtitles: Some(subtitles),
+        };
+
+        assert_eq!(
+            pick_manual_subtitle_language(&info),
+            Some("pt-BR".to_string())
+        );
+    }
+
+    #[test]
+    fn parse_vtt_text_strips_headers_and_timestamps() {
+        let text = parse_vtt_text(
+            "WEBVTT\nKind: captions\nLanguage: en\n\n1\n00:00:00.000 --> 00:00:01.000\nHello world\n\n2\n00:00:01.000 --> 00:00:02.000\nSecond line",
+        );
+        assert_eq!(text, "Hello world Second line");
     }
 }

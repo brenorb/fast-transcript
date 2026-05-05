@@ -32,6 +32,9 @@ The existing options I tested had clear problems for this use case:
 - stores the extracted model in a persistent per-user application data directory
 - keeps the downloaded tarball in the user cache directory
 - accepts `mp3`, `wav`, and other audio formats supported by `ffmpeg`
+- accepts remote `http(s)` video/audio URLs supported by `yt-dlp`
+- prefers platform-provided manual subtitles for remote URLs when available
+- falls back to downloading remote audio and transcribing locally when only auto-captions exist or no captions exist
 - auto-converts unsupported audio to **16 kHz mono PCM16 WAV**
 - uses **120s chunks** with **2s overlap** by default
 - writes `<audio>.transcript.json` next to the input unless you choose a different output path
@@ -44,6 +47,7 @@ The existing options I tested had clear problems for this use case:
 
 - `ffmpeg`
 - `ffprobe`
+- `yt-dlp` for remote URLs, or `uvx yt-dlp`
 
 ### Install with Homebrew
 
@@ -95,6 +99,7 @@ cargo install --path .
 
 ```bash
 fscript lecture.mp3
+fscript https://www.youtube.com/watch?v=QSdh8Gj0mEg
 ```
 
 This will:
@@ -104,12 +109,18 @@ This will:
 3. transcribe with the default chunking strategy
 4. write `lecture.transcript.json`
 
+For remote URLs, the default flow is:
+
+1. inspect the URL with `yt-dlp`
+2. use manual subtitles directly when the platform provides them
+3. otherwise download the remote audio and run the normal local transcription pipeline
+
 ## Usage
 
 ```bash
-fscript <audio> [output.json]
-fscript <audio> --stdout
-fscript <audio> -
+fscript <audio-or-url> [output.json]
+fscript <audio-or-url> --stdout
+fscript <audio-or-url> -
 ```
 
 Optional overrides:
@@ -122,6 +133,8 @@ fscript lecture.wav --chunk-seconds 0
 fscript lecture.wav --model-dir ./models/parakeet/custom-copy
 fscript lecture.wav --model-package ./models/parakeet-v3-int8.tar.gz
 fscript lecture.wav --model-url https://example.com/parakeet-v3-int8.tar.gz
+fscript https://www.youtube.com/watch?v=QSdh8Gj0mEg
+fscript https://www.youtube.com/watch?v=QSdh8Gj0mEg --prefer-local-for-remote
 ```
 
 Environment overrides:
@@ -178,6 +191,7 @@ The output is JSON and includes:
 - model path
 - original input path
 - prepared WAV path
+- whether a remote URL used manual subtitles or the local model
 - whether `ffmpeg` normalization was used
 - load time
 - transcribe time
