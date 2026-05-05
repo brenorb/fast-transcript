@@ -76,8 +76,7 @@ PyPI publishing is currently enabled for:
 
 - macOS arm64
 
-The remaining step is registering the PyPI project/publisher on the PyPI side.
-See [`docs/pypi-publishing.md`](./docs/pypi-publishing.md) for the exact fields.
+See [`docs/pypi-publishing.md`](./docs/pypi-publishing.md) for the release workflow details.
 
 ### Install a prebuilt binary directly
 
