@@ -262,6 +262,56 @@ fn default_output_path_for_input(source: &InputSource, video_title: Option<&str>
     }
 }
 
+fn resolve_absolute_output_path(output_path: &Path, current_dir: &Path) -> Result<PathBuf> {
+    let candidate = if output_path.is_absolute() {
+        output_path.to_path_buf()
+    } else {
+        current_dir.join(output_path)
+    };
+
+    fs::canonicalize(&candidate).with_context(|| {
+        format!(
+            "failed to resolve absolute path for {}",
+            candidate.display()
+        )
+    })
+}
+
+fn write_transcript_json_file(
+    json: &str,
+    output_path: &Path,
+    current_dir: &Path,
+) -> Result<PathBuf> {
+    let candidate = if output_path.is_absolute() {
+        output_path.to_path_buf()
+    } else {
+        current_dir.join(output_path)
+    };
+
+    if let Some(parent) = candidate.parent() {
+        if !parent.as_os_str().is_empty() {
+            fs::create_dir_all(parent)
+                .with_context(|| format!("failed to create {}", parent.display()))?;
+        }
+    }
+    fs::write(&candidate, format!("{json}\n"))
+        .with_context(|| format!("failed to write {}", candidate.display()))?;
+
+    resolve_absolute_output_path(&candidate, current_dir)
+}
+
+fn emit_file_output_completion(
+    stdout: &mut impl Write,
+    stderr: &mut impl Write,
+    output_path: &Path,
+    status_message: &str,
+) -> Result<()> {
+    writeln!(stdout, "{}", output_path.display())
+        .context("failed to write final output path to stdout")?;
+    writeln!(stderr, "{status_message}").context("failed to write status message to stderr")?;
+    Ok(())
+}
+
 fn pick_manual_subtitle_language(info: &YtDlpVideoInfo) -> Option<String> {
     let subtitles = info.subtitles.as_ref()?;
     let preferred = ["pt-BR", "pt", "en", "en-US"];
@@ -1116,18 +1166,16 @@ fn main() -> Result<()> {
                 let output_path = resolved_output_path
                     .as_ref()
                     .context("missing output path for file output mode")?;
-                if let Some(parent) = output_path.parent() {
-                    if !parent.as_os_str().is_empty() {
-                        fs::create_dir_all(parent)
-                            .with_context(|| format!("failed to create {}", parent.display()))?;
-                    }
-                }
-                fs::write(output_path, format!("{json}\n"))
-                    .with_context(|| format!("failed to write {}", output_path.display()))?;
-                eprintln!(
-                    "done: wrote {} (used manual subtitles via yt-dlp)",
-                    output_path.display()
-                );
+                let current_dir =
+                    env::current_dir().context("failed to resolve current working directory")?;
+                let absolute_output_path =
+                    write_transcript_json_file(&json, output_path, &current_dir)?;
+                emit_file_output_completion(
+                    &mut io::stdout(),
+                    &mut io::stderr(),
+                    &absolute_output_path,
+                    "done: used manual subtitles via yt-dlp",
+                )?;
                 return Ok(());
             }
         }
@@ -1241,20 +1289,14 @@ fn transcribe_audio_input(
     let output_path = output_path
         .as_ref()
         .context("missing output path for file output mode")?;
-    if let Some(parent) = output_path.parent() {
-        if !parent.as_os_str().is_empty() {
-            fs::create_dir_all(parent)
-                .with_context(|| format!("failed to create {}", parent.display()))?;
-        }
-    }
-    fs::write(output_path, format!("{json}\n"))
-        .with_context(|| format!("failed to write {}", output_path.display()))?;
-
-    eprintln!(
-        "done: wrote {} ({:.2}x real-time)",
-        output_path.display(),
-        result.realtime_speedup
-    );
+    let current_dir = env::current_dir().context("failed to resolve current working directory")?;
+    let absolute_output_path = write_transcript_json_file(&json, output_path, &current_dir)?;
+    emit_file_output_completion(
+        &mut io::stdout(),
+        &mut io::stderr(),
+        &absolute_output_path,
+        &format!("done in {:.2}x real-time", result.realtime_speedup),
+    )?;
     Ok(())
 }
 
@@ -1262,13 +1304,15 @@ fn transcribe_audio_input(
 mod tests {
     use super::{
         build_chunk_ranges, default_model_dir, default_model_package, default_output_path,
-        default_output_path_for_input, infer_input_source, is_supported_audio, merge_chunk_texts,
-        parse_args, parse_vtt_text, pick_manual_subtitle_language, remove_appledouble_files,
-        render_chunk_progress, render_chunk_progress_done, version_string, FfprobeStream,
-        InputSource, YtDlpSubtitleTrack, YtDlpVideoInfo, DEFAULT_MODEL_BASENAME,
-        DEFAULT_MODEL_PACKAGE_NAME,
+        default_output_path_for_input, emit_file_output_completion, infer_input_source,
+        is_supported_audio, merge_chunk_texts, parse_args, parse_vtt_text,
+        pick_manual_subtitle_language, remove_appledouble_files, render_chunk_progress,
+        render_chunk_progress_done, resolve_absolute_output_path, version_string,
+        write_transcript_json_file, FfprobeStream, InputSource, YtDlpSubtitleTrack, YtDlpVideoInfo,
+        DEFAULT_MODEL_BASENAME, DEFAULT_MODEL_PACKAGE_NAME,
     };
     use std::collections::BTreeMap;
+    use std::io::Cursor;
     use std::path::{Path, PathBuf};
     use tempfile::tempdir;
 
@@ -1535,5 +1579,52 @@ mod tests {
             "WEBVTT\nKind: captions\nLanguage: en\n\n1\n00:00:00.000 --> 00:00:01.000\nHello world\n\n2\n00:00:01.000 --> 00:00:02.000\nSecond line",
         );
         assert_eq!(text, "Hello world Second line");
+    }
+
+    #[test]
+    fn write_transcript_json_file_returns_absolute_path_for_relative_output() {
+        let temp = tempdir().unwrap();
+        let cwd = temp.path();
+        let expected = cwd.join("nested/out.json");
+
+        let output =
+            write_transcript_json_file("{\"ok\":true}", Path::new("nested/out.json"), cwd).unwrap();
+
+        assert_eq!(output, std::fs::canonicalize(&expected).unwrap());
+        assert_eq!(
+            std::fs::read_to_string(expected).unwrap(),
+            "{\"ok\":true}\n"
+        );
+    }
+
+    #[test]
+    fn resolve_absolute_output_path_keeps_absolute_paths() {
+        let temp = tempdir().unwrap();
+        let output = temp.path().join("result.json");
+        std::fs::write(&output, "{}\n").unwrap();
+
+        assert_eq!(
+            resolve_absolute_output_path(&output, Path::new("/tmp/ignored")).unwrap(),
+            std::fs::canonicalize(&output).unwrap()
+        );
+    }
+
+    #[test]
+    fn emit_file_output_completion_sends_path_to_stdout_and_status_to_stderr() {
+        let mut stdout = Cursor::new(Vec::new());
+        let mut stderr = Cursor::new(Vec::new());
+        let path = Path::new("/tmp/example.transcript.json");
+
+        emit_file_output_completion(&mut stdout, &mut stderr, path, "done in 11.11x real-time")
+            .unwrap();
+
+        assert_eq!(
+            String::from_utf8(stdout.into_inner()).unwrap(),
+            "/tmp/example.transcript.json\n"
+        );
+        assert_eq!(
+            String::from_utf8(stderr.into_inner()).unwrap(),
+            "done in 11.11x real-time\n"
+        );
     }
 }

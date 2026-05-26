@@ -107,6 +107,7 @@ This will:
 2. normalize the audio if needed
 3. transcribe with the default chunking strategy
 4. write `lecture.transcript.json`
+5. print the final absolute transcript path to `stdout`
 
 For remote URLs, the default flow is:
 
@@ -121,6 +122,14 @@ fscript <audio-or-url> [output.json]
 fscript <audio-or-url> --stdout
 fscript <audio-or-url> -
 fscript --version
+```
+
+When `fscript` writes the transcript to a file, it keeps progress and human-readable status on `stderr` and prints only the final absolute transcript path on `stdout`.
+That makes it easy to compose in shell scripts:
+
+```bash
+out=$(fscript lecture.mp3)
+open "$out"
 ```
 
 Optional overrides:
