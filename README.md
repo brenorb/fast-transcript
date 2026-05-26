@@ -10,6 +10,8 @@ The CLI binary is called **`fscript`**:
 
 ```bash
 fscript lecture.mp3
+fscript lecture.mp3 -d
+fscript lecture.mp3 -d --num-speakers 2
 ```
 
 That is the whole point of this project. One command. Large audio. No babysitting.
@@ -37,6 +39,7 @@ The existing options I tested had clear problems for this use case:
 - falls back to downloading remote audio and transcribing locally when only auto-captions exist or no captions exist
 - auto-converts unsupported audio to **16 kHz mono PCM16 WAV**
 - uses **120s chunks** with **2s overlap** by default
+- can run optional local speaker diarization as a second pass via `fluidaudiocli process --mode offline`
 - writes `<audio>.transcript.json` next to the input unless you choose a different output path
 - stays quiet by default: concise progress in the terminal, transcript JSON on disk
 - shows a spinner and chunk progress bar on interactive terminals
@@ -48,6 +51,7 @@ The existing options I tested had clear problems for this use case:
 - `ffmpeg`
 - `ffprobe`
 - `yt-dlp` for remote URLs, or `uvx yt-dlp`
+- `fluidaudiocli` on `PATH` if you want local diarization (`-d`)
 
 ### Install with Homebrew
 
@@ -121,6 +125,8 @@ For remote URLs, the default flow is:
 fscript <audio-or-url> [output.json]
 fscript <audio-or-url> --stdout
 fscript <audio-or-url> -
+fscript <audio-or-url> -d
+fscript <audio-or-url> -d --num-speakers 2
 fscript --version
 ```
 
@@ -137,6 +143,8 @@ Optional overrides:
 ```bash
 fscript lecture.wav custom-output.json
 fscript lecture.wav --stdout
+fscript lecture.wav -d
+fscript lecture.wav -d --num-speakers 2
 fscript lecture.wav --chunk-seconds 180 --chunk-overlap-seconds 3
 fscript lecture.wav --chunk-seconds 0
 fscript lecture.wav --model-dir ./models/parakeet/custom-copy
@@ -151,6 +159,22 @@ Environment overrides:
 - `FSCRIPT_MODEL_DIR`
 - `FSCRIPT_MODEL_PACKAGE`
 - `FSCRIPT_MODEL_URL`
+- `FSCRIPT_DIARIZATION_BINARY`
+
+## Optional diarization
+
+`fscript` keeps the current fast path as the default.
+
+When you pass `-d` or `--diarize`, it:
+
+1. runs the normal Parakeet ASR flow first
+2. releases the ASR model
+3. runs `fluidaudiocli process --mode offline` as a separate subprocess
+4. merges diarization windows into ASR segments by temporal overlap
+
+`--num-speakers N` is forwarded to the diarizer, but only when diarization is enabled.
+
+If `fluidaudiocli` is missing, `fscript` now returns a clear backend error instead of silently falling back.
 
 ## Defaults
 
@@ -206,6 +230,12 @@ The output is JSON and includes:
 - transcribe time
 - chunk configuration
 - per-chunk timing
+- transcript `segments`
+- optional `speaker_diarization` metadata
+
+When diarization is enabled, each transcript segment may include:
+
+- `speaker`
 
 ## Motivation
 

@@ -1,4 +1,9 @@
+mod diarization;
+
 use anyhow::{bail, Context, Result};
+use diarization::{
+    maybe_diarize_segments, DiarizationRequest, FluidAudioDiarizer, SpeakerDiarizationMetadata,
+};
 use directories::ProjectDirs;
 use flate2::read::GzDecoder;
 use reqwest::blocking::Client;
@@ -49,6 +54,7 @@ struct CliArgs {
     prefer_local_for_remote: bool,
     chunk_seconds: Option<f64>,
     chunk_overlap_seconds: f64,
+    diarization: Option<DiarizationRequest>,
 }
 
 #[derive(Debug)]
@@ -112,6 +118,15 @@ struct BenchmarkChunk {
     text: String,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize)]
+struct TranscriptSegment {
+    start_s: f64,
+    end_s: f64,
+    text: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    speaker: Option<String>,
+}
+
 #[derive(Serialize)]
 struct BenchmarkResult {
     input_source: String,
@@ -132,6 +147,10 @@ struct BenchmarkResult {
     chunk_overlap_seconds: f64,
     chunk_count: usize,
     chunks: Vec<BenchmarkChunk>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    segments: Option<Vec<TranscriptSegment>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    speaker_diarization: Option<SpeakerDiarizationMetadata>,
 }
 
 struct ChunkProgressReporter {
@@ -143,7 +162,7 @@ struct ChunkProgressReporter {
 
 fn usage() -> String {
     format!(
-        "usage: fscript <audio-or-url> [output.json | - | --stdout] [--prefer-local-for-remote] [--model-dir PATH] [--model-package PATH] [--model-url URL] [--chunk-seconds N] [--chunk-overlap-seconds N]\n\
+        "usage: fscript <audio-or-url> [output.json | - | --stdout] [--prefer-local-for-remote] [-d | --diarize] [--num-speakers N] [--model-dir PATH] [--model-package PATH] [--model-url URL] [--chunk-seconds N] [--chunk-overlap-seconds N]\n\
 defaults:\n\
   --model-dir {}\n\
   --model-package {}\n\
@@ -532,6 +551,8 @@ fn parse_args(raw_args: &[String]) -> Result<CliArgs> {
     let mut prefer_local_for_remote = false;
     let mut chunk_seconds_override = None;
     let mut chunk_overlap_seconds_override = None;
+    let mut diarization_requested = false;
+    let mut diarization_num_speakers = None;
     let mut index = 0usize;
 
     while index < raw_args.len() {
@@ -564,6 +585,23 @@ fn parse_args(raw_args: &[String]) -> Result<CliArgs> {
             "--prefer-local-for-remote" => {
                 prefer_local_for_remote = true;
                 index += 1;
+            }
+            "-d" | "--diarize" => {
+                diarization_requested = true;
+                index += 1;
+            }
+            "--num-speakers" => {
+                let value = raw_args
+                    .get(index + 1)
+                    .with_context(|| format!("missing value for --num-speakers\n{}", usage()))?;
+                let parsed = value.parse::<usize>().with_context(|| {
+                    format!("invalid --num-speakers value {value:?}\n{}", usage())
+                })?;
+                if parsed == 0 {
+                    bail!("--num-speakers must be >= 1");
+                }
+                diarization_num_speakers = Some(parsed);
+                index += 2;
             }
             "--chunk-seconds" => {
                 let value = raw_args
@@ -614,6 +652,9 @@ fn parse_args(raw_args: &[String]) -> Result<CliArgs> {
 
     let input = input.with_context(|| format!("missing audio path\n{}", usage()))?;
     let output_path = if output_to_stdout { None } else { output_path };
+    if diarization_num_speakers.is_some() && !diarization_requested {
+        bail!("--num-speakers requires -d or --diarize");
+    }
 
     let requested_chunk_seconds = chunk_seconds_override.unwrap_or(DEFAULT_CHUNK_SECONDS);
     let (chunk_seconds, chunk_overlap_seconds) = if requested_chunk_seconds == 0.0 {
@@ -640,6 +681,9 @@ fn parse_args(raw_args: &[String]) -> Result<CliArgs> {
         prefer_local_for_remote,
         chunk_seconds,
         chunk_overlap_seconds,
+        diarization: diarization_requested.then_some(DiarizationRequest {
+            num_speakers: diarization_num_speakers,
+        }),
     })
 }
 
@@ -1048,13 +1092,87 @@ fn merge_chunk_texts(left: &str, right: &str) -> String {
     }
 }
 
+fn normalized_text(text: &str) -> String {
+    normalized_words(text)
+        .into_iter()
+        .map(|(_, normalized)| normalized)
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+fn transcript_segments_from_text(text: &str, start_s: f64, end_s: f64) -> Vec<TranscriptSegment> {
+    let text = text.trim();
+    if text.is_empty() {
+        return Vec::new();
+    }
+    vec![TranscriptSegment {
+        start_s,
+        end_s,
+        text: text.to_string(),
+        speaker: None,
+    }]
+}
+
+fn transcript_segments_from_transcription(
+    transcription: &transcribe_rs::TranscriptionResult,
+    fallback_start_s: f64,
+    fallback_end_s: f64,
+) -> Vec<TranscriptSegment> {
+    if let Some(segments) = &transcription.segments {
+        let collected = segments
+            .iter()
+            .map(|segment| TranscriptSegment {
+                start_s: segment.start as f64,
+                end_s: segment.end as f64,
+                text: segment.text.trim().to_string(),
+                speaker: None,
+            })
+            .filter(|segment| !segment.text.is_empty() && segment.end_s > segment.start_s)
+            .collect::<Vec<_>>();
+        if !collected.is_empty() {
+            return collected;
+        }
+    }
+
+    transcript_segments_from_text(&transcription.text, fallback_start_s, fallback_end_s)
+}
+
+fn merge_transcript_segments(
+    existing: &mut Vec<TranscriptSegment>,
+    incoming: Vec<TranscriptSegment>,
+) {
+    for segment in incoming {
+        if let Some(last) = existing.last_mut() {
+            let overlap =
+                (last.end_s.min(segment.end_s) - last.start_s.max(segment.start_s)).max(0.0);
+            if overlap > 0.0 {
+                if normalized_text(&last.text) == normalized_text(&segment.text) {
+                    last.end_s = last.end_s.max(segment.end_s);
+                    continue;
+                }
+
+                let merged_text = merge_chunk_texts(&last.text, &segment.text);
+                let concatenated = format!("{} {}", last.text.trim(), segment.text.trim())
+                    .trim()
+                    .to_string();
+                if merged_text != concatenated {
+                    last.text = merged_text;
+                    last.end_s = last.end_s.max(segment.end_s);
+                    continue;
+                }
+            }
+        }
+        existing.push(segment);
+    }
+}
+
 fn transcribe_chunked(
     model: &mut ParakeetModel,
     samples: &[f32],
     chunk_seconds: f64,
     chunk_overlap_seconds: f64,
     params: &ParakeetParams,
-) -> Result<(String, Vec<BenchmarkChunk>, f64)> {
+) -> Result<(String, Vec<BenchmarkChunk>, Vec<TranscriptSegment>, f64)> {
     let ranges = build_chunk_ranges(
         samples.len(),
         SAMPLE_RATE,
@@ -1063,6 +1181,7 @@ fn transcribe_chunked(
     )?;
     let mut chunks = Vec::with_capacity(ranges.len());
     let mut merged_text = String::new();
+    let mut merged_segments = Vec::new();
     let mut total_transcribe_seconds = 0.0;
     let total_chunks = ranges.len();
     let progress = ChunkProgressReporter::start(total_chunks);
@@ -1070,14 +1189,23 @@ fn transcribe_chunked(
     for (index, (start, end)) in ranges.into_iter().enumerate() {
         progress.set_current_chunk(index + 1);
         let transcribe_started = Instant::now();
-        let transcription = model
+        let mut transcription = model
             .transcribe_with(&samples[start..end], params)
             .with_context(|| format!("failed chunk {index} ({start}..{end})"))?;
         let transcribe_seconds = transcribe_started.elapsed().as_secs_f64();
         total_transcribe_seconds += transcribe_seconds;
+        transcription.offset_timestamps(start as f32 / SAMPLE_RATE as f32);
 
         let text = transcription.text.trim().to_string();
         merged_text = merge_chunk_texts(&merged_text, &text);
+        merge_transcript_segments(
+            &mut merged_segments,
+            transcript_segments_from_transcription(
+                &transcription,
+                start as f64 / SAMPLE_RATE as f64,
+                end as f64 / SAMPLE_RATE as f64,
+            ),
+        );
 
         chunks.push(BenchmarkChunk {
             index,
@@ -1090,7 +1218,12 @@ fn transcribe_chunked(
     }
 
     progress.finish();
-    Ok((merged_text, chunks, total_transcribe_seconds))
+    Ok((
+        merged_text,
+        chunks,
+        merged_segments,
+        total_transcribe_seconds,
+    ))
 }
 
 fn main() -> Result<()> {
@@ -1129,9 +1262,10 @@ fn main() -> Result<()> {
             }))
         };
 
-        if !args.prefer_local_for_remote {
+        if !args.prefer_local_for_remote && args.diarization.is_none() {
             if let Some(transcript) = download_manual_remote_transcript(url, &info)? {
                 let result = BenchmarkResult {
+                    segments: Some(transcript_segments_from_text(&transcript.text, 0.0, 0.0)),
                     input_source: url.clone(),
                     model_dir: String::new(),
                     audio_path: url.clone(),
@@ -1155,8 +1289,9 @@ fn main() -> Result<()> {
                         end_s: 0.0,
                         audio_seconds: 0.0,
                         transcribe_seconds: 0.0,
-                        text: transcript.text,
+                        text: transcript.text.clone(),
                     }],
+                    speaker_diarization: None,
                 };
                 let json = serde_json::to_string_pretty(&result)?;
                 if args.output_to_stdout {
@@ -1221,42 +1356,67 @@ fn transcribe_audio_input(
     })?;
     let audio_seconds = samples.len() as f64 / SAMPLE_RATE as f64;
 
-    let load_start = Instant::now();
-    eprintln!("loading model...");
-    let mut model = ParakeetModel::load(&args.model_dir, &Quantization::Int8)
-        .context("failed to load Parakeet model")?;
-    let load_seconds = load_start.elapsed().as_secs_f64();
+    let (text, chunks, transcript_segments, load_seconds, transcribe_seconds) = {
+        let load_start = Instant::now();
+        eprintln!("loading model...");
+        let mut model = ParakeetModel::load(&args.model_dir, &Quantization::Int8)
+            .context("failed to load Parakeet model")?;
+        let load_seconds = load_start.elapsed().as_secs_f64();
 
-    let params = ParakeetParams {
-        timestamp_granularity: Some(TimestampGranularity::Segment),
-        ..Default::default()
+        let params = ParakeetParams {
+            timestamp_granularity: Some(TimestampGranularity::Segment),
+            ..Default::default()
+        };
+        if let Some(chunk_seconds) = args.chunk_seconds {
+            let (text, chunks, transcript_segments, transcribe_seconds) = transcribe_chunked(
+                &mut model,
+                &samples,
+                chunk_seconds,
+                args.chunk_overlap_seconds,
+                &params,
+            )?;
+            (
+                text,
+                chunks,
+                transcript_segments,
+                load_seconds,
+                transcribe_seconds,
+            )
+        } else {
+            eprintln!("transcribing...");
+            let transcribe_start = Instant::now();
+            let transcription = model
+                .transcribe_with(&samples, &params)
+                .context("failed to transcribe audio")?;
+            let transcribe_seconds = transcribe_start.elapsed().as_secs_f64();
+            let text = transcription.text.trim().to_string();
+            let chunks = vec![BenchmarkChunk {
+                index: 0,
+                start_s: 0.0,
+                end_s: audio_seconds,
+                audio_seconds,
+                transcribe_seconds,
+                text: text.clone(),
+            }];
+            let transcript_segments =
+                transcript_segments_from_transcription(&transcription, 0.0, audio_seconds);
+            (
+                text,
+                chunks,
+                transcript_segments,
+                load_seconds,
+                transcribe_seconds,
+            )
+        }
     };
-    let (text, chunks, transcribe_seconds) = if let Some(chunk_seconds) = args.chunk_seconds {
-        transcribe_chunked(
-            &mut model,
-            &samples,
-            chunk_seconds,
-            args.chunk_overlap_seconds,
-            &params,
-        )?
-    } else {
-        eprintln!("transcribing...");
-        let transcribe_start = Instant::now();
-        let transcription = model
-            .transcribe_with(&samples, &params)
-            .context("failed to transcribe audio")?;
-        let transcribe_seconds = transcribe_start.elapsed().as_secs_f64();
-        let text = transcription.text.trim().to_string();
-        let chunks = vec![BenchmarkChunk {
-            index: 0,
-            start_s: 0.0,
-            end_s: audio_seconds,
-            audio_seconds,
-            transcribe_seconds,
-            text: text.clone(),
-        }];
-        (text, chunks, transcribe_seconds)
-    };
+    drop(samples);
+
+    let (segments, speaker_diarization) = maybe_diarize_segments(
+        &FluidAudioDiarizer::new(),
+        &prepared_audio.wav_path,
+        transcript_segments,
+        args.diarization.as_ref(),
+    )?;
 
     let total_inside_seconds = load_seconds + transcribe_seconds;
     let result = BenchmarkResult {
@@ -1278,6 +1438,8 @@ fn transcribe_audio_input(
         chunk_overlap_seconds: args.chunk_overlap_seconds,
         chunk_count: chunks.len(),
         chunks,
+        segments: (!segments.is_empty()).then_some(segments),
+        speaker_diarization,
     };
 
     let json = serde_json::to_string_pretty(&result)?;
@@ -1305,11 +1467,12 @@ mod tests {
     use super::{
         build_chunk_ranges, default_model_dir, default_model_package, default_output_path,
         default_output_path_for_input, emit_file_output_completion, infer_input_source,
-        is_supported_audio, merge_chunk_texts, parse_args, parse_vtt_text,
-        pick_manual_subtitle_language, remove_appledouble_files, render_chunk_progress,
-        render_chunk_progress_done, resolve_absolute_output_path, version_string,
-        write_transcript_json_file, FfprobeStream, InputSource, YtDlpSubtitleTrack, YtDlpVideoInfo,
-        DEFAULT_MODEL_BASENAME, DEFAULT_MODEL_PACKAGE_NAME,
+        is_supported_audio, merge_chunk_texts, merge_transcript_segments, parse_args,
+        parse_vtt_text, pick_manual_subtitle_language, remove_appledouble_files,
+        render_chunk_progress, render_chunk_progress_done, resolve_absolute_output_path,
+        transcript_segments_from_text, version_string, write_transcript_json_file,
+        DiarizationRequest, FfprobeStream, InputSource, TranscriptSegment, YtDlpSubtitleTrack,
+        YtDlpVideoInfo, DEFAULT_MODEL_BASENAME, DEFAULT_MODEL_PACKAGE_NAME,
     };
     use std::collections::BTreeMap;
     use std::io::Cursor;
@@ -1342,6 +1505,7 @@ mod tests {
         assert!(!parsed.output_to_stdout);
         assert_eq!(parsed.chunk_seconds, Some(120.0));
         assert_eq!(parsed.chunk_overlap_seconds, 2.0);
+        assert_eq!(parsed.diarization, None);
         assert!(path_ends_with(
             &parsed.model_dir,
             &["models", DEFAULT_MODEL_BASENAME]
@@ -1426,6 +1590,46 @@ mod tests {
     }
 
     #[test]
+    fn parse_args_supports_optional_diarization() {
+        let args = vec!["audio.wav".to_string(), "-d".to_string()];
+        let parsed = parse_args(&args).unwrap();
+        assert_eq!(
+            parsed.diarization,
+            Some(DiarizationRequest { num_speakers: None })
+        );
+    }
+
+    #[test]
+    fn parse_args_passes_num_speakers_when_diarization_is_enabled() {
+        let args = vec![
+            "audio.wav".to_string(),
+            "--diarize".to_string(),
+            "--num-speakers".to_string(),
+            "2".to_string(),
+        ];
+        let parsed = parse_args(&args).unwrap();
+        assert_eq!(
+            parsed.diarization,
+            Some(DiarizationRequest {
+                num_speakers: Some(2),
+            })
+        );
+    }
+
+    #[test]
+    fn parse_args_rejects_num_speakers_without_diarization() {
+        let args = vec![
+            "audio.wav".to_string(),
+            "--num-speakers".to_string(),
+            "2".to_string(),
+        ];
+        let err = parse_args(&args).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("--num-speakers requires -d or --diarize"));
+    }
+
+    #[test]
     fn version_string_matches_package_version() {
         assert_eq!(
             version_string(),
@@ -1478,6 +1682,29 @@ mod tests {
     fn merge_chunk_texts_keeps_text_when_no_overlap() {
         let merged = merge_chunk_texts("Primeira frase.", "Segunda frase.");
         assert_eq!(merged, "Primeira frase. Segunda frase.");
+    }
+
+    #[test]
+    fn merge_transcript_segments_dedups_overlapping_boundary_segments() {
+        let mut segments = transcript_segments_from_text("chefe de", 0.0, 1.0);
+        merge_transcript_segments(
+            &mut segments,
+            vec![TranscriptSegment {
+                start_s: 0.8,
+                end_s: 1.8,
+                text: "de cozinha".to_string(),
+                speaker: None,
+            }],
+        );
+        assert_eq!(
+            segments,
+            vec![TranscriptSegment {
+                start_s: 0.0,
+                end_s: 1.8,
+                text: "chefe de cozinha".to_string(),
+                speaker: None,
+            }]
+        );
     }
 
     #[test]
