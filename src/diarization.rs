@@ -2,7 +2,6 @@ use crate::TranscriptSegment;
 use anyhow::{bail, Context, Result};
 use serde::Deserialize;
 use serde::Serialize;
-use std::cell::{Cell, RefCell};
 use std::collections::BTreeMap;
 use std::io;
 use std::path::Path;
@@ -12,10 +11,44 @@ use tempfile::tempdir;
 const DEFAULT_FLUIDAUDIO_BINARY: &str = "fluidaudiocli";
 const COREML_BACKEND_NAME: &str =
     "FluidInference/speaker-diarization-coreml via fluidaudiocli process --mode offline";
+const LSEEND_DIHARD3_BACKEND_NAME: &str =
+    "FluidInference/ls-eend-coreml dihard3 via fluidaudiocli lseend";
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+pub enum DiarizationBackend {
+    Coreml,
+    LseendDihard3,
+}
+
+impl DiarizationBackend {
+    pub fn from_cli_value(value: &str) -> Option<Self> {
+        match value {
+            "coreml" => Some(Self::Coreml),
+            "lseend-dihard3" => Some(Self::LseendDihard3),
+            _ => None,
+        }
+    }
+
+    pub fn cli_name(self) -> &'static str {
+        match self {
+            Self::Coreml => "coreml",
+            Self::LseendDihard3 => "lseend-dihard3",
+        }
+    }
+
+    pub fn backend_name(self) -> &'static str {
+        match self {
+            Self::Coreml => COREML_BACKEND_NAME,
+            Self::LseendDihard3 => LSEEND_DIHARD3_BACKEND_NAME,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct DiarizationRequest {
+    pub backend: DiarizationBackend,
     pub num_speakers: Option<usize>,
+    pub threshold: Option<f64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -44,10 +77,6 @@ pub struct DiarizationResult {
 pub trait SpeakerDiarizer {
     fn diarize(&self, audio_path: &Path, request: &DiarizationRequest)
         -> Result<DiarizationResult>;
-
-    fn backend_name(&self) -> &'static str {
-        COREML_BACKEND_NAME
-    }
 }
 
 trait CommandRunner {
@@ -79,6 +108,7 @@ impl FluidAudioDiarizer<SystemCommandRunner> {
 }
 
 impl<R> FluidAudioDiarizer<R> {
+    #[cfg(test)]
     fn with_runner(binary: impl Into<String>, runner: R) -> Self {
         Self {
             binary: binary.into(),
@@ -95,14 +125,28 @@ impl<R: CommandRunner> SpeakerDiarizer for FluidAudioDiarizer<R> {
     ) -> Result<DiarizationResult> {
         let tempdir = tempdir().context("failed to create temp dir for diarization output")?;
         let output_path = tempdir.path().join("diarization.json");
-        let mut args = vec![
-            "process".to_string(),
-            audio_path.display().to_string(),
-            "--mode".to_string(),
-            "offline".to_string(),
-            "--output".to_string(),
-            output_path.display().to_string(),
-        ];
+        let mut args = match request.backend {
+            DiarizationBackend::Coreml => vec![
+                "process".to_string(),
+                audio_path.display().to_string(),
+                "--mode".to_string(),
+                "offline".to_string(),
+                "--output".to_string(),
+                output_path.display().to_string(),
+            ],
+            DiarizationBackend::LseendDihard3 => vec![
+                "lseend".to_string(),
+                audio_path.display().to_string(),
+                "--variant".to_string(),
+                "dihard3".to_string(),
+                "--output".to_string(),
+                output_path.display().to_string(),
+            ],
+        };
+        if let Some(threshold) = request.threshold {
+            args.push("--threshold".to_string());
+            args.push(threshold.to_string());
+        }
         if let Some(num_speakers) = request.num_speakers {
             args.push("--num-speakers".to_string());
             args.push(num_speakers.to_string());
@@ -114,7 +158,7 @@ impl<R: CommandRunner> SpeakerDiarizer for FluidAudioDiarizer<R> {
                 bail!(
                     "speaker diarization requested, but `{}` is not available on PATH. Install {}.",
                     self.binary,
-                    COREML_BACKEND_NAME
+                    request.backend.backend_name()
                 );
             }
             Err(err) => {
@@ -144,7 +188,12 @@ pub fn parse_diarization_output(payload: &str) -> Result<DiarizationResult> {
         serde_json::from_str(payload).context("failed to parse diarization JSON output")?;
     let mut segments = Vec::with_capacity(parsed.segments.len());
     for segment in parsed.segments {
-        let speaker = segment.speaker_id.trim();
+        let speaker = segment
+            .speaker_id
+            .as_deref()
+            .or(segment.speaker.as_deref())
+            .unwrap_or("")
+            .trim();
         if speaker.is_empty() {
             continue;
         }
@@ -210,7 +259,7 @@ pub fn maybe_diarize_segments(
     let diarization = diarizer.diarize(audio_path, request)?;
     let merged_segments = merge_speakers_into_segments(&transcript_segments, &diarization.segments);
     let metadata = SpeakerDiarizationMetadata {
-        backend: diarizer.backend_name().to_string(),
+        backend: request.backend.backend_name().to_string(),
         requested_num_speakers: request.num_speakers,
         detected_speaker_count: diarization.speaker_count,
         segment_count: diarization.segments.len(),
@@ -237,12 +286,14 @@ struct FluidAudioSegment {
     #[serde(rename = "endTimeSeconds")]
     end_time_seconds: f64,
     #[serde(rename = "speakerId")]
-    speaker_id: String,
+    speaker_id: Option<String>,
+    speaker: Option<String>,
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::cell::{Cell, RefCell};
     use std::os::unix::process::ExitStatusExt;
     use std::rc::Rc;
 
@@ -376,6 +427,24 @@ mod tests {
     }
 
     #[test]
+    fn parse_diarization_output_supports_lseend_speaker_field() {
+        let parsed = parse_diarization_output(
+            r#"{
+                "segments": [
+                    {"startTimeSeconds": 0.0, "endTimeSeconds": 1.5, "speaker": "Speaker 0"},
+                    {"startTimeSeconds": 1.5, "endTimeSeconds": 3.0, "speaker": "Speaker 1"}
+                ]
+            }"#,
+        )
+        .unwrap();
+
+        assert_eq!(parsed.speaker_count, None);
+        assert_eq!(parsed.segments.len(), 2);
+        assert_eq!(parsed.segments[0].speaker, "Speaker 0");
+        assert_eq!(parsed.segments[1].speaker, "Speaker 1");
+    }
+
+    #[test]
     fn merge_speakers_into_segments_uses_largest_temporal_overlap() {
         let transcript_segments = vec![
             TranscriptSegment {
@@ -473,7 +542,9 @@ mod tests {
             },
         ];
         let request = DiarizationRequest {
+            backend: DiarizationBackend::Coreml,
             num_speakers: Some(2),
+            threshold: None,
         };
 
         let (segments, metadata) = maybe_diarize_segments(
@@ -488,7 +559,9 @@ mod tests {
         assert_eq!(
             diarizer.last_request.borrow().clone(),
             Some(DiarizationRequest {
+                backend: DiarizationBackend::Coreml,
                 num_speakers: Some(2),
+                threshold: None,
             })
         );
         assert_eq!(segments[0].speaker.as_deref(), Some("S1"));
@@ -511,7 +584,11 @@ mod tests {
         let err = diarizer
             .diarize(
                 Path::new("/tmp/audio.wav"),
-                &DiarizationRequest { num_speakers: None },
+                &DiarizationRequest {
+                    backend: DiarizationBackend::Coreml,
+                    num_speakers: None,
+                    threshold: None,
+                },
             )
             .unwrap_err();
 
@@ -531,7 +608,9 @@ mod tests {
             .diarize(
                 Path::new("/tmp/audio.wav"),
                 &DiarizationRequest {
+                    backend: DiarizationBackend::Coreml,
                     num_speakers: Some(2),
+                    threshold: None,
                 },
             )
             .unwrap();
@@ -549,5 +628,39 @@ mod tests {
         assert_eq!(seen_args[7], "2");
         assert_eq!(result.speaker_count, Some(2));
         assert_eq!(result.segments.len(), 1);
+    }
+
+    #[test]
+    fn fluidaudio_diarizer_can_run_lseend_backend_with_threshold() {
+        let (runner, state) = FakeRunner::success(
+            r#"{"segments":[{"startTimeSeconds":0.0,"endTimeSeconds":1.0,"speaker":"Speaker 0"}]}"#,
+        );
+        let diarizer = FluidAudioDiarizer::with_runner("fluidaudiocli", runner);
+
+        let result = diarizer
+            .diarize(
+                Path::new("/tmp/audio.wav"),
+                &DiarizationRequest {
+                    backend: DiarizationBackend::LseendDihard3,
+                    num_speakers: None,
+                    threshold: Some(0.3),
+                },
+            )
+            .unwrap();
+
+        let seen_args = state.seen_args.borrow();
+        assert_eq!(
+            &seen_args[0..5],
+            [
+                "lseend",
+                "/tmp/audio.wav",
+                "--variant",
+                "dihard3",
+                "--output"
+            ]
+        );
+        assert_eq!(seen_args[6], "--threshold");
+        assert_eq!(seen_args[7], "0.3");
+        assert_eq!(result.segments[0].speaker, "Speaker 0");
     }
 }

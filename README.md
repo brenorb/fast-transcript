@@ -11,6 +11,7 @@ The CLI binary is called **`fscript`**:
 ```bash
 fscript lecture.mp3
 fscript lecture.mp3 -d
+fscript lecture.mp3 -d lseend-dihard3 -t 0.3
 fscript lecture.mp3 -d --num-speakers 2
 ```
 
@@ -126,6 +127,7 @@ fscript <audio-or-url> [output.json]
 fscript <audio-or-url> --stdout
 fscript <audio-or-url> -
 fscript <audio-or-url> -d
+fscript <audio-or-url> -d lseend-dihard3 -t 0.3
 fscript <audio-or-url> -d --num-speakers 2
 fscript --version
 ```
@@ -144,6 +146,8 @@ Optional overrides:
 fscript lecture.wav custom-output.json
 fscript lecture.wav --stdout
 fscript lecture.wav -d
+fscript lecture.wav -d coreml --num-speakers 2
+fscript lecture.wav -d lseend-dihard3 -t 0.3
 fscript lecture.wav -d --num-speakers 2
 fscript lecture.wav --chunk-seconds 180 --chunk-overlap-seconds 3
 fscript lecture.wav --chunk-seconds 0
@@ -169,10 +173,19 @@ When you pass `-d` or `--diarize`, it:
 
 1. runs the normal Parakeet ASR flow first
 2. releases the ASR model
-3. runs `fluidaudiocli process --mode offline` as a separate subprocess
+3. runs a separate `fluidaudiocli` diarization subprocess
 4. merges diarization windows into ASR segments by temporal overlap
 
-`--num-speakers N` is forwarded to the diarizer, but only when diarization is enabled.
+Backends:
+
+- `-d` or `-d coreml`: default `FluidInference/speaker-diarization-coreml` path via `fluidaudiocli process --mode offline`
+- `-d lseend-dihard3`: alternate `FluidInference/ls-eend-coreml` DIHARD III path via `fluidaudiocli lseend --variant dihard3`
+
+Controls:
+
+- `--num-speakers N` is forwarded only to the default `coreml` backend
+- `-t N` / `--threshold N` sets the diarization threshold
+- `lseend-dihard3` does not support `--num-speakers`; use `-t` / `--threshold` instead
 
 If `fluidaudiocli` is missing, `fscript` now returns a clear backend error instead of silently falling back.
 

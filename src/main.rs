@@ -2,7 +2,8 @@ mod diarization;
 
 use anyhow::{bail, Context, Result};
 use diarization::{
-    maybe_diarize_segments, DiarizationRequest, FluidAudioDiarizer, SpeakerDiarizationMetadata,
+    maybe_diarize_segments, DiarizationBackend, DiarizationRequest, FluidAudioDiarizer,
+    SpeakerDiarizationMetadata,
 };
 use directories::ProjectDirs;
 use flate2::read::GzDecoder;
@@ -162,12 +163,21 @@ struct ChunkProgressReporter {
 
 fn usage() -> String {
     format!(
-        "usage: fscript <audio-or-url> [output.json | - | --stdout] [--prefer-local-for-remote] [-d | --diarize] [--num-speakers N] [--model-dir PATH] [--model-package PATH] [--model-url URL] [--chunk-seconds N] [--chunk-overlap-seconds N]\n\
+        "usage: fscript <audio-or-url> [output.json | - | --stdout] [--prefer-local-for-remote] [-d [{}|{}] | --diarize [{}|{}]] [--num-speakers N] [-t N | --threshold N] [--model-dir PATH] [--model-package PATH] [--model-url URL] [--chunk-seconds N] [--chunk-overlap-seconds N]\n\
+aliases:\n\
+  -d [{}|{}]\n\
+  -t, --threshold <value>\n\
 defaults:\n\
   --model-dir {}\n\
   --model-package {}\n\
   --chunk-seconds 120\n\
   --chunk-overlap-seconds 2",
+        DiarizationBackend::Coreml.cli_name(),
+        DiarizationBackend::LseendDihard3.cli_name(),
+        DiarizationBackend::Coreml.cli_name(),
+        DiarizationBackend::LseendDihard3.cli_name(),
+        DiarizationBackend::Coreml.cli_name(),
+        DiarizationBackend::LseendDihard3.cli_name(),
         default_model_dir().display(),
         default_model_package().display()
     )
@@ -552,7 +562,9 @@ fn parse_args(raw_args: &[String]) -> Result<CliArgs> {
     let mut chunk_seconds_override = None;
     let mut chunk_overlap_seconds_override = None;
     let mut diarization_requested = false;
+    let mut diarization_backend = DiarizationBackend::Coreml;
     let mut diarization_num_speakers = None;
+    let mut diarization_threshold = None;
     let mut index = 0usize;
 
     while index < raw_args.len() {
@@ -588,6 +600,13 @@ fn parse_args(raw_args: &[String]) -> Result<CliArgs> {
             }
             "-d" | "--diarize" => {
                 diarization_requested = true;
+                if let Some(value) = raw_args.get(index + 1) {
+                    if let Some(backend) = DiarizationBackend::from_cli_value(value) {
+                        diarization_backend = backend;
+                        index += 2;
+                        continue;
+                    }
+                }
                 index += 1;
             }
             "--num-speakers" => {
@@ -601,6 +620,16 @@ fn parse_args(raw_args: &[String]) -> Result<CliArgs> {
                     bail!("--num-speakers must be >= 1");
                 }
                 diarization_num_speakers = Some(parsed);
+                index += 2;
+            }
+            "-t" | "--threshold" => {
+                let value = raw_args
+                    .get(index + 1)
+                    .with_context(|| format!("missing value for --threshold\n{}", usage()))?;
+                let parsed = value
+                    .parse::<f64>()
+                    .with_context(|| format!("invalid --threshold value {value:?}\n{}", usage()))?;
+                diarization_threshold = Some(parsed);
                 index += 2;
             }
             "--chunk-seconds" => {
@@ -655,6 +684,14 @@ fn parse_args(raw_args: &[String]) -> Result<CliArgs> {
     if diarization_num_speakers.is_some() && !diarization_requested {
         bail!("--num-speakers requires -d or --diarize");
     }
+    if diarization_threshold.is_some() && !diarization_requested {
+        bail!("--threshold requires -d or --diarize");
+    }
+    if diarization_num_speakers.is_some()
+        && diarization_backend == DiarizationBackend::LseendDihard3
+    {
+        bail!("--num-speakers is not supported with lseend-dihard3; use -t or --threshold instead");
+    }
 
     let requested_chunk_seconds = chunk_seconds_override.unwrap_or(DEFAULT_CHUNK_SECONDS);
     let (chunk_seconds, chunk_overlap_seconds) = if requested_chunk_seconds == 0.0 {
@@ -682,7 +719,9 @@ fn parse_args(raw_args: &[String]) -> Result<CliArgs> {
         chunk_seconds,
         chunk_overlap_seconds,
         diarization: diarization_requested.then_some(DiarizationRequest {
+            backend: diarization_backend,
             num_speakers: diarization_num_speakers,
+            threshold: diarization_threshold,
         }),
     })
 }
@@ -1471,8 +1510,8 @@ mod tests {
         parse_vtt_text, pick_manual_subtitle_language, remove_appledouble_files,
         render_chunk_progress, render_chunk_progress_done, resolve_absolute_output_path,
         transcript_segments_from_text, version_string, write_transcript_json_file,
-        DiarizationRequest, FfprobeStream, InputSource, TranscriptSegment, YtDlpSubtitleTrack,
-        YtDlpVideoInfo, DEFAULT_MODEL_BASENAME, DEFAULT_MODEL_PACKAGE_NAME,
+        DiarizationBackend, DiarizationRequest, FfprobeStream, InputSource, TranscriptSegment,
+        YtDlpSubtitleTrack, YtDlpVideoInfo, DEFAULT_MODEL_BASENAME, DEFAULT_MODEL_PACKAGE_NAME,
     };
     use std::collections::BTreeMap;
     use std::io::Cursor;
@@ -1595,7 +1634,11 @@ mod tests {
         let parsed = parse_args(&args).unwrap();
         assert_eq!(
             parsed.diarization,
-            Some(DiarizationRequest { num_speakers: None })
+            Some(DiarizationRequest {
+                backend: DiarizationBackend::Coreml,
+                num_speakers: None,
+                threshold: None,
+            })
         );
     }
 
@@ -1611,7 +1654,9 @@ mod tests {
         assert_eq!(
             parsed.diarization,
             Some(DiarizationRequest {
+                backend: DiarizationBackend::Coreml,
                 num_speakers: Some(2),
+                threshold: None,
             })
         );
     }
@@ -1627,6 +1672,72 @@ mod tests {
         assert!(err
             .to_string()
             .contains("--num-speakers requires -d or --diarize"));
+    }
+
+    #[test]
+    fn parse_args_supports_diarization_backend_argument() {
+        let args = vec![
+            "audio.wav".to_string(),
+            "-d".to_string(),
+            "lseend-dihard3".to_string(),
+        ];
+        let parsed = parse_args(&args).unwrap();
+        assert_eq!(
+            parsed.diarization,
+            Some(DiarizationRequest {
+                backend: DiarizationBackend::LseendDihard3,
+                num_speakers: None,
+                threshold: None,
+            })
+        );
+    }
+
+    #[test]
+    fn parse_args_supports_threshold_short_flag() {
+        let args = vec![
+            "audio.wav".to_string(),
+            "-d".to_string(),
+            "lseend-dihard3".to_string(),
+            "-t".to_string(),
+            "0.3".to_string(),
+        ];
+        let parsed = parse_args(&args).unwrap();
+        assert_eq!(
+            parsed.diarization,
+            Some(DiarizationRequest {
+                backend: DiarizationBackend::LseendDihard3,
+                num_speakers: None,
+                threshold: Some(0.3),
+            })
+        );
+    }
+
+    #[test]
+    fn parse_args_rejects_threshold_without_diarization() {
+        let args = vec![
+            "audio.wav".to_string(),
+            "--threshold".to_string(),
+            "0.3".to_string(),
+        ];
+        let err = parse_args(&args).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("--threshold requires -d or --diarize"));
+    }
+
+    #[test]
+    fn parse_args_rejects_num_speakers_with_lseend_backend() {
+        let args = vec![
+            "audio.wav".to_string(),
+            "-d".to_string(),
+            "lseend-dihard3".to_string(),
+            "--num-speakers".to_string(),
+            "2".to_string(),
+        ];
+        let err = parse_args(&args).unwrap_err();
+        assert!(err.to_string().contains(
+            "--num-speakers is not supported with lseend-dihard3; use -t or --threshold instead"
+        ));
     }
 
     #[test]
