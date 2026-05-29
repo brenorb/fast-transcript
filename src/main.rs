@@ -163,9 +163,10 @@ struct ChunkProgressReporter {
 
 fn usage() -> String {
     format!(
-        "usage: fscript <audio-or-url> [output.json | - | --stdout] [--prefer-local-for-remote] [-d [{}|{}] | --diarize [{}|{}]] [--num-speakers N] [-t N | --threshold N] [--model-dir PATH] [--model-package PATH] [--model-url URL] [--chunk-seconds N] [--chunk-overlap-seconds N]\n\
+        "usage: fscript <audio-or-url> [output.json | - | --stdout] [--prefer-local-for-remote] [-d [{}|{}] | --diarize [{}|{}]] [-n N | --num-speakers N] [-t N | --threshold N] [--model-dir PATH] [--model-package PATH] [--model-url URL] [--chunk-seconds N] [--chunk-overlap-seconds N]\n\
 aliases:\n\
   -d [{}|{}]\n\
+  -n, --num-speakers <count>\n\
   -t, --threshold <value>\n\
 defaults:\n\
   --model-dir {}\n\
@@ -610,6 +611,19 @@ fn parse_args(raw_args: &[String]) -> Result<CliArgs> {
                 index += 1;
             }
             "--num-speakers" => {
+                let value = raw_args
+                    .get(index + 1)
+                    .with_context(|| format!("missing value for --num-speakers\n{}", usage()))?;
+                let parsed = value.parse::<usize>().with_context(|| {
+                    format!("invalid --num-speakers value {value:?}\n{}", usage())
+                })?;
+                if parsed == 0 {
+                    bail!("--num-speakers must be >= 1");
+                }
+                diarization_num_speakers = Some(parsed);
+                index += 2;
+            }
+            "-n" => {
                 let value = raw_args
                     .get(index + 1)
                     .with_context(|| format!("missing value for --num-speakers\n{}", usage()))?;
@@ -1647,7 +1661,7 @@ mod tests {
         let args = vec![
             "audio.wav".to_string(),
             "--diarize".to_string(),
-            "--num-speakers".to_string(),
+            "-n".to_string(),
             "2".to_string(),
         ];
         let parsed = parse_args(&args).unwrap();
@@ -1663,15 +1677,30 @@ mod tests {
 
     #[test]
     fn parse_args_rejects_num_speakers_without_diarization() {
-        let args = vec![
-            "audio.wav".to_string(),
-            "--num-speakers".to_string(),
-            "2".to_string(),
-        ];
+        let args = vec!["audio.wav".to_string(), "-n".to_string(), "2".to_string()];
         let err = parse_args(&args).unwrap_err();
         assert!(err
             .to_string()
             .contains("--num-speakers requires -d or --diarize"));
+    }
+
+    #[test]
+    fn parse_args_supports_num_speakers_long_flag() {
+        let args = vec![
+            "audio.wav".to_string(),
+            "-d".to_string(),
+            "--num-speakers".to_string(),
+            "2".to_string(),
+        ];
+        let parsed = parse_args(&args).unwrap();
+        assert_eq!(
+            parsed.diarization,
+            Some(DiarizationRequest {
+                backend: DiarizationBackend::Coreml,
+                num_speakers: Some(2),
+                threshold: None,
+            })
+        );
     }
 
     #[test]

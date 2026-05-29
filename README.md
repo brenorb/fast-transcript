@@ -12,7 +12,7 @@ The CLI binary is called **`fscript`**:
 fscript lecture.mp3
 fscript lecture.mp3 -d
 fscript lecture.mp3 -d lseend-dihard3 -t 0.3
-fscript lecture.mp3 -d --num-speakers 2
+fscript lecture.mp3 -d -n 2
 ```
 
 That is the whole point of this project. One command. Large audio. No babysitting.
@@ -128,7 +128,7 @@ fscript <audio-or-url> --stdout
 fscript <audio-or-url> -
 fscript <audio-or-url> -d
 fscript <audio-or-url> -d lseend-dihard3 -t 0.3
-fscript <audio-or-url> -d --num-speakers 2
+fscript <audio-or-url> -d -n 2
 fscript --version
 ```
 
@@ -146,9 +146,9 @@ Optional overrides:
 fscript lecture.wav custom-output.json
 fscript lecture.wav --stdout
 fscript lecture.wav -d
-fscript lecture.wav -d coreml --num-speakers 2
+fscript lecture.wav -d coreml -n 2
 fscript lecture.wav -d lseend-dihard3 -t 0.3
-fscript lecture.wav -d --num-speakers 2
+fscript lecture.wav -d -n 2
 fscript lecture.wav --chunk-seconds 180 --chunk-overlap-seconds 3
 fscript lecture.wav --chunk-seconds 0
 fscript lecture.wav --model-dir ./models/parakeet/custom-copy
@@ -183,7 +183,7 @@ Backends:
 
 Controls:
 
-- `--num-speakers N` is forwarded only to the default `coreml` backend
+- `-n N` / `--num-speakers N` is forwarded only to the default `coreml` backend
 - `-t N` / `--threshold N` sets the diarization threshold
 - `lseend-dihard3` does not support `--num-speakers`; use `-t` / `--threshold` instead
 
