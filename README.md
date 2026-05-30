@@ -193,6 +193,7 @@ Subtitle output modes:
 - `--srt`: SubRip subtitle file
 - `--vtt`: WebVTT subtitle file
 - if diarization is active, subtitle cues include normalized speaker labels such as `SPEAKER_01: ...`
+- when a coarse ASR segment is too large for one cue, `fscript` automatically splits it into shorter subtitle-sized cues and spreads them across the original segment window
 - when `--srt` is active and you do not pass an explicit output path, the default file becomes `<audio>.srt`
 - when `--vtt` is active and you do not pass an explicit output path, the default file becomes `<audio>.vtt`
 

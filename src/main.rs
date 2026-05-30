@@ -548,14 +548,198 @@ fn estimate_subtitle_duration_seconds(text: &str) -> f64 {
     (word_count * 0.42).max(char_count * 0.065).clamp(1.2, 6.0)
 }
 
-fn normalized_subtitle_segments(segments: &[TranscriptSegment]) -> Vec<TranscriptSegment> {
-    let mut normalized = Vec::new();
-    for (index, segment) in segments.iter().enumerate() {
-        let text = segment.text.trim();
-        if text.is_empty() || segment.end_s <= segment.start_s {
+const SUBTITLE_MAX_CHARS: usize = 84;
+const SUBTITLE_MIN_DURATION_SECONDS: f64 = 0.2;
+const SUBTITLE_GAP_SECONDS: f64 = 0.05;
+
+fn split_subtitle_phrase(text: &str) -> Vec<String> {
+    let mut parts = Vec::new();
+    let mut current = Vec::new();
+    let mut current_len = 0usize;
+
+    for word in text.split_whitespace() {
+        let projected_len = if current.is_empty() {
+            word.len()
+        } else {
+            current_len + 1 + word.len()
+        };
+        if !current.is_empty() && projected_len > SUBTITLE_MAX_CHARS {
+            parts.push(current.join(" "));
+            current.clear();
+            current_len = 0;
+        }
+        current.push(word);
+        current_len = if current_len == 0 {
+            word.len()
+        } else {
+            current_len + 1 + word.len()
+        };
+    }
+
+    if !current.is_empty() {
+        parts.push(current.join(" "));
+    }
+
+    parts
+}
+
+fn split_subtitle_text(text: &str) -> Vec<String> {
+    let mut phrases = Vec::new();
+    let mut phrase_start = 0usize;
+    let sentence_breaks = ['.', '!', '?', ';', ':'];
+
+    for (index, ch) in text.char_indices() {
+        if !sentence_breaks.contains(&ch) {
             continue;
         }
 
+        let next_index = index + ch.len_utf8();
+        let phrase = text[phrase_start..next_index].trim();
+        if !phrase.is_empty() {
+            phrases.push(phrase.to_string());
+        }
+        phrase_start = next_index;
+    }
+
+    let trailing = text[phrase_start..].trim();
+    if !trailing.is_empty() {
+        phrases.push(trailing.to_string());
+    }
+    if phrases.is_empty() {
+        phrases.push(text.trim().to_string());
+    }
+
+    let mut cues = Vec::new();
+    let mut current = String::new();
+    for phrase in phrases {
+        if phrase.len() > SUBTITLE_MAX_CHARS {
+            if !current.is_empty() {
+                cues.push(current);
+                current = String::new();
+            }
+            cues.extend(split_subtitle_phrase(&phrase));
+            continue;
+        }
+
+        let projected_len = if current.is_empty() {
+            phrase.len()
+        } else {
+            current.len() + 1 + phrase.len()
+        };
+        if !current.is_empty() && projected_len > SUBTITLE_MAX_CHARS {
+            cues.push(current);
+            current = phrase;
+        } else if current.is_empty() {
+            current = phrase;
+        } else {
+            current.push(' ');
+            current.push_str(&phrase);
+        }
+    }
+
+    if !current.is_empty() {
+        cues.push(current);
+    }
+
+    cues
+}
+
+fn subtitle_segment_available_end(segment: &TranscriptSegment, next_start: Option<f64>) -> f64 {
+    let mut end_s = segment.end_s;
+    if let Some(start) = next_start {
+        end_s = end_s.min((start - SUBTITLE_GAP_SECONDS).max(segment.start_s));
+    }
+    if end_s <= segment.start_s {
+        segment.start_s + SUBTITLE_MIN_DURATION_SECONDS
+    } else {
+        end_s
+    }
+}
+
+fn subtitle_segments_for_segment(
+    segment: &TranscriptSegment,
+    next_start: Option<f64>,
+) -> Vec<TranscriptSegment> {
+    let text = segment.text.trim();
+    if text.is_empty() || segment.end_s <= segment.start_s {
+        return Vec::new();
+    }
+
+    let cues = split_subtitle_text(text);
+    if cues.is_empty() {
+        return Vec::new();
+    }
+
+    let available_end = subtitle_segment_available_end(segment, next_start);
+    if cues.len() == 1 {
+        let mut end_s = available_end;
+        let actual_duration = segment.end_s - segment.start_s;
+        if actual_duration > 8.0 {
+            end_s = end_s.min(segment.start_s + estimate_subtitle_duration_seconds(text));
+        }
+        if end_s <= segment.start_s {
+            end_s = segment.start_s + SUBTITLE_MIN_DURATION_SECONDS;
+        }
+
+        return vec![TranscriptSegment {
+            start_s: segment.start_s,
+            end_s,
+            text: text.to_string(),
+            speaker: segment.speaker.clone(),
+        }];
+    }
+
+    let weights = cues
+        .iter()
+        .map(|cue| estimate_subtitle_duration_seconds(cue))
+        .collect::<Vec<_>>();
+    let total_weight = weights.iter().sum::<f64>();
+    let available_duration =
+        (available_end - segment.start_s).max(SUBTITLE_MIN_DURATION_SECONDS * cues.len() as f64);
+    let mut elapsed_weight = 0.0;
+    let mut current_start = segment.start_s;
+    let mut normalized = Vec::with_capacity(cues.len());
+
+    for (index, cue_text) in cues.into_iter().enumerate() {
+        let window_start = segment.start_s + available_duration * (elapsed_weight / total_weight);
+        elapsed_weight += weights[index];
+        let window_end = if index + 1 == weights.len() {
+            available_end
+        } else {
+            segment.start_s + available_duration * (elapsed_weight / total_weight)
+        };
+
+        let start_s = current_start.max(window_start);
+        if start_s >= available_end {
+            break;
+        }
+
+        let ideal_end = start_s + estimate_subtitle_duration_seconds(&cue_text);
+        let latest_end = if index + 1 == weights.len() {
+            available_end
+        } else {
+            (window_end - SUBTITLE_GAP_SECONDS).max(start_s + SUBTITLE_MIN_DURATION_SECONDS)
+        };
+        let mut end_s = ideal_end.min(latest_end);
+        if end_s <= start_s {
+            end_s = (start_s + SUBTITLE_MIN_DURATION_SECONDS).min(available_end);
+        }
+
+        normalized.push(TranscriptSegment {
+            start_s,
+            end_s,
+            text: cue_text,
+            speaker: segment.speaker.clone(),
+        });
+        current_start = (end_s + SUBTITLE_GAP_SECONDS).min(available_end);
+    }
+
+    normalized
+}
+
+fn normalized_subtitle_segments(segments: &[TranscriptSegment]) -> Vec<TranscriptSegment> {
+    let mut normalized = Vec::new();
+    for (index, segment) in segments.iter().enumerate() {
         let next_start = segments
             .iter()
             .skip(index + 1)
@@ -563,27 +747,7 @@ fn normalized_subtitle_segments(segments: &[TranscriptSegment]) -> Vec<Transcrip
                 candidate.end_s > candidate.start_s && !candidate.text.trim().is_empty()
             })
             .map(|candidate| candidate.start_s);
-        let max_end_from_next = next_start.map(|start| (start - 0.05).max(segment.start_s + 0.2));
-        let actual_duration = segment.end_s - segment.start_s;
-        let estimated_end = segment.start_s + estimate_subtitle_duration_seconds(text);
-        let mut end_s = segment.end_s;
-
-        if actual_duration > 8.0 {
-            end_s = end_s.min(estimated_end);
-        }
-        if let Some(max_end) = max_end_from_next {
-            end_s = end_s.min(max_end);
-        }
-        if end_s <= segment.start_s {
-            end_s = (segment.start_s + 0.2).min(segment.end_s.max(segment.start_s + 0.2));
-        }
-
-        normalized.push(TranscriptSegment {
-            start_s: segment.start_s,
-            end_s,
-            text: text.to_string(),
-            speaker: segment.speaker.clone(),
-        });
+        normalized.extend(subtitle_segments_for_segment(segment, next_start));
     }
     normalized
 }
@@ -781,6 +945,7 @@ fn parse_vtt_segments(contents: &str) -> Vec<TranscriptSegment> {
         .collect()
 }
 
+#[cfg(test)]
 fn parse_vtt_text(contents: &str) -> String {
     parse_vtt_segments(contents)
         .into_iter()
@@ -1973,14 +2138,14 @@ mod tests {
         build_chunk_ranges, default_model_dir, default_model_package, default_output_path,
         default_output_path_for_input, emit_file_output_completion, format_hhmmss,
         infer_input_source, is_supported_audio, merge_chunk_texts, merge_transcript_segments,
-        normalize_speaker_label, parse_args, parse_json3_segments, parse_vtt_segments,
-        parse_vtt_text, pick_manual_subtitle_language, remove_appledouble_files,
-        render_chunk_progress, render_chunk_progress_done, render_output,
+        normalize_speaker_label, normalized_subtitle_segments, parse_args, parse_json3_segments,
+        parse_vtt_segments, parse_vtt_text, pick_manual_subtitle_language,
+        remove_appledouble_files, render_chunk_progress, render_chunk_progress_done, render_output,
         render_speaker_script_lines, resolve_absolute_output_path, transcript_segments_from_text,
         version_string, write_output_file, BenchmarkResult, DiarizationBackend, DiarizationRequest,
         FfprobeStream, InputSource, OutputFormat, ScriptFormat, SubtitleFormat, TextFormat,
         TranscriptSegment, YtDlpSubtitleTrack, YtDlpVideoInfo, DEFAULT_MODEL_BASENAME,
-        DEFAULT_MODEL_PACKAGE_NAME,
+        DEFAULT_MODEL_PACKAGE_NAME, SUBTITLE_MAX_CHARS,
     };
     use std::collections::BTreeMap;
     use std::io::Cursor;
@@ -2845,6 +3010,51 @@ mod tests {
         assert!(rendered.contains("1\n00:02:30,000 --> 00:02:31,820\nChissa come saranno ridotto."));
         assert!(rendered
             .contains("2\n00:03:48,000 --> 00:03:53,000\nLo sai che non devi allontanarti."));
+    }
+
+    #[test]
+    fn normalized_subtitle_segments_split_run_on_fallback_text() {
+        let normalized = normalized_subtitle_segments(&[TranscriptSegment {
+            start_s: 10.0,
+            end_s: 70.0,
+            text: "um texto bastante longo sem pontuacao que continua crescendo com varias palavras para simular uma saida grosseira do asr dentro de um chunk muito grande e precisa ser quebrado em legendas menores sem ficar preso em um unico cue enorme na tela".to_string(),
+            speaker: None,
+        }]);
+
+        assert!(normalized.len() >= 3);
+        assert!(normalized
+            .iter()
+            .all(|segment| segment.text.len() <= SUBTITLE_MAX_CHARS));
+        assert_eq!(normalized.first().unwrap().start_s, 10.0);
+        assert!(normalized.last().unwrap().start_s > 40.0);
+        assert!(normalized
+            .windows(2)
+            .all(|pair| pair[0].end_s <= pair[1].start_s));
+    }
+
+    #[test]
+    fn normalized_subtitle_segments_spread_split_cues_across_original_window() {
+        let normalized = normalized_subtitle_segments(&[
+            TranscriptSegment {
+                start_s: 100.0,
+                end_s: 160.0,
+                text: "Primeira frase bem maior do que um cue de legenda normal para testar a divisao. Segunda frase tambem maior do que um cue curto para forcar outra divisao. Terceira frase fechando o bloco para verificar distribuicao no tempo.".to_string(),
+                speaker: None,
+            },
+            TranscriptSegment {
+                start_s: 162.0,
+                end_s: 165.0,
+                text: "proximo bloco".to_string(),
+                speaker: None,
+            },
+        ]);
+
+        assert!(normalized.len() >= 4);
+        assert_eq!(normalized[0].start_s, 100.0);
+        assert!(normalized[1].start_s > 110.0);
+        assert!(normalized[2].start_s > 125.0);
+        assert!(normalized[2].end_s < 162.0);
+        assert_eq!(normalized.last().unwrap().text, "proximo bloco");
     }
 
     #[test]
