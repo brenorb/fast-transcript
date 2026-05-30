@@ -102,6 +102,8 @@ Or from a local clone:
 cargo install --path .
 ```
 
+On macOS, the build now auto-detects the active Xcode or Command Line Tools Clang runtime directories so `cargo test` keeps linking even if your Rust toolchain points at a stale `libclang_rt.osx` path.
+
 ## Quick start
 
 ```bash
