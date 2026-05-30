@@ -52,10 +52,33 @@ struct CliArgs {
     input: String,
     output_path: Option<PathBuf>,
     output_to_stdout: bool,
+    output_format: OutputFormat,
     prefer_local_for_remote: bool,
     chunk_seconds: Option<f64>,
     chunk_overlap_seconds: f64,
     diarization: Option<DiarizationRequest>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ScriptFormat {
+    Plain,
+    Timestamped,
+}
+
+impl ScriptFormat {
+    fn from_cli_value(value: &str) -> Option<Self> {
+        match value {
+            "plain" => Some(Self::Plain),
+            "timestamps" => Some(Self::Timestamped),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum OutputFormat {
+    Json,
+    Script(ScriptFormat),
 }
 
 #[derive(Debug)]
@@ -163,12 +186,14 @@ struct ChunkProgressReporter {
 
 fn usage() -> String {
     format!(
-        "usage: fscript <audio-or-url> [output.json | - | --stdout] [--prefer-local-for-remote] [-d [{}|{}] | --diarize [{}|{}]] [-n N | --num-speakers N] [-t N | --threshold N] [--model-dir PATH] [--model-package PATH] [--model-url URL] [--chunk-seconds N] [--chunk-overlap-seconds N]\n\
+        "usage: fscript <audio-or-url> [output-path | - | --stdout] [--script [plain|timestamps]] [--prefer-local-for-remote] [-d [{}|{}] | --diarize [{}|{}]] [-n N | --num-speakers N] [-t N | --threshold N] [--model-dir PATH] [--model-package PATH] [--model-url URL] [--chunk-seconds N] [--chunk-overlap-seconds N]\n\
 aliases:\n\
   -d [{}|{}]\n\
+  --script [plain|timestamps]\n\
   -n, --num-speakers <count>\n\
   -t, --threshold <value>\n\
 defaults:\n\
+  --script timestamps\n\
   --model-dir {}\n\
   --model-package {}\n\
   --chunk-seconds 120\n\
@@ -230,13 +255,16 @@ fn default_model_url() -> String {
     env::var("FSCRIPT_MODEL_URL").unwrap_or_else(|_| DEFAULT_MODEL_URL.to_string())
 }
 
-fn default_output_path(audio_path: &Path) -> PathBuf {
+fn default_output_path(audio_path: &Path, output_format: OutputFormat) -> PathBuf {
     let stem = audio_path
         .file_stem()
         .and_then(|value| value.to_str())
         .filter(|value| !value.is_empty())
         .unwrap_or("transcript");
-    let file_name = format!("{stem}.transcript.json");
+    let file_name = match output_format {
+        OutputFormat::Json => format!("{stem}.transcript.json"),
+        OutputFormat::Script(_) => format!("{stem}.script.txt"),
+    };
     audio_path
         .parent()
         .unwrap_or_else(|| Path::new("."))
@@ -279,15 +307,22 @@ fn sanitize_file_stem(value: &str) -> String {
     }
 }
 
-fn default_output_path_for_input(source: &InputSource, video_title: Option<&str>) -> PathBuf {
+fn default_output_path_for_input(
+    source: &InputSource,
+    video_title: Option<&str>,
+    output_format: OutputFormat,
+) -> PathBuf {
     match source {
-        InputSource::LocalPath(path) => default_output_path(path),
+        InputSource::LocalPath(path) => default_output_path(path, output_format),
         InputSource::RemoteUrl(url) => {
             let stem = video_title
                 .filter(|value| !value.trim().is_empty())
                 .map(sanitize_file_stem)
                 .unwrap_or_else(|| sanitize_file_stem(url));
-            PathBuf::from(format!("{stem}.transcript.json"))
+            match output_format {
+                OutputFormat::Json => PathBuf::from(format!("{stem}.transcript.json")),
+                OutputFormat::Script(_) => PathBuf::from(format!("{stem}.script.txt")),
+            }
         }
     }
 }
@@ -307,11 +342,7 @@ fn resolve_absolute_output_path(output_path: &Path, current_dir: &Path) -> Resul
     })
 }
 
-fn write_transcript_json_file(
-    json: &str,
-    output_path: &Path,
-    current_dir: &Path,
-) -> Result<PathBuf> {
+fn write_output_file(contents: &str, output_path: &Path, current_dir: &Path) -> Result<PathBuf> {
     let candidate = if output_path.is_absolute() {
         output_path.to_path_buf()
     } else {
@@ -324,10 +355,121 @@ fn write_transcript_json_file(
                 .with_context(|| format!("failed to create {}", parent.display()))?;
         }
     }
-    fs::write(&candidate, format!("{json}\n"))
+    fs::write(&candidate, format!("{contents}\n"))
         .with_context(|| format!("failed to write {}", candidate.display()))?;
 
     resolve_absolute_output_path(&candidate, current_dir)
+}
+
+fn normalize_speaker_label(label: &str, unknown_label: &str) -> String {
+    let cleaned = label.trim();
+    if cleaned.is_empty() {
+        return unknown_label.to_string();
+    }
+
+    let formatted = cleaned
+        .strip_prefix("SPEAKER_")
+        .or_else(|| cleaned.strip_prefix("S"));
+    if let Some(suffix) = formatted {
+        if !suffix.is_empty() && suffix.chars().all(|ch| ch.is_ascii_digit()) {
+            if let Ok(number) = suffix.parse::<usize>() {
+                return format!("SPEAKER_{number:02}");
+            }
+        }
+    }
+
+    cleaned.to_string()
+}
+
+fn format_hhmmss(seconds: f64) -> String {
+    let total_seconds = if seconds.is_finite() {
+        seconds.max(0.0).floor() as u64
+    } else {
+        0
+    };
+    let hours = total_seconds / 3600;
+    let minutes = (total_seconds % 3600) / 60;
+    let seconds = total_seconds % 60;
+    format!("{hours:02}:{minutes:02}:{seconds:02}")
+}
+
+fn render_speaker_script_lines(
+    segments: &[TranscriptSegment],
+    script_format: ScriptFormat,
+    merge_consecutive: bool,
+    unknown_label: &str,
+) -> Vec<String> {
+    let mut lines = Vec::new();
+    let mut current_speaker: Option<String> = None;
+    let mut current_start_s = 0.0;
+    let mut current_parts: Vec<&str> = Vec::new();
+
+    let flush = |lines: &mut Vec<String>,
+                 current_speaker: &mut Option<String>,
+                 current_start_s: &mut f64,
+                 current_parts: &mut Vec<&str>| {
+        let Some(speaker) = current_speaker.take() else {
+            current_parts.clear();
+            return;
+        };
+        let text = current_parts.join(" ").trim().to_string();
+        current_parts.clear();
+        if text.is_empty() {
+            return;
+        }
+        let line = match script_format {
+            ScriptFormat::Plain => format!("{speaker}: {text}"),
+            ScriptFormat::Timestamped => {
+                format!("{} - {speaker}: {text}", format_hhmmss(*current_start_s))
+            }
+        };
+        lines.push(line);
+    };
+
+    for segment in segments {
+        let text = segment.text.trim();
+        if text.is_empty() {
+            continue;
+        }
+
+        let speaker =
+            normalize_speaker_label(segment.speaker.as_deref().unwrap_or(""), unknown_label);
+        if merge_consecutive && current_speaker.as_deref() == Some(speaker.as_str()) {
+            current_parts.push(text);
+            continue;
+        }
+
+        flush(
+            &mut lines,
+            &mut current_speaker,
+            &mut current_start_s,
+            &mut current_parts,
+        );
+        current_start_s = segment.start_s;
+        current_speaker = Some(speaker);
+        current_parts.push(text);
+    }
+
+    flush(
+        &mut lines,
+        &mut current_speaker,
+        &mut current_start_s,
+        &mut current_parts,
+    );
+    lines
+}
+
+fn render_output(result: &BenchmarkResult, output_format: OutputFormat) -> Result<String> {
+    match output_format {
+        OutputFormat::Json => serde_json::to_string_pretty(result).map_err(Into::into),
+        OutputFormat::Script(script_format) => Ok(render_speaker_script_lines(
+            result.segments.as_deref().unwrap_or(&[]),
+            script_format,
+            true,
+            "UNKNOWN",
+        )
+        .join("\n")),
+    }
 }
 
 fn emit_file_output_completion(
@@ -559,6 +701,7 @@ fn parse_args(raw_args: &[String]) -> Result<CliArgs> {
     let mut input = None;
     let mut output_path = None;
     let mut output_to_stdout = false;
+    let mut output_format = OutputFormat::Json;
     let mut prefer_local_for_remote = false;
     let mut chunk_seconds_override = None;
     let mut chunk_overlap_seconds_override = None;
@@ -593,6 +736,17 @@ fn parse_args(raw_args: &[String]) -> Result<CliArgs> {
             }
             "--stdout" => {
                 output_to_stdout = true;
+                index += 1;
+            }
+            "--script" => {
+                output_format = OutputFormat::Script(ScriptFormat::Timestamped);
+                if let Some(value) = raw_args.get(index + 1) {
+                    if let Some(script_format) = ScriptFormat::from_cli_value(value) {
+                        output_format = OutputFormat::Script(script_format);
+                        index += 2;
+                        continue;
+                    }
+                }
                 index += 1;
             }
             "--prefer-local-for-remote" => {
@@ -729,6 +883,7 @@ fn parse_args(raw_args: &[String]) -> Result<CliArgs> {
         input,
         output_path,
         output_to_stdout,
+        output_format,
         prefer_local_for_remote,
         chunk_seconds,
         chunk_overlap_seconds,
@@ -1295,11 +1450,9 @@ fn main() -> Result<()> {
     let output_path = if args.output_to_stdout {
         None
     } else {
-        Some(
-            args.output_path
-                .clone()
-                .unwrap_or_else(|| default_output_path_for_input(&input_source, None)),
-        )
+        Some(args.output_path.clone().unwrap_or_else(|| {
+            default_output_path_for_input(&input_source, None, args.output_format)
+        }))
     };
 
     if let InputSource::RemoteUrl(url) = &input_source {
@@ -1311,6 +1464,7 @@ fn main() -> Result<()> {
                 default_output_path_for_input(
                     &input_source,
                     info.title.as_deref().or(info.id.as_deref()),
+                    args.output_format,
                 )
             }))
         };
@@ -1346,9 +1500,9 @@ fn main() -> Result<()> {
                     }],
                     speaker_diarization: None,
                 };
-                let json = serde_json::to_string_pretty(&result)?;
+                let output = render_output(&result, args.output_format)?;
                 if args.output_to_stdout {
-                    println!("{json}");
+                    println!("{output}");
                     return Ok(());
                 }
                 let output_path = resolved_output_path
@@ -1356,8 +1510,7 @@ fn main() -> Result<()> {
                     .context("missing output path for file output mode")?;
                 let current_dir =
                     env::current_dir().context("failed to resolve current working directory")?;
-                let absolute_output_path =
-                    write_transcript_json_file(&json, output_path, &current_dir)?;
+                let absolute_output_path = write_output_file(&output, output_path, &current_dir)?;
                 emit_file_output_completion(
                     &mut io::stdout(),
                     &mut io::stderr(),
@@ -1495,9 +1648,9 @@ fn transcribe_audio_input(
         speaker_diarization,
     };
 
-    let json = serde_json::to_string_pretty(&result)?;
+    let output = render_output(&result, args.output_format)?;
     if args.output_to_stdout {
-        println!("{json}");
+        println!("{output}");
         return Ok(());
     }
 
@@ -1505,7 +1658,7 @@ fn transcribe_audio_input(
         .as_ref()
         .context("missing output path for file output mode")?;
     let current_dir = env::current_dir().context("failed to resolve current working directory")?;
-    let absolute_output_path = write_transcript_json_file(&json, output_path, &current_dir)?;
+    let absolute_output_path = write_output_file(&output, output_path, &current_dir)?;
     emit_file_output_completion(
         &mut io::stdout(),
         &mut io::stderr(),
@@ -1519,13 +1672,14 @@ fn transcribe_audio_input(
 mod tests {
     use super::{
         build_chunk_ranges, default_model_dir, default_model_package, default_output_path,
-        default_output_path_for_input, emit_file_output_completion, infer_input_source,
-        is_supported_audio, merge_chunk_texts, merge_transcript_segments, parse_args,
-        parse_vtt_text, pick_manual_subtitle_language, remove_appledouble_files,
-        render_chunk_progress, render_chunk_progress_done, resolve_absolute_output_path,
-        transcript_segments_from_text, version_string, write_transcript_json_file,
-        DiarizationBackend, DiarizationRequest, FfprobeStream, InputSource, TranscriptSegment,
-        YtDlpSubtitleTrack, YtDlpVideoInfo, DEFAULT_MODEL_BASENAME, DEFAULT_MODEL_PACKAGE_NAME,
+        default_output_path_for_input, emit_file_output_completion, format_hhmmss,
+        infer_input_source, is_supported_audio, merge_chunk_texts, merge_transcript_segments,
+        normalize_speaker_label, parse_args, parse_vtt_text, pick_manual_subtitle_language,
+        remove_appledouble_files, render_chunk_progress, render_chunk_progress_done,
+        render_speaker_script_lines, resolve_absolute_output_path, transcript_segments_from_text,
+        version_string, write_output_file, DiarizationBackend, DiarizationRequest, FfprobeStream,
+        InputSource, OutputFormat, ScriptFormat, TranscriptSegment, YtDlpSubtitleTrack,
+        YtDlpVideoInfo, DEFAULT_MODEL_BASENAME, DEFAULT_MODEL_PACKAGE_NAME,
     };
     use std::collections::BTreeMap;
     use std::io::Cursor;
@@ -1556,6 +1710,7 @@ mod tests {
         assert_eq!(parsed.input, "audio.mp3");
         assert_eq!(parsed.output_path, None);
         assert!(!parsed.output_to_stdout);
+        assert_eq!(parsed.output_format, OutputFormat::Json);
         assert_eq!(parsed.chunk_seconds, Some(120.0));
         assert_eq!(parsed.chunk_overlap_seconds, 2.0);
         assert_eq!(parsed.diarization, None);
@@ -1630,6 +1785,30 @@ mod tests {
         let parsed = parse_args(&args).unwrap();
         assert!(parsed.output_to_stdout);
         assert_eq!(parsed.output_path, None);
+    }
+
+    #[test]
+    fn parse_args_supports_script_output_defaulting_to_timestamps() {
+        let args = vec!["audio.wav".to_string(), "--script".to_string()];
+        let parsed = parse_args(&args).unwrap();
+        assert_eq!(
+            parsed.output_format,
+            OutputFormat::Script(ScriptFormat::Timestamped)
+        );
+    }
+
+    #[test]
+    fn parse_args_supports_plain_script_output() {
+        let args = vec![
+            "audio.wav".to_string(),
+            "--script".to_string(),
+            "plain".to_string(),
+        ];
+        let parsed = parse_args(&args).unwrap();
+        assert_eq!(
+            parsed.output_format,
+            OutputFormat::Script(ScriptFormat::Plain)
+        );
     }
 
     #[test]
@@ -1884,11 +2063,18 @@ mod tests {
     #[test]
     fn default_output_path_stays_next_to_source_audio() {
         let path = PathBuf::from("/tmp/folder/audio.file.mp3");
-        let output = default_output_path(&path);
+        let output = default_output_path(&path, OutputFormat::Json);
         assert_eq!(
             output,
             PathBuf::from("/tmp/folder/audio.file.transcript.json")
         );
+    }
+
+    #[test]
+    fn default_script_output_path_uses_script_extension() {
+        let path = PathBuf::from("/tmp/folder/audio.file.mp3");
+        let output = default_output_path(&path, OutputFormat::Script(ScriptFormat::Timestamped));
+        assert_eq!(output, PathBuf::from("/tmp/folder/audio.file.script.txt"));
     }
 
     #[test]
@@ -1908,8 +2094,19 @@ mod tests {
         let output = default_output_path_for_input(
             &InputSource::RemoteUrl("https://youtu.be/demo".to_string()),
             Some("TED Talk: Future / Now"),
+            OutputFormat::Json,
         );
         assert_eq!(output, PathBuf::from("TED_Talk_Future_Now.transcript.json"));
+    }
+
+    #[test]
+    fn default_script_output_path_for_remote_url_uses_video_title() {
+        let output = default_output_path_for_input(
+            &InputSource::RemoteUrl("https://youtu.be/demo".to_string()),
+            Some("TED Talk: Future / Now"),
+            OutputFormat::Script(ScriptFormat::Timestamped),
+        );
+        assert_eq!(output, PathBuf::from("TED_Talk_Future_Now.script.txt"));
     }
 
     #[test]
@@ -1949,13 +2146,12 @@ mod tests {
     }
 
     #[test]
-    fn write_transcript_json_file_returns_absolute_path_for_relative_output() {
+    fn write_output_file_returns_absolute_path_for_relative_output() {
         let temp = tempdir().unwrap();
         let cwd = temp.path();
         let expected = cwd.join("nested/out.json");
 
-        let output =
-            write_transcript_json_file("{\"ok\":true}", Path::new("nested/out.json"), cwd).unwrap();
+        let output = write_output_file("{\"ok\":true}", Path::new("nested/out.json"), cwd).unwrap();
 
         assert_eq!(output, std::fs::canonicalize(&expected).unwrap());
         assert_eq!(
@@ -1992,6 +2188,82 @@ mod tests {
         assert_eq!(
             String::from_utf8(stderr.into_inner()).unwrap(),
             "done in 11.11x real-time\n"
+        );
+    }
+
+    #[test]
+    fn normalize_speaker_label_formats_simple_labels() {
+        assert_eq!(normalize_speaker_label("S1", "UNKNOWN"), "SPEAKER_01");
+        assert_eq!(
+            normalize_speaker_label("SPEAKER_2", "UNKNOWN"),
+            "SPEAKER_02"
+        );
+        assert_eq!(normalize_speaker_label("", "UNKNOWN"), "UNKNOWN");
+        assert_eq!(normalize_speaker_label("Speaker 0", "UNKNOWN"), "Speaker 0");
+    }
+
+    #[test]
+    fn format_hhmmss_truncates_to_whole_seconds() {
+        assert_eq!(format_hhmmss(0.0), "00:00:00");
+        assert_eq!(format_hhmmss(65.9), "00:01:05");
+        assert_eq!(format_hhmmss(3_661.2), "01:01:01");
+    }
+
+    #[test]
+    fn render_speaker_script_lines_merges_consecutive_turns() {
+        let segments = vec![
+            TranscriptSegment {
+                start_s: 5.0,
+                end_s: 6.0,
+                text: "Oi.".to_string(),
+                speaker: Some("S1".to_string()),
+            },
+            TranscriptSegment {
+                start_s: 6.0,
+                end_s: 7.0,
+                text: "Tudo bem?".to_string(),
+                speaker: Some("S1".to_string()),
+            },
+            TranscriptSegment {
+                start_s: 8.0,
+                end_s: 9.0,
+                text: "Tudo.".to_string(),
+                speaker: Some("S2".to_string()),
+            },
+        ];
+
+        assert_eq!(
+            render_speaker_script_lines(&segments, ScriptFormat::Plain, true, "UNKNOWN"),
+            vec![
+                "SPEAKER_01: Oi. Tudo bem?".to_string(),
+                "SPEAKER_02: Tudo.".to_string(),
+            ]
+        );
+    }
+
+    #[test]
+    fn render_speaker_script_lines_can_include_timestamps() {
+        let segments = vec![
+            TranscriptSegment {
+                start_s: 65.9,
+                end_s: 67.0,
+                text: "Primeira.".to_string(),
+                speaker: Some("S1".to_string()),
+            },
+            TranscriptSegment {
+                start_s: 68.0,
+                end_s: 70.0,
+                text: "Segunda.".to_string(),
+                speaker: Some("S1".to_string()),
+            },
+        ];
+
+        assert_eq!(
+            render_speaker_script_lines(&segments, ScriptFormat::Timestamped, false, "UNKNOWN"),
+            vec![
+                "00:01:05 - SPEAKER_01: Primeira.".to_string(),
+                "00:01:08 - SPEAKER_01: Segunda.".to_string(),
+            ]
         );
     }
 }
