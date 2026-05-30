@@ -76,9 +76,33 @@ impl ScriptFormat {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum TextFormat {
+    Plain,
+    Timestamped,
+}
+
+impl TextFormat {
+    fn from_cli_value(value: &str) -> Option<Self> {
+        match value {
+            "plain" => Some(Self::Plain),
+            "timestamps" => Some(Self::Timestamped),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum SubtitleFormat {
+    Srt,
+    Vtt,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum OutputFormat {
     Json,
     Script(ScriptFormat),
+    Text(TextFormat),
+    Subtitle(SubtitleFormat),
 }
 
 #[derive(Debug)]
@@ -109,6 +133,7 @@ struct YtDlpSubtitleTrack {
 #[derive(Debug)]
 struct DirectTranscript {
     text: String,
+    segments: Vec<TranscriptSegment>,
 }
 
 #[derive(Debug)]
@@ -186,14 +211,18 @@ struct ChunkProgressReporter {
 
 fn usage() -> String {
     format!(
-        "usage: fscript <audio-or-url> [output-path | - | --stdout] [--script [plain|timestamps]] [--prefer-local-for-remote] [-d [{}|{}] | --diarize [{}|{}]] [-n N | --num-speakers N] [-t N | --threshold N] [--model-dir PATH] [--model-package PATH] [--model-url URL] [--chunk-seconds N] [--chunk-overlap-seconds N]\n\
+        "usage: fscript <audio-or-url> [output-path | - | --stdout] [--script [plain|timestamps] | --text [plain|timestamps] | --srt | --vtt] [--prefer-local-for-remote] [-d [{}|{}] | --diarize [{}|{}]] [-n N | --num-speakers N] [-t N | --threshold N] [--model-dir PATH] [--model-package PATH] [--model-url URL] [--chunk-seconds N] [--chunk-overlap-seconds N]\n\
 aliases:\n\
   -d [{}|{}]\n\
   --script [plain|timestamps]\n\
+  --text [plain|timestamps]\n\
+  --srt\n\
+  --vtt\n\
   -n, --num-speakers <count>\n\
   -t, --threshold <value>\n\
 defaults:\n\
   --script timestamps\n\
+  --text plain\n\
   --model-dir {}\n\
   --model-package {}\n\
   --chunk-seconds 120\n\
@@ -264,6 +293,9 @@ fn default_output_path(audio_path: &Path, output_format: OutputFormat) -> PathBu
     let file_name = match output_format {
         OutputFormat::Json => format!("{stem}.transcript.json"),
         OutputFormat::Script(_) => format!("{stem}.script.txt"),
+        OutputFormat::Text(_) => format!("{stem}.transcript.txt"),
+        OutputFormat::Subtitle(SubtitleFormat::Srt) => format!("{stem}.srt"),
+        OutputFormat::Subtitle(SubtitleFormat::Vtt) => format!("{stem}.vtt"),
     };
     audio_path
         .parent()
@@ -322,6 +354,9 @@ fn default_output_path_for_input(
             match output_format {
                 OutputFormat::Json => PathBuf::from(format!("{stem}.transcript.json")),
                 OutputFormat::Script(_) => PathBuf::from(format!("{stem}.script.txt")),
+                OutputFormat::Text(_) => PathBuf::from(format!("{stem}.transcript.txt")),
+                OutputFormat::Subtitle(SubtitleFormat::Srt) => PathBuf::from(format!("{stem}.srt")),
+                OutputFormat::Subtitle(SubtitleFormat::Vtt) => PathBuf::from(format!("{stem}.vtt")),
             }
         }
     }
@@ -393,6 +428,40 @@ fn format_hhmmss(seconds: f64) -> String {
     format!("{hours:02}:{minutes:02}:{seconds:02}")
 }
 
+fn format_subtitle_timestamp(seconds: f64, millis_separator: char) -> String {
+    let total_millis = if seconds.is_finite() {
+        (seconds.max(0.0) * 1000.0).round() as u64
+    } else {
+        0
+    };
+    let hours = total_millis / 3_600_000;
+    let minutes = (total_millis % 3_600_000) / 60_000;
+    let seconds = (total_millis % 60_000) / 1_000;
+    let millis = total_millis % 1_000;
+    format!("{hours:02}:{minutes:02}:{seconds:02}{millis_separator}{millis:03}")
+}
+
+fn collapse_whitespace(value: &str) -> String {
+    value.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
+fn segment_display_text(segment: &TranscriptSegment, include_speaker: bool) -> String {
+    let text = segment.text.trim();
+    if !include_speaker {
+        return text.to_string();
+    }
+
+    match segment
+        .speaker
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    {
+        Some(speaker) => format!("{}: {text}", normalize_speaker_label(speaker, "UNKNOWN")),
+        None => text.to_string(),
+    }
+}
+
 fn render_speaker_script_lines(
     segments: &[TranscriptSegment],
     script_format: ScriptFormat,
@@ -459,6 +528,59 @@ fn render_speaker_script_lines(
     lines
 }
 
+fn render_timestamped_text_lines(segments: &[TranscriptSegment]) -> Vec<String> {
+    segments
+        .iter()
+        .filter_map(|segment| {
+            let text = segment.text.trim();
+            if text.is_empty() {
+                None
+            } else {
+                Some(format!("{} - {text}", format_hhmmss(segment.start_s)))
+            }
+        })
+        .collect()
+}
+
+fn render_srt(segments: &[TranscriptSegment]) -> String {
+    segments
+        .iter()
+        .filter(|segment| segment.end_s > segment.start_s && !segment.text.trim().is_empty())
+        .enumerate()
+        .map(|(index, segment)| {
+            format!(
+                "{}\n{} --> {}\n{}",
+                index + 1,
+                format_subtitle_timestamp(segment.start_s, ','),
+                format_subtitle_timestamp(segment.end_s, ','),
+                segment_display_text(segment, true),
+            )
+        })
+        .collect::<Vec<_>>()
+        .join("\n\n")
+}
+
+fn render_vtt(segments: &[TranscriptSegment]) -> String {
+    let body = segments
+        .iter()
+        .filter(|segment| segment.end_s > segment.start_s && !segment.text.trim().is_empty())
+        .map(|segment| {
+            format!(
+                "{} --> {}\n{}",
+                format_subtitle_timestamp(segment.start_s, '.'),
+                format_subtitle_timestamp(segment.end_s, '.'),
+                segment_display_text(segment, true),
+            )
+        })
+        .collect::<Vec<_>>()
+        .join("\n\n");
+    if body.is_empty() {
+        "WEBVTT".to_string()
+    } else {
+        format!("WEBVTT\n\n{body}")
+    }
+}
+
 fn render_output(result: &BenchmarkResult, output_format: OutputFormat) -> Result<String> {
     match output_format {
         OutputFormat::Json => serde_json::to_string_pretty(result).map_err(Into::into),
@@ -469,6 +591,16 @@ fn render_output(result: &BenchmarkResult, output_format: OutputFormat) -> Resul
             "UNKNOWN",
         )
         .join("\n")),
+        OutputFormat::Text(TextFormat::Plain) => Ok(result.text.trim().to_string()),
+        OutputFormat::Text(TextFormat::Timestamped) => {
+            Ok(render_timestamped_text_lines(result.segments.as_deref().unwrap_or(&[])).join("\n"))
+        }
+        OutputFormat::Subtitle(SubtitleFormat::Srt) => {
+            Ok(render_srt(result.segments.as_deref().unwrap_or(&[])))
+        }
+        OutputFormat::Subtitle(SubtitleFormat::Vtt) => {
+            Ok(render_vtt(result.segments.as_deref().unwrap_or(&[])))
+        }
     }
 }
 
@@ -545,22 +677,123 @@ fn yt_dlp_command() -> Command {
     Command::new("yt-dlp")
 }
 
-fn parse_vtt_text(contents: &str) -> String {
+fn parse_subtitle_timestamp(value: &str) -> Option<f64> {
+    let normalized = value.trim().replace(',', ".");
+    let parts = normalized.split(':').collect::<Vec<_>>();
+    let (hours, minutes, seconds) = match parts.as_slice() {
+        [minutes, seconds] => (
+            0u64,
+            minutes.parse::<u64>().ok()?,
+            seconds.parse::<f64>().ok()?,
+        ),
+        [hours, minutes, seconds] => (
+            hours.parse::<u64>().ok()?,
+            minutes.parse::<u64>().ok()?,
+            seconds.parse::<f64>().ok()?,
+        ),
+        _ => return None,
+    };
+    Some(hours as f64 * 3600.0 + minutes as f64 * 60.0 + seconds)
+}
+
+fn parse_vtt_segments(contents: &str) -> Vec<TranscriptSegment> {
     contents
-        .lines()
-        .map(str::trim)
-        .filter(|line| {
-            !line.is_empty()
-                && *line != "WEBVTT"
-                && !line.starts_with("NOTE")
-                && !line.starts_with("Kind:")
-                && !line.starts_with("Language:")
-                && !line.starts_with("Style:")
-                && !line.contains("-->")
-                && !line.chars().all(|ch| ch.is_ascii_digit())
+        .replace("\r\n", "\n")
+        .replace('\r', "\n")
+        .split("\n\n")
+        .filter_map(|block| {
+            let lines = block
+                .lines()
+                .map(str::trim)
+                .filter(|line| !line.is_empty())
+                .collect::<Vec<_>>();
+            if lines.is_empty() {
+                return None;
+            }
+
+            let timing_index = lines.iter().position(|line| line.contains("-->"))?;
+            let (start, end) = {
+                let timing_line = lines[timing_index];
+                let (start, end) = timing_line.split_once("-->")?;
+                let end = end.split_whitespace().next()?;
+                (
+                    parse_subtitle_timestamp(start)?,
+                    parse_subtitle_timestamp(end)?,
+                )
+            };
+
+            let text = collapse_whitespace(&lines[timing_index + 1..].join(" "));
+            if text.is_empty() || end <= start {
+                return None;
+            }
+
+            Some(TranscriptSegment {
+                start_s: start,
+                end_s: end,
+                text,
+                speaker: None,
+            })
         })
+        .collect()
+}
+
+fn parse_vtt_text(contents: &str) -> String {
+    parse_vtt_segments(contents)
+        .into_iter()
+        .map(|segment| segment.text)
         .collect::<Vec<_>>()
         .join(" ")
+}
+
+#[derive(Debug, Deserialize)]
+struct Json3Transcript {
+    events: Vec<Json3Event>,
+}
+
+#[derive(Debug, Deserialize)]
+struct Json3Event {
+    #[serde(rename = "tStartMs")]
+    t_start_ms: Option<f64>,
+    #[serde(rename = "dDurationMs")]
+    d_duration_ms: Option<f64>,
+    segs: Option<Vec<Json3CaptionSegment>>,
+}
+
+#[derive(Debug, Deserialize)]
+struct Json3CaptionSegment {
+    utf8: Option<String>,
+}
+
+fn parse_json3_segments(contents: &str) -> Result<Vec<TranscriptSegment>> {
+    let parsed: Json3Transcript =
+        serde_json::from_str(contents).context("failed to parse json3 subtitle payload")?;
+    Ok(parsed
+        .events
+        .into_iter()
+        .filter_map(|event| {
+            let start = event.t_start_ms? / 1000.0;
+            let duration = event.d_duration_ms? / 1000.0;
+            let end = start + duration;
+            let text = collapse_whitespace(
+                &event
+                    .segs
+                    .into_iter()
+                    .flatten()
+                    .filter_map(|segment| segment.utf8)
+                    .filter(|segment| !segment.trim().is_empty() && segment.trim() != "\n")
+                    .collect::<String>(),
+            );
+            if text.is_empty() || end <= start {
+                return None;
+            }
+            Some(TranscriptSegment {
+                start_s: start,
+                end_s: end,
+                text,
+                speaker: None,
+            })
+        })
+        .collect())
 }
 
 fn load_remote_video_info(url: &str) -> Result<YtDlpVideoInfo> {
@@ -622,35 +855,38 @@ fn download_manual_remote_transcript(
             format!("yt-dlp reported subtitles for {url} but did not write a .{extension} file")
         })?;
 
-    let text = if extension == "vtt" {
-        parse_vtt_text(
-            &fs::read_to_string(&subtitle_path)
-                .with_context(|| format!("failed to read {}", subtitle_path.display()))?,
+    let (text, segments) = if extension == "vtt" {
+        let contents = fs::read_to_string(&subtitle_path)
+            .with_context(|| format!("failed to read {}", subtitle_path.display()))?;
+        let segments = parse_vtt_segments(&contents);
+        (
+            segments
+                .iter()
+                .map(|segment| segment.text.as_str())
+                .collect::<Vec<_>>()
+                .join(" "),
+            segments,
         )
     } else {
-        let value: serde_json::Value = serde_json::from_slice(
-            &fs::read(&subtitle_path)
-                .with_context(|| format!("failed to read {}", subtitle_path.display()))?,
+        let contents = fs::read_to_string(&subtitle_path)
+            .with_context(|| format!("failed to read {}", subtitle_path.display()))?;
+        let segments = parse_json3_segments(&contents)
+            .with_context(|| format!("failed to parse {}", subtitle_path.display()))?;
+        (
+            segments
+                .iter()
+                .map(|segment| segment.text.as_str())
+                .collect::<Vec<_>>()
+                .join(" "),
+            segments,
         )
-        .with_context(|| format!("failed to parse {}", subtitle_path.display()))?;
-        value["events"]
-            .as_array()
-            .into_iter()
-            .flatten()
-            .filter_map(|event| event["segs"].as_array())
-            .flatten()
-            .filter_map(|segment| segment["utf8"].as_str())
-            .map(str::trim)
-            .filter(|segment| !segment.is_empty() && *segment != "\n")
-            .collect::<Vec<_>>()
-            .join(" ")
     };
 
     if text.trim().is_empty() {
         return Ok(None);
     }
 
-    Ok(Some(DirectTranscript { text }))
+    Ok(Some(DirectTranscript { text, segments }))
 }
 
 fn download_remote_audio(url: &str, _info: &YtDlpVideoInfo) -> Result<DownloadedAudio> {
@@ -747,6 +983,25 @@ fn parse_args(raw_args: &[String]) -> Result<CliArgs> {
                         continue;
                     }
                 }
+                index += 1;
+            }
+            "--text" => {
+                output_format = OutputFormat::Text(TextFormat::Plain);
+                if let Some(value) = raw_args.get(index + 1) {
+                    if let Some(text_format) = TextFormat::from_cli_value(value) {
+                        output_format = OutputFormat::Text(text_format);
+                        index += 2;
+                        continue;
+                    }
+                }
+                index += 1;
+            }
+            "--srt" => {
+                output_format = OutputFormat::Subtitle(SubtitleFormat::Srt);
+                index += 1;
+            }
+            "--vtt" => {
+                output_format = OutputFormat::Subtitle(SubtitleFormat::Vtt);
                 index += 1;
             }
             "--prefer-local-for-remote" => {
@@ -1472,7 +1727,7 @@ fn main() -> Result<()> {
         if !args.prefer_local_for_remote && args.diarization.is_none() {
             if let Some(transcript) = download_manual_remote_transcript(url, &info)? {
                 let result = BenchmarkResult {
-                    segments: Some(transcript_segments_from_text(&transcript.text, 0.0, 0.0)),
+                    segments: (!transcript.segments.is_empty()).then_some(transcript.segments),
                     input_source: url.clone(),
                     model_dir: String::new(),
                     audio_path: url.clone(),
@@ -1674,12 +1929,14 @@ mod tests {
         build_chunk_ranges, default_model_dir, default_model_package, default_output_path,
         default_output_path_for_input, emit_file_output_completion, format_hhmmss,
         infer_input_source, is_supported_audio, merge_chunk_texts, merge_transcript_segments,
-        normalize_speaker_label, parse_args, parse_vtt_text, pick_manual_subtitle_language,
-        remove_appledouble_files, render_chunk_progress, render_chunk_progress_done,
+        normalize_speaker_label, parse_args, parse_json3_segments, parse_vtt_segments,
+        parse_vtt_text, pick_manual_subtitle_language, remove_appledouble_files,
+        render_chunk_progress, render_chunk_progress_done, render_output,
         render_speaker_script_lines, resolve_absolute_output_path, transcript_segments_from_text,
-        version_string, write_output_file, DiarizationBackend, DiarizationRequest, FfprobeStream,
-        InputSource, OutputFormat, ScriptFormat, TranscriptSegment, YtDlpSubtitleTrack,
-        YtDlpVideoInfo, DEFAULT_MODEL_BASENAME, DEFAULT_MODEL_PACKAGE_NAME,
+        version_string, write_output_file, BenchmarkResult, DiarizationBackend, DiarizationRequest,
+        FfprobeStream, InputSource, OutputFormat, ScriptFormat, SubtitleFormat, TextFormat,
+        TranscriptSegment, YtDlpSubtitleTrack, YtDlpVideoInfo, DEFAULT_MODEL_BASENAME,
+        DEFAULT_MODEL_PACKAGE_NAME,
     };
     use std::collections::BTreeMap;
     use std::io::Cursor;
@@ -1701,6 +1958,36 @@ mod tests {
             current = parent;
         }
         true
+    }
+
+    fn sample_result(segments: Vec<TranscriptSegment>) -> BenchmarkResult {
+        let text = segments
+            .iter()
+            .map(|segment| segment.text.as_str())
+            .collect::<Vec<_>>()
+            .join(" ");
+        BenchmarkResult {
+            input_source: "input".to_string(),
+            model_dir: "model".to_string(),
+            audio_path: "audio".to_string(),
+            prepared_audio_path: "prepared".to_string(),
+            used_ffmpeg_normalization: false,
+            used_local_model: true,
+            transcript_source: "local-audio-local-model".to_string(),
+            audio_seconds: 10.0,
+            load_seconds: 1.0,
+            transcribe_seconds: 1.0,
+            total_inside_seconds: 2.0,
+            seconds_per_audio_second: 0.2,
+            realtime_speedup: 5.0,
+            text,
+            chunk_seconds: Some(120.0),
+            chunk_overlap_seconds: 2.0,
+            chunk_count: 1,
+            chunks: vec![],
+            segments: Some(segments),
+            speaker_diarization: None,
+        }
     }
 
     #[test]
@@ -1808,6 +2095,47 @@ mod tests {
         assert_eq!(
             parsed.output_format,
             OutputFormat::Script(ScriptFormat::Plain)
+        );
+    }
+
+    #[test]
+    fn parse_args_supports_plain_text_output() {
+        let args = vec!["audio.wav".to_string(), "--text".to_string()];
+        let parsed = parse_args(&args).unwrap();
+        assert_eq!(parsed.output_format, OutputFormat::Text(TextFormat::Plain));
+    }
+
+    #[test]
+    fn parse_args_supports_timestamped_text_output() {
+        let args = vec![
+            "audio.wav".to_string(),
+            "--text".to_string(),
+            "timestamps".to_string(),
+        ];
+        let parsed = parse_args(&args).unwrap();
+        assert_eq!(
+            parsed.output_format,
+            OutputFormat::Text(TextFormat::Timestamped)
+        );
+    }
+
+    #[test]
+    fn parse_args_supports_srt_output() {
+        let args = vec!["audio.wav".to_string(), "--srt".to_string()];
+        let parsed = parse_args(&args).unwrap();
+        assert_eq!(
+            parsed.output_format,
+            OutputFormat::Subtitle(SubtitleFormat::Srt)
+        );
+    }
+
+    #[test]
+    fn parse_args_supports_vtt_output() {
+        let args = vec!["audio.wav".to_string(), "--vtt".to_string()];
+        let parsed = parse_args(&args).unwrap();
+        assert_eq!(
+            parsed.output_format,
+            OutputFormat::Subtitle(SubtitleFormat::Vtt)
         );
     }
 
@@ -2078,6 +2406,30 @@ mod tests {
     }
 
     #[test]
+    fn default_text_output_path_uses_transcript_text_extension() {
+        let path = PathBuf::from("/tmp/folder/audio.file.mp3");
+        let output = default_output_path(&path, OutputFormat::Text(TextFormat::Plain));
+        assert_eq!(
+            output,
+            PathBuf::from("/tmp/folder/audio.file.transcript.txt")
+        );
+    }
+
+    #[test]
+    fn default_srt_output_path_uses_srt_extension() {
+        let path = PathBuf::from("/tmp/folder/audio.file.mp3");
+        let output = default_output_path(&path, OutputFormat::Subtitle(SubtitleFormat::Srt));
+        assert_eq!(output, PathBuf::from("/tmp/folder/audio.file.srt"));
+    }
+
+    #[test]
+    fn default_vtt_output_path_uses_vtt_extension() {
+        let path = PathBuf::from("/tmp/folder/audio.file.mp3");
+        let output = default_output_path(&path, OutputFormat::Subtitle(SubtitleFormat::Vtt));
+        assert_eq!(output, PathBuf::from("/tmp/folder/audio.file.vtt"));
+    }
+
+    #[test]
     fn infer_input_source_detects_remote_urls() {
         assert_eq!(
             infer_input_source("https://www.youtube.com/watch?v=QSdh8Gj0mEg"),
@@ -2107,6 +2459,36 @@ mod tests {
             OutputFormat::Script(ScriptFormat::Timestamped),
         );
         assert_eq!(output, PathBuf::from("TED_Talk_Future_Now.script.txt"));
+    }
+
+    #[test]
+    fn default_text_output_path_for_remote_url_uses_video_title() {
+        let output = default_output_path_for_input(
+            &InputSource::RemoteUrl("https://youtu.be/demo".to_string()),
+            Some("TED Talk: Future / Now"),
+            OutputFormat::Text(TextFormat::Plain),
+        );
+        assert_eq!(output, PathBuf::from("TED_Talk_Future_Now.transcript.txt"));
+    }
+
+    #[test]
+    fn default_srt_output_path_for_remote_url_uses_video_title() {
+        let output = default_output_path_for_input(
+            &InputSource::RemoteUrl("https://youtu.be/demo".to_string()),
+            Some("TED Talk: Future / Now"),
+            OutputFormat::Subtitle(SubtitleFormat::Srt),
+        );
+        assert_eq!(output, PathBuf::from("TED_Talk_Future_Now.srt"));
+    }
+
+    #[test]
+    fn default_vtt_output_path_for_remote_url_uses_video_title() {
+        let output = default_output_path_for_input(
+            &InputSource::RemoteUrl("https://youtu.be/demo".to_string()),
+            Some("TED Talk: Future / Now"),
+            OutputFormat::Subtitle(SubtitleFormat::Vtt),
+        );
+        assert_eq!(output, PathBuf::from("TED_Talk_Future_Now.vtt"));
     }
 
     #[test]
@@ -2143,6 +2525,68 @@ mod tests {
             "WEBVTT\nKind: captions\nLanguage: en\n\n1\n00:00:00.000 --> 00:00:01.000\nHello world\n\n2\n00:00:01.000 --> 00:00:02.000\nSecond line",
         );
         assert_eq!(text, "Hello world Second line");
+    }
+
+    #[test]
+    fn parse_vtt_segments_extracts_timed_cues() {
+        let segments = parse_vtt_segments(
+            "WEBVTT\n\nintro\n00:00:00.000 --> 00:00:02.500 align:start position:0%\nHello\nworld\n\n00:00:03.000 --> 00:00:04.250\nSecond line",
+        );
+        assert_eq!(
+            segments,
+            vec![
+                TranscriptSegment {
+                    start_s: 0.0,
+                    end_s: 2.5,
+                    text: "Hello world".to_string(),
+                    speaker: None,
+                },
+                TranscriptSegment {
+                    start_s: 3.0,
+                    end_s: 4.25,
+                    text: "Second line".to_string(),
+                    speaker: None,
+                },
+            ]
+        );
+    }
+
+    #[test]
+    fn parse_json3_segments_extracts_timed_cues() {
+        let segments = parse_json3_segments(
+            r#"{
+              "events": [
+                {
+                  "tStartMs": 1250,
+                  "dDurationMs": 1750,
+                  "segs": [{"utf8": "Hello "}, {"utf8": "world"}]
+                },
+                {
+                  "tStartMs": 4000,
+                  "dDurationMs": 500,
+                  "segs": [{"utf8": "Second line"}]
+                }
+              ]
+            }"#,
+        )
+        .unwrap();
+        assert_eq!(
+            segments,
+            vec![
+                TranscriptSegment {
+                    start_s: 1.25,
+                    end_s: 3.0,
+                    text: "Hello world".to_string(),
+                    speaker: None,
+                },
+                TranscriptSegment {
+                    start_s: 4.0,
+                    end_s: 4.5,
+                    text: "Second line".to_string(),
+                    speaker: None,
+                },
+            ]
+        );
     }
 
     #[test]
@@ -2264,6 +2708,90 @@ mod tests {
                 "00:01:05 - SPEAKER_01: Primeira.".to_string(),
                 "00:01:08 - SPEAKER_01: Segunda.".to_string(),
             ]
+        );
+    }
+
+    #[test]
+    fn render_output_supports_plain_text() {
+        let result = sample_result(vec![
+            TranscriptSegment {
+                start_s: 0.0,
+                end_s: 1.0,
+                text: "Primeira frase.".to_string(),
+                speaker: None,
+            },
+            TranscriptSegment {
+                start_s: 1.0,
+                end_s: 2.0,
+                text: "Segunda frase.".to_string(),
+                speaker: None,
+            },
+        ]);
+
+        assert_eq!(
+            render_output(&result, OutputFormat::Text(TextFormat::Plain)).unwrap(),
+            "Primeira frase. Segunda frase."
+        );
+    }
+
+    #[test]
+    fn render_output_supports_timestamped_text() {
+        let result = sample_result(vec![
+            TranscriptSegment {
+                start_s: 5.0,
+                end_s: 6.0,
+                text: "Primeira frase.".to_string(),
+                speaker: None,
+            },
+            TranscriptSegment {
+                start_s: 65.9,
+                end_s: 67.0,
+                text: "Segunda frase.".to_string(),
+                speaker: None,
+            },
+        ]);
+
+        assert_eq!(
+            render_output(&result, OutputFormat::Text(TextFormat::Timestamped)).unwrap(),
+            "00:00:05 - Primeira frase.\n00:01:05 - Segunda frase."
+        );
+    }
+
+    #[test]
+    fn render_output_supports_srt_subtitles() {
+        let result = sample_result(vec![
+            TranscriptSegment {
+                start_s: 1.25,
+                end_s: 3.0,
+                text: "Hello world".to_string(),
+                speaker: Some("S1".to_string()),
+            },
+            TranscriptSegment {
+                start_s: 4.0,
+                end_s: 4.5,
+                text: "Second line".to_string(),
+                speaker: None,
+            },
+        ]);
+
+        assert_eq!(
+            render_output(&result, OutputFormat::Subtitle(SubtitleFormat::Srt)).unwrap(),
+            "1\n00:00:01,250 --> 00:00:03,000\nSPEAKER_01: Hello world\n\n2\n00:00:04,000 --> 00:00:04,500\nSecond line"
+        );
+    }
+
+    #[test]
+    fn render_output_supports_vtt_subtitles() {
+        let result = sample_result(vec![TranscriptSegment {
+            start_s: 1.25,
+            end_s: 3.0,
+            text: "Hello world".to_string(),
+            speaker: Some("S1".to_string()),
+        }]);
+
+        assert_eq!(
+            render_output(&result, OutputFormat::Subtitle(SubtitleFormat::Vtt)).unwrap(),
+            "WEBVTT\n\n00:00:01.250 --> 00:00:03.000\nSPEAKER_01: Hello world"
         );
     }
 }

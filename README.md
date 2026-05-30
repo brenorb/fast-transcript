@@ -10,6 +10,10 @@ The CLI binary is called **`fscript`**:
 
 ```bash
 fscript lecture.mp3
+fscript lecture.mp3 --text
+fscript lecture.mp3 --text timestamps
+fscript lecture.mp3 --srt
+fscript lecture.mp3 --vtt
 fscript lecture.mp3 -d
 fscript lecture.mp3 -d --script
 fscript lecture.mp3 -d --script plain
@@ -44,6 +48,8 @@ The existing options I tested had clear problems for this use case:
 - uses **120s chunks** with **2s overlap** by default
 - can run optional local speaker diarization as a second pass via `fluidaudiocli process --mode offline`
 - writes `<audio>.transcript.json` next to the input unless you choose a different output path
+- can alternatively write raw transcript text via `--text`, with optional segment timestamps via `--text timestamps`
+- can alternatively write subtitle files via `--srt` or `--vtt`
 - can alternatively write a speaker script text file via `--script`, defaulting to `HH:MM:SS - SPEAKER_01: ...`
 - stays quiet by default: concise progress in the terminal, transcript JSON on disk
 - shows a spinner and chunk progress bar on interactive terminals
@@ -131,6 +137,10 @@ For remote URLs, the default flow is:
 fscript <audio-or-url> [output-path]
 fscript <audio-or-url> --stdout
 fscript <audio-or-url> -
+fscript <audio-or-url> --text
+fscript <audio-or-url> --text timestamps
+fscript <audio-or-url> --srt
+fscript <audio-or-url> --vtt
 fscript <audio-or-url> --script
 fscript <audio-or-url> --script plain
 fscript <audio-or-url> -d
@@ -152,6 +162,10 @@ Optional overrides:
 ```bash
 fscript lecture.wav custom-output.json
 fscript lecture.wav --stdout
+fscript lecture.wav --text
+fscript lecture.wav --text timestamps
+fscript lecture.wav --srt
+fscript lecture.wav --vtt
 fscript lecture.wav --script
 fscript lecture.wav --script plain
 fscript lecture.wav -d
@@ -167,6 +181,20 @@ fscript lecture.wav --model-url https://example.com/parakeet-v3-int8.tar.gz
 fscript https://www.youtube.com/watch?v=QSdh8Gj0mEg
 fscript https://www.youtube.com/watch?v=QSdh8Gj0mEg --prefer-local-for-remote
 ```
+
+Raw text output modes:
+
+- `--text`: plain transcript text without timestamps or speaker labels
+- `--text timestamps`: one line per segment with `HH:MM:SS - ...`
+- when `--text` is active and you do not pass an explicit output path, the default file becomes `<audio>.transcript.txt`
+
+Subtitle output modes:
+
+- `--srt`: SubRip subtitle file
+- `--vtt`: WebVTT subtitle file
+- if diarization is active, subtitle cues include normalized speaker labels such as `SPEAKER_01: ...`
+- when `--srt` is active and you do not pass an explicit output path, the default file becomes `<audio>.srt`
+- when `--vtt` is active and you do not pass an explicit output path, the default file becomes `<audio>.vtt`
 
 Script output modes:
 
@@ -217,6 +245,9 @@ If `fluidaudiocli` is missing, `fscript` now returns a clear backend error inste
 - chunk seconds: `120`
 - chunk overlap seconds: `2`
 - output path: `<audio>.transcript.json`
+- output path with `--text`: `<audio>.transcript.txt`
+- output path with `--srt`: `<audio>.srt`
+- output path with `--vtt`: `<audio>.vtt`
 - output path with `--script`: `<audio>.script.txt`
 
 ## Benchmarks
@@ -248,7 +279,7 @@ These are **local development benchmarks**, not universal claims. They were run 
 
 ## Output format
 
-The output is JSON and includes:
+Default output is JSON and includes:
 
 - merged transcript text
 - model path
@@ -266,6 +297,14 @@ The output is JSON and includes:
 When diarization is enabled, each transcript segment may include:
 
 - `speaker`
+
+Alternative output modes:
+
+- `--text`: plain transcript text
+- `--text timestamps`: plain transcript text with segment timestamps
+- `--srt`: subtitle file
+- `--vtt`: subtitle file
+- `--script` / `--script plain`: diarized speaker script text
 
 ## Motivation
 
