@@ -542,10 +542,55 @@ fn render_timestamped_text_lines(segments: &[TranscriptSegment]) -> Vec<String> 
         .collect()
 }
 
+fn estimate_subtitle_duration_seconds(text: &str) -> f64 {
+    let word_count = text.split_whitespace().count() as f64;
+    let char_count = text.chars().count() as f64;
+    (word_count * 0.42).max(char_count * 0.065).clamp(1.2, 6.0)
+}
+
+fn normalized_subtitle_segments(segments: &[TranscriptSegment]) -> Vec<TranscriptSegment> {
+    let mut normalized = Vec::new();
+    for (index, segment) in segments.iter().enumerate() {
+        let text = segment.text.trim();
+        if text.is_empty() || segment.end_s <= segment.start_s {
+            continue;
+        }
+
+        let next_start = segments
+            .iter()
+            .skip(index + 1)
+            .find(|candidate| {
+                candidate.end_s > candidate.start_s && !candidate.text.trim().is_empty()
+            })
+            .map(|candidate| candidate.start_s);
+        let max_end_from_next = next_start.map(|start| (start - 0.05).max(segment.start_s + 0.2));
+        let actual_duration = segment.end_s - segment.start_s;
+        let estimated_end = segment.start_s + estimate_subtitle_duration_seconds(text);
+        let mut end_s = segment.end_s;
+
+        if actual_duration > 8.0 {
+            end_s = end_s.min(estimated_end);
+        }
+        if let Some(max_end) = max_end_from_next {
+            end_s = end_s.min(max_end);
+        }
+        if end_s <= segment.start_s {
+            end_s = (segment.start_s + 0.2).min(segment.end_s.max(segment.start_s + 0.2));
+        }
+
+        normalized.push(TranscriptSegment {
+            start_s: segment.start_s,
+            end_s,
+            text: text.to_string(),
+            speaker: segment.speaker.clone(),
+        });
+    }
+    normalized
+}
+
 fn render_srt(segments: &[TranscriptSegment]) -> String {
-    segments
-        .iter()
-        .filter(|segment| segment.end_s > segment.start_s && !segment.text.trim().is_empty())
+    normalized_subtitle_segments(segments)
+        .into_iter()
         .enumerate()
         .map(|(index, segment)| {
             format!(
@@ -553,7 +598,7 @@ fn render_srt(segments: &[TranscriptSegment]) -> String {
                 index + 1,
                 format_subtitle_timestamp(segment.start_s, ','),
                 format_subtitle_timestamp(segment.end_s, ','),
-                segment_display_text(segment, true),
+                segment_display_text(&segment, true),
             )
         })
         .collect::<Vec<_>>()
@@ -561,15 +606,14 @@ fn render_srt(segments: &[TranscriptSegment]) -> String {
 }
 
 fn render_vtt(segments: &[TranscriptSegment]) -> String {
-    let body = segments
-        .iter()
-        .filter(|segment| segment.end_s > segment.start_s && !segment.text.trim().is_empty())
+    let body = normalized_subtitle_segments(segments)
+        .into_iter()
         .map(|segment| {
             format!(
                 "{} --> {}\n{}",
                 format_subtitle_timestamp(segment.start_s, '.'),
                 format_subtitle_timestamp(segment.end_s, '.'),
-                segment_display_text(segment, true),
+                segment_display_text(&segment, true),
             )
         })
         .collect::<Vec<_>>()
@@ -2778,6 +2822,29 @@ mod tests {
             render_output(&result, OutputFormat::Subtitle(SubtitleFormat::Srt)).unwrap(),
             "1\n00:00:01,250 --> 00:00:03,000\nSPEAKER_01: Hello world\n\n2\n00:00:04,000 --> 00:00:04,500\nSecond line"
         );
+    }
+
+    #[test]
+    fn render_output_clips_overlong_subtitle_duration() {
+        let result = sample_result(vec![
+            TranscriptSegment {
+                start_s: 150.0,
+                end_s: 228.0,
+                text: "Chissa come saranno ridotto.".to_string(),
+                speaker: None,
+            },
+            TranscriptSegment {
+                start_s: 228.0,
+                end_s: 233.0,
+                text: "Lo sai che non devi allontanarti.".to_string(),
+                speaker: None,
+            },
+        ]);
+
+        let rendered = render_output(&result, OutputFormat::Subtitle(SubtitleFormat::Srt)).unwrap();
+        assert!(rendered.contains("1\n00:02:30,000 --> 00:02:31,820\nChissa come saranno ridotto."));
+        assert!(rendered
+            .contains("2\n00:03:48,000 --> 00:03:53,000\nLo sai che non devi allontanarti."));
     }
 
     #[test]
