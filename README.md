@@ -67,18 +67,27 @@ The existing options I tested had clear problems for this use case:
 ### Install with Homebrew
 
 ```bash
+brew tap brenorb/tap
+brew install fast-transcript
+```
+
+If you prefer the fully-qualified formula name:
+
+```bash
 brew install brenorb/tap/fast-transcript
+```
+
+If you previously used the old tap name, migrate with:
+
+```bash
+brew uninstall brenorb/fast-transcript/fast-transcript
+brew untap brenorb/fast-transcript
+brew tap brenorb/tap
+brew install fast-transcript
 ```
 
 On Apple Silicon macOS, Homebrew now installs `fast-transcript` from a proper bottle.
 On Linux x86_64, the formula still installs from the published release binary.
-
-If you prefer the explicit two-step form:
-
-```bash
-brew tap brenorb/tap
-brew install fast-transcript
-```
 
 ### PyPI / uv
 
