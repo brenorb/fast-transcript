@@ -61,16 +61,24 @@ The existing options I tested had clear problems for this use case:
 - `ffmpeg`
 - `ffprobe`
 - `yt-dlp` for remote URLs, or `uvx yt-dlp`
-- `fluidaudiocli` on `PATH` if you want local diarization (`-d`)
+- `fluidaudiocli` on `PATH` for the default speaker-aware mode
+  - use `--backend=none` if you want to skip diarization
 
 ### Install with Homebrew
 
 ```bash
-brew install brenorb/fast-transcript/fast-transcript
+brew install brenorb/tap/fast-transcript
 ```
 
 On Apple Silicon macOS, Homebrew now installs `fast-transcript` from a proper bottle.
 On Linux x86_64, the formula still installs from the published release binary.
+
+If you prefer the explicit two-step form:
+
+```bash
+brew tap brenorb/tap
+brew install fast-transcript
+```
 
 ### PyPI / uv
 
