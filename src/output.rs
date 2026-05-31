@@ -4,7 +4,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use crate::types::{
-    BenchmarkChunk, BenchmarkResult, InputSource, OutputFormat, ScriptFormat, SubtitleFormat,
+    BenchmarkChunk, BenchmarkResult, InputSource, OutputFormat, SpeakersFormat, SubtitleFormat,
     TextFormat, TranscriptSegment,
 };
 
@@ -16,7 +16,7 @@ pub(crate) fn default_output_path(audio_path: &Path, output_format: OutputFormat
         .unwrap_or("transcript");
     let file_name = match output_format {
         OutputFormat::Json => format!("{stem}.transcript.json"),
-        OutputFormat::Script(_) => format!("{stem}.script.txt"),
+        OutputFormat::Speakers(_) => format!("{stem}.speakers.txt"),
         OutputFormat::Text(_) => format!("{stem}.transcript.txt"),
         OutputFormat::Subtitle(SubtitleFormat::Srt) => format!("{stem}.srt"),
         OutputFormat::Subtitle(SubtitleFormat::Vtt) => format!("{stem}.vtt"),
@@ -41,12 +41,33 @@ pub(crate) fn default_output_path_for_input(
                 .unwrap_or_else(|| sanitize_file_stem(url));
             match output_format {
                 OutputFormat::Json => PathBuf::from(format!("{stem}.transcript.json")),
-                OutputFormat::Script(_) => PathBuf::from(format!("{stem}.script.txt")),
+                OutputFormat::Speakers(_) => PathBuf::from(format!("{stem}.speakers.txt")),
                 OutputFormat::Text(_) => PathBuf::from(format!("{stem}.transcript.txt")),
                 OutputFormat::Subtitle(SubtitleFormat::Srt) => PathBuf::from(format!("{stem}.srt")),
                 OutputFormat::Subtitle(SubtitleFormat::Vtt) => PathBuf::from(format!("{stem}.vtt")),
             }
         }
+    }
+}
+
+pub(crate) fn resolve_output_target_path(
+    output_path: &Path,
+    current_dir: &Path,
+    default_output_path: &Path,
+) -> PathBuf {
+    let candidate = if output_path.is_absolute() {
+        output_path.to_path_buf()
+    } else {
+        current_dir.join(output_path)
+    };
+
+    if candidate.is_dir() {
+        let file_name = default_output_path
+            .file_name()
+            .unwrap_or_else(|| std::ffi::OsStr::new("transcript.txt"));
+        candidate.join(file_name)
+    } else {
+        candidate
     }
 }
 
@@ -272,11 +293,17 @@ fn segment_display_text(segment: &TranscriptSegment, include_speaker: bool) -> S
     }
 }
 
-pub(crate) fn render_speaker_script_lines(
+fn normalized_speaker_label(speaker: Option<&str>) -> Option<String> {
+    speaker
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(|value| normalize_speaker_label(value, "UNKNOWN"))
+}
+
+pub(crate) fn render_speaker_lines(
     segments: &[TranscriptSegment],
-    script_format: ScriptFormat,
+    speakers_format: SpeakersFormat,
     merge_consecutive: bool,
-    unknown_label: &str,
 ) -> Vec<String> {
     let mut lines = Vec::new();
     let mut current_speaker: Option<String> = None;
@@ -287,19 +314,23 @@ pub(crate) fn render_speaker_script_lines(
                  current_speaker: &mut Option<String>,
                  current_start_s: &mut f64,
                  current_parts: &mut Vec<&str>| {
-        let Some(speaker) = current_speaker.take() else {
-            current_parts.clear();
-            return;
-        };
         let text = current_parts.join(" ").trim().to_string();
         current_parts.clear();
         if text.is_empty() {
+            current_speaker.take();
             return;
         }
-        let line = match script_format {
-            ScriptFormat::Plain => format!("{speaker}: {text}"),
-            ScriptFormat::Timestamped => {
-                format!("{} - {speaker}: {text}", format_hhmmss(*current_start_s))
+        let speaker_prefix = current_speaker
+            .take()
+            .map(|speaker| format!("{speaker}: "))
+            .unwrap_or_default();
+        let line = match speakers_format {
+            SpeakersFormat::Plain => format!("{speaker_prefix}{text}"),
+            SpeakersFormat::Timestamped => {
+                format!(
+                    "{} - {speaker_prefix}{text}",
+                    format_hhmmss(*current_start_s)
+                )
             }
         };
         lines.push(line);
@@ -311,9 +342,8 @@ pub(crate) fn render_speaker_script_lines(
             continue;
         }
 
-        let speaker =
-            normalize_speaker_label(segment.speaker.as_deref().unwrap_or(""), unknown_label);
-        if merge_consecutive && current_speaker.as_deref() == Some(speaker.as_str()) {
+        let speaker = normalized_speaker_label(segment.speaker.as_deref());
+        if merge_consecutive && current_speaker == speaker {
             current_parts.push(text);
             continue;
         }
@@ -325,7 +355,7 @@ pub(crate) fn render_speaker_script_lines(
             &mut current_parts,
         );
         current_start_s = segment.start_s;
-        current_speaker = Some(speaker);
+        current_speaker = speaker;
         current_parts.push(text);
     }
 
@@ -406,14 +436,18 @@ pub(crate) fn render_output(
 
     match output_format {
         OutputFormat::Json => serde_json::to_string_pretty(effective_result).map_err(Into::into),
-        OutputFormat::Script(script_format) => Ok(render_speaker_script_lines(
+        OutputFormat::Speakers(speakers_format) => Ok(render_speaker_lines(
             effective_result.segments.as_deref().unwrap_or(&[]),
-            script_format,
+            speakers_format,
             true,
-            "UNKNOWN",
         )
         .join("\n")),
-        OutputFormat::Text(TextFormat::Plain) => Ok(effective_result.text.trim().to_string()),
+        OutputFormat::Text(TextFormat::Plain) => Ok(effective_result
+            .text
+            .trim()
+            .replace("\n", " ")
+            .trim()
+            .to_string()),
         OutputFormat::Text(TextFormat::Timestamped) => Ok(render_timestamped_text_lines(
             effective_result.segments.as_deref().unwrap_or(&[]),
         )
@@ -468,11 +502,11 @@ mod tests {
     use super::{
         clean_pathological_repeated_words, default_output_path, default_output_path_for_input,
         emit_file_output_completion, format_hhmmss, normalize_speaker_label, render_output,
-        render_speaker_script_lines, repeated_word_threshold, resolve_absolute_output_path,
-        write_output_file,
+        render_speaker_lines, repeated_word_threshold, resolve_absolute_output_path,
+        resolve_output_target_path, write_output_file,
     };
     use crate::types::{
-        BenchmarkResult, InputSource, OutputFormat, ScriptFormat, SubtitleFormat, TextFormat,
+        BenchmarkResult, InputSource, OutputFormat, SpeakersFormat, SubtitleFormat, TextFormat,
         TranscriptSegment,
     };
     use std::io::Cursor;
@@ -520,10 +554,11 @@ mod tests {
     }
 
     #[test]
-    fn default_script_output_path_uses_script_extension() {
+    fn default_speakers_output_path_uses_speakers_extension() {
         let path = PathBuf::from("/tmp/folder/audio.file.mp3");
-        let output = default_output_path(&path, OutputFormat::Script(ScriptFormat::Timestamped));
-        assert_eq!(output, PathBuf::from("/tmp/folder/audio.file.script.txt"));
+        let output =
+            default_output_path(&path, OutputFormat::Speakers(SpeakersFormat::Timestamped));
+        assert_eq!(output, PathBuf::from("/tmp/folder/audio.file.speakers.txt"));
     }
 
     #[test]
@@ -561,13 +596,13 @@ mod tests {
     }
 
     #[test]
-    fn default_script_output_path_for_remote_url_uses_video_title() {
+    fn default_speakers_output_path_for_remote_url_uses_video_title() {
         let output = default_output_path_for_input(
             &InputSource::RemoteUrl("https://youtu.be/demo".to_string()),
             Some("TED Talk: Future / Now"),
-            OutputFormat::Script(ScriptFormat::Timestamped),
+            OutputFormat::Speakers(SpeakersFormat::Timestamped),
         );
-        assert_eq!(output, PathBuf::from("TED_Talk_Future_Now.script.txt"));
+        assert_eq!(output, PathBuf::from("TED_Talk_Future_Now.speakers.txt"));
     }
 
     #[test]
@@ -613,6 +648,20 @@ mod tests {
             std::fs::read_to_string(expected).unwrap(),
             "{\"ok\":true}\n"
         );
+    }
+
+    #[test]
+    fn resolve_output_target_path_uses_default_filename_inside_existing_directory() {
+        let temp = tempdir().unwrap();
+        let cwd = temp.path();
+        let directory = cwd.join("exports");
+        std::fs::create_dir_all(&directory).unwrap();
+        let resolved = resolve_output_target_path(
+            Path::new("exports"),
+            cwd,
+            Path::new("/tmp/audio.speakers.txt"),
+        );
+        assert_eq!(resolved, directory.join("audio.speakers.txt"));
     }
 
     #[test]
@@ -665,7 +714,7 @@ mod tests {
     }
 
     #[test]
-    fn render_speaker_script_lines_merges_consecutive_turns() {
+    fn render_speaker_lines_merges_consecutive_turns() {
         let segments = vec![
             TranscriptSegment {
                 start_s: 5.0,
@@ -688,7 +737,7 @@ mod tests {
         ];
 
         assert_eq!(
-            render_speaker_script_lines(&segments, ScriptFormat::Plain, true, "UNKNOWN"),
+            render_speaker_lines(&segments, SpeakersFormat::Plain, true),
             vec![
                 "SPEAKER_01: Oi. Tudo bem?".to_string(),
                 "SPEAKER_02: Tudo.".to_string(),
@@ -697,7 +746,7 @@ mod tests {
     }
 
     #[test]
-    fn render_speaker_script_lines_can_include_timestamps() {
+    fn render_speaker_lines_can_include_timestamps() {
         let segments = vec![
             TranscriptSegment {
                 start_s: 65.9,
@@ -714,11 +763,26 @@ mod tests {
         ];
 
         assert_eq!(
-            render_speaker_script_lines(&segments, ScriptFormat::Timestamped, false, "UNKNOWN"),
+            render_speaker_lines(&segments, SpeakersFormat::Timestamped, false),
             vec![
                 "00:01:05 - SPEAKER_01: Primeira.".to_string(),
                 "00:01:08 - SPEAKER_01: Segunda.".to_string(),
             ]
+        );
+    }
+
+    #[test]
+    fn render_speaker_lines_omits_unknown_label_when_diarization_is_absent() {
+        let segments = vec![TranscriptSegment {
+            start_s: 65.9,
+            end_s: 67.0,
+            text: "Primeira.".to_string(),
+            speaker: None,
+        }];
+
+        assert_eq!(
+            render_speaker_lines(&segments, SpeakersFormat::Timestamped, false),
+            vec!["00:01:05 - Primeira.".to_string()]
         );
     }
 
@@ -850,7 +914,7 @@ mod tests {
     }
 
     #[test]
-    fn render_output_can_clean_script_output() {
+    fn render_output_can_clean_speakers_output() {
         let result = sample_result(vec![TranscriptSegment {
             start_s: 65.9,
             end_s: 67.0,
@@ -861,7 +925,7 @@ mod tests {
         assert_eq!(
             render_output(
                 &result,
-                OutputFormat::Script(ScriptFormat::Timestamped),
+                OutputFormat::Speakers(SpeakersFormat::Timestamped),
                 true
             )
             .unwrap(),

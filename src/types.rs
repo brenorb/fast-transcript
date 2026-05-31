@@ -13,19 +13,19 @@ pub(crate) struct CliArgs {
     pub(crate) output_to_stdout: bool,
     pub(crate) output_format: OutputFormat,
     pub(crate) clean_output: bool,
-    pub(crate) prefer_local_for_remote: bool,
+    pub(crate) force_local_for_remote: bool,
     pub(crate) chunk_seconds: Option<f64>,
     pub(crate) chunk_overlap_seconds: f64,
     pub(crate) diarization: Option<DiarizationRequest>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum ScriptFormat {
+pub(crate) enum SpeakersFormat {
     Plain,
     Timestamped,
 }
 
-impl ScriptFormat {
+impl SpeakersFormat {
     pub(crate) fn from_cli_value(value: &str) -> Option<Self> {
         match value {
             "plain" => Some(Self::Plain),
@@ -60,7 +60,7 @@ pub(crate) enum SubtitleFormat {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum OutputFormat {
     Json,
-    Script(ScriptFormat),
+    Speakers(SpeakersFormat),
     Text(TextFormat),
     Subtitle(SubtitleFormat),
 }

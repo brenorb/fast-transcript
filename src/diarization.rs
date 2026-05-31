@@ -29,13 +29,6 @@ impl DiarizationBackend {
         }
     }
 
-    pub fn cli_name(self) -> &'static str {
-        match self {
-            Self::Coreml => "coreml",
-            Self::LseendDihard3 => "lseend-dihard3",
-        }
-    }
-
     pub fn backend_name(self) -> &'static str {
         match self {
             Self::Coreml => COREML_BACKEND_NAME,

@@ -10,16 +10,16 @@ The CLI binary is called **`fscript`**:
 
 ```bash
 fscript lecture.mp3
+fscript lecture.mp3 notes/
 fscript lecture.mp3 --text
-fscript lecture.mp3 --text timestamps
-fscript lecture.mp3 --text --clean
+fscript lecture.mp3 --text=plain
+fscript lecture.mp3 --raw
 fscript lecture.mp3 --srt
 fscript lecture.mp3 --vtt
-fscript lecture.mp3 -d
-fscript lecture.mp3 -d --script
-fscript lecture.mp3 -d --script plain
-fscript lecture.mp3 -d lseend-dihard3 -t 0.3
-fscript lecture.mp3 -d -n 2
+fscript lecture.mp3 --json
+fscript lecture.mp3 --backend=lseend-dihard3 -t 0.3
+fscript lecture.mp3 --backend=none --json --raw
+fscript lecture.mp3 -n 2
 ```
 
 That is the whole point of this project. One command. Large audio. No babysitting.
@@ -47,12 +47,12 @@ The existing options I tested had clear problems for this use case:
 - falls back to downloading remote audio and transcribing locally when only auto-captions exist or no captions exist
 - auto-converts unsupported audio to **16 kHz mono PCM16 WAV**
 - uses **120s chunks** with **2s overlap** by default
-- can run optional local speaker diarization as a second pass via `fluidaudiocli process --mode offline`
-- writes `<audio>.transcript.json` next to the input unless you choose a different output path
-- can alternatively write raw transcript text via `--text`, with optional segment timestamps via `--text timestamps`
+- runs local speaker diarization by default via `fluidaudiocli process --mode offline`
+- writes `<audio>.speakers.txt` next to the input unless you choose a different output path
+- can alternatively write raw transcript text via `--text`, with timestamps on by default and `--text=plain` as the opt-out
 - can alternatively write subtitle files via `--srt` or `--vtt`
-- can alternatively write a speaker script text file via `--script`, defaulting to `HH:MM:SS - SPEAKER_01: ...`
-- can optionally clean pathological repeated-word runs such as `we we we we` into `we... we` via `--clean`
+- can alternatively write speaker-aware text via `--speakers`, defaulting to `HH:MM:SS - SPEAKER_01: ...`
+- cleans pathological repeated-word runs such as `we we we we` into `we... we` by default, with `--raw` as the opt-out
 - stays quiet by default: concise progress in the terminal, transcript JSON on disk
 - shows a spinner and chunk progress bar on interactive terminals
 
@@ -63,7 +63,8 @@ The existing options I tested had clear problems for this use case:
 - `ffmpeg`
 - `ffprobe`
 - `yt-dlp` for remote URLs, or `uvx yt-dlp`
-- `fluidaudiocli` on `PATH` if you want local diarization (`-d`)
+- `fluidaudiocli` on `PATH` for the default speaker-aware mode
+  - use `--backend=none` if you want to skip diarization
 
 ### Install with Homebrew
 
@@ -124,31 +125,36 @@ This will:
 1. ensure the default model exists
 2. normalize the audio if needed
 3. transcribe with the default chunking strategy
-4. write `lecture.transcript.json`
-5. print the final absolute transcript path to `stdout`
+4. diarize with the default `coreml` backend
+5. write `lecture.speakers.txt`
+6. print the final absolute transcript path to `stdout`
 
-For remote URLs, the default flow is:
+For remote URLs, the default speaker-aware flow is:
 
 1. inspect the URL with `yt-dlp`
-2. use manual subtitles directly when the platform provides them
-3. otherwise download the remote audio and run the normal local transcription pipeline
+2. download the remote audio
+3. run the normal local transcription + diarization pipeline
+
+If you switch to `--backend=none`, `fscript` can still use platform-provided manual subtitles directly when they are available unless you also force `--local`.
 
 ## Usage
 
 ```bash
 fscript <audio-or-url> [output-path]
+fscript <audio-or-url> -o output-path
 fscript <audio-or-url> --stdout
 fscript <audio-or-url> -
+fscript <audio-or-url> --speakers
+fscript <audio-or-url> --speakers=plain
 fscript <audio-or-url> --text
-fscript <audio-or-url> --text timestamps
-fscript <audio-or-url> --text --clean
+fscript <audio-or-url> --text=plain
+fscript <audio-or-url> --raw
+fscript <audio-or-url> --json
 fscript <audio-or-url> --srt
 fscript <audio-or-url> --vtt
-fscript <audio-or-url> --script
-fscript <audio-or-url> --script plain
-fscript <audio-or-url> -d
-fscript <audio-or-url> -d lseend-dihard3 -t 0.3
-fscript <audio-or-url> -d -n 2
+fscript <audio-or-url> --backend=lseend-dihard3 -t 0.3
+fscript <audio-or-url> --backend=none --json --raw
+fscript <audio-or-url> -n 2
 fscript --version
 ```
 
@@ -160,43 +166,46 @@ out=$(fscript lecture.mp3)
 open "$out"
 ```
 
+If the explicit `output-path` already exists as a directory, `fscript` writes the default filename for the chosen mode inside that directory.
+
 Optional overrides:
 
 ```bash
-fscript lecture.wav custom-output.json
+fscript lecture.wav custom-output.txt
+fscript lecture.wav exports/
+fscript lecture.wav -o custom-output.txt
 fscript lecture.wav --stdout
+fscript lecture.wav --speakers
+fscript lecture.wav --speakers=plain
 fscript lecture.wav --text
-fscript lecture.wav --text timestamps
-fscript lecture.wav --text --clean
+fscript lecture.wav --text=plain
+fscript lecture.wav --raw
+fscript lecture.wav --json
 fscript lecture.wav --srt
 fscript lecture.wav --vtt
-fscript lecture.wav --script
-fscript lecture.wav --script plain
-fscript lecture.wav -d
-fscript lecture.wav -d --script
-fscript lecture.wav -d coreml -n 2
-fscript lecture.wav -d lseend-dihard3 -t 0.3
-fscript lecture.wav -d -n 2
-fscript lecture.wav --chunk-seconds 180 --chunk-overlap-seconds 3
-fscript lecture.wav --chunk-seconds 0
+fscript lecture.wav --backend=lseend-dihard3 -t 0.3
+fscript lecture.wav --backend=none --json --raw
+fscript lecture.wav -n 2
+fscript lecture.wav --chunk 180 --overlap 3
+fscript lecture.wav --chunk 0
 fscript lecture.wav --model-dir ./models/parakeet/custom-copy
 fscript lecture.wav --model-package ./models/parakeet-v3-int8.tar.gz
 fscript lecture.wav --model-url https://example.com/parakeet-v3-int8.tar.gz
 fscript https://www.youtube.com/watch?v=QSdh8Gj0mEg
-fscript https://www.youtube.com/watch?v=QSdh8Gj0mEg --prefer-local-for-remote
+fscript https://www.youtube.com/watch?v=QSdh8Gj0mEg --local
 ```
 
 Raw text output modes:
 
-- `--text`: plain transcript text without timestamps or speaker labels
-- `--text timestamps`: one line per segment with `HH:MM:SS - ...`
+- `--text`: transcript text with segment timestamps, one line per segment with `HH:MM:SS - ...`
+- `--text=plain`: transcript text without timestamps or speaker labels
 - when `--text` is active and you do not pass an explicit output path, the default file becomes `<audio>.transcript.txt`
 
 Cleaning mode:
 
-- `--clean` / `-c`: collapses obvious pathological repeated-word runs in emitted output, for example `we we we we` becomes `we... we`
-- cleaning is opt-in and only affects the output being written for that invocation
-- it applies to JSON, text, script, SRT, and VTT outputs
+- cleaning is on by default and affects only the output being written for that invocation
+- `--raw`: disables output cleaning for that invocation
+- it applies to JSON, speakers, text, SRT, and VTT outputs
 - it is intentionally conservative and leaves ordinary repetition alone
 
 Subtitle output modes:
@@ -207,11 +216,13 @@ Subtitle output modes:
 - when `--srt` is active and you do not pass an explicit output path, the default file becomes `<audio>.srt`
 - when `--vtt` is active and you do not pass an explicit output path, the default file becomes `<audio>.vtt`
 
-Script output modes:
+Speaker-aware output modes:
 
-- `--script`: speaker script with timestamps, for example `00:12:34 - SPEAKER_01: ...`
-- `--script plain`: speaker script without timestamps, for example `SPEAKER_01: ...`
-- when `--script` is active and you do not pass an explicit output path, the default file becomes `<audio>.script.txt`
+- `--speakers`: speaker-aware output with timestamps, for example `00:12:34 - SPEAKER_01: ...`
+- `--speakers=plain`: speaker-aware output without timestamps, for example `SPEAKER_01: ...`
+- if diarization is disabled or a segment has no speaker label, the line falls back to plain segment text without an `UNKNOWN:` prefix
+- when no output mode is passed, `--speakers` is the default
+- when `--speakers` is active and you do not pass an explicit output path, the default file becomes `<audio>.speakers.txt`
 
 Environment overrides:
 
@@ -222,9 +233,9 @@ Environment overrides:
 
 ## Optional diarization
 
-`fscript` keeps the current fast path as the default.
+`fscript` keeps the speaker-aware path as the default.
 
-When you pass `-d` or `--diarize`, it:
+By default, it:
 
 1. runs the normal Parakeet ASR flow first
 2. releases the ASR model
@@ -233,13 +244,14 @@ When you pass `-d` or `--diarize`, it:
 
 Backends:
 
-- `-d` or `-d coreml`: default `FluidInference/speaker-diarization-coreml` path via `fluidaudiocli process --mode offline`
-- `-d lseend-dihard3`: alternate `FluidInference/ls-eend-coreml` DIHARD III path via `fluidaudiocli lseend --variant dihard3`
+- `--backend=coreml`: default `FluidInference/speaker-diarization-coreml` path via `fluidaudiocli process --mode offline`
+- `--backend=lseend-dihard3`: alternate `FluidInference/ls-eend-coreml` DIHARD III path via `fluidaudiocli lseend --variant dihard3`
+- `--backend=none`: skip diarization entirely
 
 Controls:
 
 - `-n N` / `--num-speakers N` is forwarded only to the default `coreml` backend
-- `-t N` / `--threshold N` sets the diarization threshold
+- `-t N` / `--threshold N` sets the diarization threshold only for `lseend-dihard3`
 - `lseend-dihard3` does not support `--num-speakers`; use `-t` / `--threshold` instead
 
 If `fluidaudiocli` is missing, `fscript` now returns a clear backend error instead of silently falling back.
@@ -255,11 +267,14 @@ If `fluidaudiocli` is missing, `fscript` now returns a clear backend error inste
 - model URL: `https://huggingface.co/brenorb/parakeet-tdt-0.6b-v3-int8-onnx-bundle/resolve/main/parakeet-v3-int8.tar.gz?download=1`
 - chunk seconds: `120`
 - chunk overlap seconds: `2`
-- output path: `<audio>.transcript.json`
+- default backend: `coreml`
+- cleaning: on
+- default output path: `<audio>.speakers.txt`
+- output path with `--json`: `<audio>.transcript.json`
 - output path with `--text`: `<audio>.transcript.txt`
 - output path with `--srt`: `<audio>.srt`
 - output path with `--vtt`: `<audio>.vtt`
-- output path with `--script`: `<audio>.script.txt`
+- output path with `--speakers`: `<audio>.speakers.txt`
 
 ## Benchmarks
 
@@ -290,7 +305,13 @@ These are **local development benchmarks**, not universal claims. They were run 
 
 ## Output format
 
-Default output is JSON and includes:
+Default output is speaker-aware text and includes:
+
+- segment timestamps
+- speaker labels when diarization returns them
+- cleaned repeated-word runs unless you pass `--raw`
+
+JSON output via `--json` includes:
 
 - merged transcript text
 - model path
@@ -311,11 +332,13 @@ When diarization is enabled, each transcript segment may include:
 
 Alternative output modes:
 
-- `--text`: plain transcript text
-- `--text timestamps`: plain transcript text with segment timestamps
+- `--speakers`: speaker-aware text with timestamps
+- `--speakers=plain`: speaker-aware text without timestamps
+- `--text`: transcript text with segment timestamps
+- `--text=plain`: transcript text without timestamps
+- `--json`: structured JSON benchmark/transcript payload
 - `--srt`: subtitle file
 - `--vtt`: subtitle file
-- `--script` / `--script plain`: diarized speaker script text
 
 ## Motivation
 

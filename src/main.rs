@@ -11,7 +11,8 @@ mod types;
 use anyhow::{Context, Result};
 use cli::{parse_args, usage, version_string};
 use output::{
-    default_output_path_for_input, emit_file_output_completion, render_output, write_output_file,
+    default_output_path_for_input, emit_file_output_completion, render_output,
+    resolve_output_target_path, write_output_file,
 };
 use remote::{
     download_manual_remote_transcript, download_remote_audio, infer_input_source,
@@ -74,7 +75,7 @@ fn handle_remote_input(args: &CliArgs, input_source: &InputSource, url: &str) ->
         info.title.as_deref().or(info.id.as_deref()),
     );
 
-    if !args.prefer_local_for_remote && args.diarization.is_none() {
+    if !args.force_local_for_remote && args.diarization.is_none() {
         if let Some(transcript) = download_manual_remote_transcript(url, &info)? {
             let result = manual_subtitle_result(url, transcript);
             return write_or_print_result_with_status(
@@ -104,9 +105,16 @@ fn default_output_path_for_args(
     if args.output_to_stdout {
         None
     } else {
-        Some(args.output_path.clone().unwrap_or_else(|| {
-            default_output_path_for_input(input_source, title_hint, args.output_format)
-        }))
+        let default_path =
+            default_output_path_for_input(input_source, title_hint, args.output_format);
+        Some(match args.output_path.clone() {
+            Some(path) => resolve_output_target_path(
+                &path,
+                &env::current_dir().unwrap_or_else(|_| PathBuf::from(".")),
+                &default_path,
+            ),
+            None => default_path,
+        })
     }
 }
 
@@ -171,7 +179,8 @@ fn write_or_print_result_with_status(
         .as_ref()
         .context("missing output path for file output mode")?;
     let current_dir = env::current_dir().context("failed to resolve current working directory")?;
-    let absolute_output_path = write_output_file(&output, output_path, &current_dir)?;
+    let resolved_output_target = resolve_output_target_path(output_path, &current_dir, output_path);
+    let absolute_output_path = write_output_file(&output, &resolved_output_target, &current_dir)?;
     emit_file_output_completion(
         &mut io::stdout(),
         &mut io::stderr(),
