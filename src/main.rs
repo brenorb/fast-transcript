@@ -53,6 +53,7 @@ struct CliArgs {
     output_path: Option<PathBuf>,
     output_to_stdout: bool,
     output_format: OutputFormat,
+    clean_output: bool,
     prefer_local_for_remote: bool,
     chunk_seconds: Option<f64>,
     chunk_overlap_seconds: f64,
@@ -157,7 +158,7 @@ struct FfprobeStream {
     sample_fmt: Option<String>,
 }
 
-#[derive(Serialize)]
+#[derive(Clone, Serialize)]
 struct BenchmarkChunk {
     index: usize,
     start_s: f64,
@@ -176,7 +177,7 @@ struct TranscriptSegment {
     speaker: Option<String>,
 }
 
-#[derive(Serialize)]
+#[derive(Clone, Serialize)]
 struct BenchmarkResult {
     input_source: String,
     model_dir: String,
@@ -214,6 +215,7 @@ fn usage() -> String {
         "usage: fscript <audio-or-url> [output-path | - | --stdout] [--script [plain|timestamps] | --text [plain|timestamps] | --srt | --vtt] [--prefer-local-for-remote] [-d [{}|{}] | --diarize [{}|{}]] [-n N | --num-speakers N] [-t N | --threshold N] [--model-dir PATH] [--model-package PATH] [--model-url URL] [--chunk-seconds N] [--chunk-overlap-seconds N]\n\
 aliases:\n\
   -d [{}|{}]\n\
+  -c, --clean\n\
   --script [plain|timestamps]\n\
   --text [plain|timestamps]\n\
   --srt\n\
@@ -445,6 +447,121 @@ fn collapse_whitespace(value: &str) -> String {
     value.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
+const CLEAN_REPEAT_ALLOWLIST: &[&str] = &[
+    "a", "ah", "and", "de", "e", "eh", "eu", "i", "o", "the", "to", "uh", "um", "we",
+];
+
+const CLEAN_REPEAT_FILLERS: &[&str] = &["ah", "eh", "uh", "um"];
+
+fn split_token_affixes(token: &str) -> (&str, &str, &str) {
+    let start = token
+        .char_indices()
+        .find(|(_, ch)| ch.is_alphanumeric() || *ch == '\'')
+        .map(|(index, _)| index)
+        .unwrap_or(token.len());
+    let end = token
+        .char_indices()
+        .rev()
+        .find(|(_, ch)| ch.is_alphanumeric() || *ch == '\'')
+        .map(|(index, ch)| index + ch.len_utf8())
+        .unwrap_or(start);
+    (&token[..start], &token[start..end], &token[end..])
+}
+
+fn repeated_word_threshold(normalized: &str) -> Option<usize> {
+    if normalized.is_empty() {
+        return None;
+    }
+
+    if CLEAN_REPEAT_FILLERS.contains(&normalized) || CLEAN_REPEAT_ALLOWLIST.contains(&normalized) {
+        return Some(4);
+    }
+
+    let char_count = normalized.chars().count();
+    if char_count <= 3 {
+        return Some(5);
+    }
+
+    None
+}
+
+fn clean_pathological_repeated_words(text: &str) -> String {
+    let tokens = text.split_whitespace().collect::<Vec<_>>();
+    if tokens.is_empty() {
+        return String::new();
+    }
+
+    let mut output = Vec::with_capacity(tokens.len());
+    let mut index = 0usize;
+
+    while index < tokens.len() {
+        let (_, first_core, _) = split_token_affixes(tokens[index]);
+        let normalized = first_core.to_lowercase();
+        if normalized.is_empty() {
+            output.push(tokens[index].to_string());
+            index += 1;
+            continue;
+        }
+
+        let mut run_end = index + 1;
+        while run_end < tokens.len() {
+            let (_, candidate_core, _) = split_token_affixes(tokens[run_end]);
+            if candidate_core.to_lowercase() != normalized {
+                break;
+            }
+            run_end += 1;
+        }
+
+        let run_len = run_end - index;
+        let threshold = repeated_word_threshold(&normalized);
+        if threshold.is_some_and(|value| run_len >= value) {
+            let (first_leading, first_core, _) = split_token_affixes(tokens[index]);
+            let (_, last_core, last_trailing) = split_token_affixes(tokens[run_end - 1]);
+            output.push(format!("{first_leading}{first_core}..."));
+            output.push(format!("{last_core}{last_trailing}"));
+        } else {
+            output.extend(
+                tokens[index..run_end]
+                    .iter()
+                    .map(|token| (*token).to_string()),
+            );
+        }
+
+        index = run_end;
+    }
+
+    collapse_whitespace(&output.join(" "))
+}
+
+fn cleaned_transcript_segment(segment: &TranscriptSegment) -> TranscriptSegment {
+    let mut cleaned = segment.clone();
+    cleaned.text = clean_pathological_repeated_words(&cleaned.text);
+    cleaned
+}
+
+fn cleaned_benchmark_chunk(chunk: &BenchmarkChunk) -> BenchmarkChunk {
+    let mut cleaned = chunk.clone();
+    cleaned.text = clean_pathological_repeated_words(&cleaned.text);
+    cleaned
+}
+
+fn cleaned_benchmark_result(result: &BenchmarkResult) -> BenchmarkResult {
+    let mut cleaned = result.clone();
+    cleaned.text = clean_pathological_repeated_words(&cleaned.text);
+    cleaned.chunks = cleaned
+        .chunks
+        .iter()
+        .map(cleaned_benchmark_chunk)
+        .collect::<Vec<_>>();
+    cleaned.segments = cleaned.segments.as_ref().map(|segments| {
+        segments
+            .iter()
+            .map(cleaned_transcript_segment)
+            .collect::<Vec<_>>()
+    });
+    cleaned
+}
+
 fn segment_display_text(segment: &TranscriptSegment, include_speaker: bool) -> String {
     let text = segment.text.trim();
     if !include_speaker {
@@ -581,26 +698,39 @@ fn render_vtt(segments: &[TranscriptSegment]) -> String {
     }
 }
 
-fn render_output(result: &BenchmarkResult, output_format: OutputFormat) -> Result<String> {
+fn render_output(
+    result: &BenchmarkResult,
+    output_format: OutputFormat,
+    clean_output: bool,
+) -> Result<String> {
+    let cleaned_result;
+    let effective_result = if clean_output {
+        cleaned_result = cleaned_benchmark_result(result);
+        &cleaned_result
+    } else {
+        result
+    };
+
     match output_format {
-        OutputFormat::Json => serde_json::to_string_pretty(result).map_err(Into::into),
+        OutputFormat::Json => serde_json::to_string_pretty(effective_result).map_err(Into::into),
         OutputFormat::Script(script_format) => Ok(render_speaker_script_lines(
-            result.segments.as_deref().unwrap_or(&[]),
+            effective_result.segments.as_deref().unwrap_or(&[]),
             script_format,
             true,
             "UNKNOWN",
         )
         .join("\n")),
-        OutputFormat::Text(TextFormat::Plain) => Ok(result.text.trim().to_string()),
-        OutputFormat::Text(TextFormat::Timestamped) => {
-            Ok(render_timestamped_text_lines(result.segments.as_deref().unwrap_or(&[])).join("\n"))
-        }
-        OutputFormat::Subtitle(SubtitleFormat::Srt) => {
-            Ok(render_srt(result.segments.as_deref().unwrap_or(&[])))
-        }
-        OutputFormat::Subtitle(SubtitleFormat::Vtt) => {
-            Ok(render_vtt(result.segments.as_deref().unwrap_or(&[])))
-        }
+        OutputFormat::Text(TextFormat::Plain) => Ok(effective_result.text.trim().to_string()),
+        OutputFormat::Text(TextFormat::Timestamped) => Ok(render_timestamped_text_lines(
+            effective_result.segments.as_deref().unwrap_or(&[]),
+        )
+        .join("\n")),
+        OutputFormat::Subtitle(SubtitleFormat::Srt) => Ok(render_srt(
+            effective_result.segments.as_deref().unwrap_or(&[]),
+        )),
+        OutputFormat::Subtitle(SubtitleFormat::Vtt) => Ok(render_vtt(
+            effective_result.segments.as_deref().unwrap_or(&[]),
+        )),
     }
 }
 
@@ -938,6 +1068,7 @@ fn parse_args(raw_args: &[String]) -> Result<CliArgs> {
     let mut output_path = None;
     let mut output_to_stdout = false;
     let mut output_format = OutputFormat::Json;
+    let mut clean_output = false;
     let mut prefer_local_for_remote = false;
     let mut chunk_seconds_override = None;
     let mut chunk_overlap_seconds_override = None;
@@ -972,6 +1103,10 @@ fn parse_args(raw_args: &[String]) -> Result<CliArgs> {
             }
             "--stdout" => {
                 output_to_stdout = true;
+                index += 1;
+            }
+            "-c" | "--clean" => {
+                clean_output = true;
                 index += 1;
             }
             "--script" => {
@@ -1139,6 +1274,7 @@ fn parse_args(raw_args: &[String]) -> Result<CliArgs> {
         output_path,
         output_to_stdout,
         output_format,
+        clean_output,
         prefer_local_for_remote,
         chunk_seconds,
         chunk_overlap_seconds,
@@ -1755,7 +1891,7 @@ fn main() -> Result<()> {
                     }],
                     speaker_diarization: None,
                 };
-                let output = render_output(&result, args.output_format)?;
+                let output = render_output(&result, args.output_format, args.clean_output)?;
                 if args.output_to_stdout {
                     println!("{output}");
                     return Ok(());
@@ -1903,7 +2039,7 @@ fn transcribe_audio_input(
         speaker_diarization,
     };
 
-    let output = render_output(&result, args.output_format)?;
+    let output = render_output(&result, args.output_format, args.clean_output)?;
     if args.output_to_stdout {
         println!("{output}");
         return Ok(());
@@ -1926,17 +2062,17 @@ fn transcribe_audio_input(
 #[cfg(test)]
 mod tests {
     use super::{
-        build_chunk_ranges, default_model_dir, default_model_package, default_output_path,
-        default_output_path_for_input, emit_file_output_completion, format_hhmmss,
-        infer_input_source, is_supported_audio, merge_chunk_texts, merge_transcript_segments,
-        normalize_speaker_label, parse_args, parse_json3_segments, parse_vtt_segments,
-        parse_vtt_text, pick_manual_subtitle_language, remove_appledouble_files,
-        render_chunk_progress, render_chunk_progress_done, render_output,
-        render_speaker_script_lines, resolve_absolute_output_path, transcript_segments_from_text,
-        version_string, write_output_file, BenchmarkResult, DiarizationBackend, DiarizationRequest,
-        FfprobeStream, InputSource, OutputFormat, ScriptFormat, SubtitleFormat, TextFormat,
-        TranscriptSegment, YtDlpSubtitleTrack, YtDlpVideoInfo, DEFAULT_MODEL_BASENAME,
-        DEFAULT_MODEL_PACKAGE_NAME,
+        build_chunk_ranges, clean_pathological_repeated_words, default_model_dir,
+        default_model_package, default_output_path, default_output_path_for_input,
+        emit_file_output_completion, format_hhmmss, infer_input_source, is_supported_audio,
+        merge_chunk_texts, merge_transcript_segments, normalize_speaker_label, parse_args,
+        parse_json3_segments, parse_vtt_segments, parse_vtt_text, pick_manual_subtitle_language,
+        remove_appledouble_files, render_chunk_progress, render_chunk_progress_done, render_output,
+        render_speaker_script_lines, repeated_word_threshold, resolve_absolute_output_path,
+        transcript_segments_from_text, version_string, write_output_file, BenchmarkResult,
+        DiarizationBackend, DiarizationRequest, FfprobeStream, InputSource, OutputFormat,
+        ScriptFormat, SubtitleFormat, TextFormat, TranscriptSegment, YtDlpSubtitleTrack,
+        YtDlpVideoInfo, DEFAULT_MODEL_BASENAME, DEFAULT_MODEL_PACKAGE_NAME,
     };
     use std::collections::BTreeMap;
     use std::io::Cursor;
@@ -1998,6 +2134,7 @@ mod tests {
         assert_eq!(parsed.output_path, None);
         assert!(!parsed.output_to_stdout);
         assert_eq!(parsed.output_format, OutputFormat::Json);
+        assert!(!parsed.clean_output);
         assert_eq!(parsed.chunk_seconds, Some(120.0));
         assert_eq!(parsed.chunk_overlap_seconds, 2.0);
         assert_eq!(parsed.diarization, None);
@@ -2021,6 +2158,18 @@ mod tests {
             &default_model_package(),
             &[DEFAULT_MODEL_PACKAGE_NAME]
         ));
+    }
+
+    #[test]
+    fn parse_args_supports_clean_flag() {
+        let args = vec![
+            "audio.mp3".to_string(),
+            "--clean".to_string(),
+            "--text".to_string(),
+        ];
+        let parsed = parse_args(&args).unwrap();
+        assert!(parsed.clean_output);
+        assert_eq!(parsed.output_format, OutputFormat::Text(TextFormat::Plain));
     }
 
     #[test]
@@ -2712,6 +2861,32 @@ mod tests {
     }
 
     #[test]
+    fn repeated_word_threshold_is_conservative() {
+        assert_eq!(repeated_word_threshold("we"), Some(4));
+        assert_eq!(repeated_word_threshold("uh"), Some(4));
+        assert_eq!(repeated_word_threshold("for"), Some(5));
+        assert_eq!(repeated_word_threshold("bitcoin"), None);
+    }
+
+    #[test]
+    fn clean_pathological_repeated_words_collapses_obvious_runs() {
+        assert_eq!(
+            clean_pathological_repeated_words(
+                "So we we we we we we didn't have time and uh uh uh uh to fix it."
+            ),
+            "So we... we didn't have time and uh... uh to fix it."
+        );
+    }
+
+    #[test]
+    fn clean_pathological_repeated_words_leaves_normal_repetition_alone() {
+        assert_eq!(
+            clean_pathological_repeated_words("no no no maybe bitcoin bitcoin"),
+            "no no no maybe bitcoin bitcoin"
+        );
+    }
+
+    #[test]
     fn render_output_supports_plain_text() {
         let result = sample_result(vec![
             TranscriptSegment {
@@ -2729,7 +2904,7 @@ mod tests {
         ]);
 
         assert_eq!(
-            render_output(&result, OutputFormat::Text(TextFormat::Plain)).unwrap(),
+            render_output(&result, OutputFormat::Text(TextFormat::Plain), false).unwrap(),
             "Primeira frase. Segunda frase."
         );
     }
@@ -2752,7 +2927,7 @@ mod tests {
         ]);
 
         assert_eq!(
-            render_output(&result, OutputFormat::Text(TextFormat::Timestamped)).unwrap(),
+            render_output(&result, OutputFormat::Text(TextFormat::Timestamped), false).unwrap(),
             "00:00:05 - Primeira frase.\n00:01:05 - Segunda frase."
         );
     }
@@ -2775,7 +2950,7 @@ mod tests {
         ]);
 
         assert_eq!(
-            render_output(&result, OutputFormat::Subtitle(SubtitleFormat::Srt)).unwrap(),
+            render_output(&result, OutputFormat::Subtitle(SubtitleFormat::Srt), false).unwrap(),
             "1\n00:00:01,250 --> 00:00:03,000\nSPEAKER_01: Hello world\n\n2\n00:00:04,000 --> 00:00:04,500\nSecond line"
         );
     }
@@ -2790,8 +2965,25 @@ mod tests {
         }]);
 
         assert_eq!(
-            render_output(&result, OutputFormat::Subtitle(SubtitleFormat::Vtt)).unwrap(),
+            render_output(&result, OutputFormat::Subtitle(SubtitleFormat::Vtt), false).unwrap(),
             "WEBVTT\n\n00:00:01.250 --> 00:00:03.000\nSPEAKER_01: Hello world"
         );
+    }
+
+    #[test]
+    fn render_output_can_clean_textual_repetition() {
+        let result = sample_result(vec![TranscriptSegment {
+            start_s: 1.25,
+            end_s: 3.0,
+            text: "So we we we we we didn't have time.".to_string(),
+            speaker: Some("S1".to_string()),
+        }]);
+
+        assert_eq!(
+            render_output(&result, OutputFormat::Text(TextFormat::Plain), true).unwrap(),
+            "So we... we didn't have time."
+        );
+        let rendered_json = render_output(&result, OutputFormat::Json, true).unwrap();
+        assert!(rendered_json.contains("\"So we... we didn't have time.\""));
     }
 }

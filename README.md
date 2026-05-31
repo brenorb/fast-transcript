@@ -12,6 +12,7 @@ The CLI binary is called **`fscript`**:
 fscript lecture.mp3
 fscript lecture.mp3 --text
 fscript lecture.mp3 --text timestamps
+fscript lecture.mp3 --text --clean
 fscript lecture.mp3 --srt
 fscript lecture.mp3 --vtt
 fscript lecture.mp3 -d
@@ -51,6 +52,7 @@ The existing options I tested had clear problems for this use case:
 - can alternatively write raw transcript text via `--text`, with optional segment timestamps via `--text timestamps`
 - can alternatively write subtitle files via `--srt` or `--vtt`
 - can alternatively write a speaker script text file via `--script`, defaulting to `HH:MM:SS - SPEAKER_01: ...`
+- can optionally clean pathological repeated-word runs such as `we we we we` into `we... we` via `--clean`
 - stays quiet by default: concise progress in the terminal, transcript JSON on disk
 - shows a spinner and chunk progress bar on interactive terminals
 
@@ -139,6 +141,7 @@ fscript <audio-or-url> --stdout
 fscript <audio-or-url> -
 fscript <audio-or-url> --text
 fscript <audio-or-url> --text timestamps
+fscript <audio-or-url> --text --clean
 fscript <audio-or-url> --srt
 fscript <audio-or-url> --vtt
 fscript <audio-or-url> --script
@@ -164,6 +167,7 @@ fscript lecture.wav custom-output.json
 fscript lecture.wav --stdout
 fscript lecture.wav --text
 fscript lecture.wav --text timestamps
+fscript lecture.wav --text --clean
 fscript lecture.wav --srt
 fscript lecture.wav --vtt
 fscript lecture.wav --script
@@ -187,6 +191,13 @@ Raw text output modes:
 - `--text`: plain transcript text without timestamps or speaker labels
 - `--text timestamps`: one line per segment with `HH:MM:SS - ...`
 - when `--text` is active and you do not pass an explicit output path, the default file becomes `<audio>.transcript.txt`
+
+Cleaning mode:
+
+- `--clean` / `-c`: collapses obvious pathological repeated-word runs in emitted output, for example `we we we we` becomes `we... we`
+- cleaning is opt-in and only affects the output being written for that invocation
+- it applies to JSON, text, script, SRT, and VTT outputs
+- it is intentionally conservative and leaves ordinary repetition alone
 
 Subtitle output modes:
 
