@@ -1,4 +1,4 @@
-use crate::TranscriptSegment;
+use crate::types::TranscriptSegment;
 use anyhow::{bail, Context, Result};
 use serde::Deserialize;
 use serde::Serialize;
