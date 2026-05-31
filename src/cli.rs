@@ -6,6 +6,8 @@ use std::path::PathBuf;
 use crate::diarization::{DiarizationBackend, DiarizationRequest};
 use crate::types::{CliArgs, OutputFormat, SpeakersFormat, SubtitleFormat, TextFormat};
 
+const DEFAULT_LSEEND_THRESHOLD: f64 = 0.3;
+
 pub(crate) fn usage() -> String {
     format!(
         "usage: fscript <audio-or-url> [output-path | -o PATH | - | --stdout] [--speakers[=plain] | --text[=plain] | --json | --srt | --vtt] [--backend coreml|lseend-dihard3|none] [-n N | --num-speakers N] [-t N | --threshold N] [-l | --local] [--chunk N] [--overlap N] [--model-dir PATH] [--model-package PATH] [--model-url URL]\n\
@@ -27,6 +29,7 @@ defaults:\n\
   --speakers timestamps\n\
   --text timestamps\n\
   --backend coreml\n\
+  --backend=lseend-dihard3 => --threshold 0.3\n\
   clean output on\n\
   --model-dir {}\n\
   --model-package {}\n\
@@ -421,6 +424,11 @@ pub(crate) fn parse_args(raw_args: &[String]) -> Result<CliArgs> {
             "--num-speakers is not supported with --backend=lseend-dihard3; remove --num-speakers or switch to --backend=coreml"
         );
     }
+    if diarization_backend == Some(DiarizationBackend::LseendDihard3)
+        && diarization_threshold.is_none()
+    {
+        diarization_threshold = Some(DEFAULT_LSEEND_THRESHOLD);
+    }
     if diarization_threshold.is_some()
         && diarization_backend != Some(DiarizationBackend::LseendDihard3)
     {
@@ -776,7 +784,7 @@ mod tests {
             Some(DiarizationRequest {
                 backend: DiarizationBackend::LseendDihard3,
                 num_speakers: None,
-                threshold: None,
+                threshold: Some(0.3),
             })
         );
     }
@@ -828,6 +836,25 @@ mod tests {
                 backend: DiarizationBackend::LseendDihard3,
                 num_speakers: None,
                 threshold: Some(0.3),
+            })
+        );
+    }
+
+    #[test]
+    fn parse_args_allows_overriding_default_lseend_threshold() {
+        let args = vec![
+            "audio.wav".to_string(),
+            "--backend=lseend-dihard3".to_string(),
+            "--threshold".to_string(),
+            "0.45".to_string(),
+        ];
+        let parsed = parse_args(&args).unwrap();
+        assert_eq!(
+            parsed.diarization,
+            Some(DiarizationRequest {
+                backend: DiarizationBackend::LseendDihard3,
+                num_speakers: None,
+                threshold: Some(0.45),
             })
         );
     }

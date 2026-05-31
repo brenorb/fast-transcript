@@ -17,7 +17,7 @@ fscript lecture.mp3 --raw
 fscript lecture.mp3 --srt
 fscript lecture.mp3 --vtt
 fscript lecture.mp3 --json
-fscript lecture.mp3 --backend=lseend-dihard3 -t 0.3
+fscript lecture.mp3 --backend=lseend-dihard3
 fscript lecture.mp3 --backend=none --json --raw
 fscript lecture.mp3 -n 2
 ```
@@ -152,7 +152,7 @@ fscript <audio-or-url> --raw
 fscript <audio-or-url> --json
 fscript <audio-or-url> --srt
 fscript <audio-or-url> --vtt
-fscript <audio-or-url> --backend=lseend-dihard3 -t 0.3
+fscript <audio-or-url> --backend=lseend-dihard3
 fscript <audio-or-url> --backend=none --json --raw
 fscript <audio-or-url> -n 2
 fscript --version
@@ -183,7 +183,7 @@ fscript lecture.wav --raw
 fscript lecture.wav --json
 fscript lecture.wav --srt
 fscript lecture.wav --vtt
-fscript lecture.wav --backend=lseend-dihard3 -t 0.3
+fscript lecture.wav --backend=lseend-dihard3
 fscript lecture.wav --backend=none --json --raw
 fscript lecture.wav -n 2
 fscript lecture.wav --chunk 180 --overlap 3
@@ -246,13 +246,14 @@ Backends:
 
 - `--backend=coreml`: default `FluidInference/speaker-diarization-coreml` path via `fluidaudiocli process --mode offline`
 - `--backend=lseend-dihard3`: alternate `FluidInference/ls-eend-coreml` DIHARD III path via `fluidaudiocli lseend --variant dihard3`
+  - defaults to `--threshold 0.3`
 - `--backend=none`: skip diarization entirely
 
 Controls:
 
 - `-n N` / `--num-speakers N` is forwarded only to the default `coreml` backend
-- `-t N` / `--threshold N` sets the diarization threshold only for `lseend-dihard3`
-- `lseend-dihard3` does not support `--num-speakers`; use `-t` / `--threshold` instead
+- `-t N` / `--threshold N` overrides the default diarization threshold for `lseend-dihard3`
+- `lseend-dihard3` does not support `--num-speakers`; use the default threshold or override it with `-t` / `--threshold`
 
 If `fluidaudiocli` is missing, `fscript` now returns a clear backend error instead of silently falling back.
 
