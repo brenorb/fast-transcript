@@ -673,10 +673,6 @@ fn subtitle_segments_for_segment(
     let available_end = subtitle_segment_available_end(segment, next_start);
     if cues.len() == 1 {
         let mut end_s = available_end;
-        let actual_duration = segment.end_s - segment.start_s;
-        if actual_duration > 8.0 {
-            end_s = end_s.min(segment.start_s + estimate_subtitle_duration_seconds(text));
-        }
         if end_s <= segment.start_s {
             end_s = segment.start_s + SUBTITLE_MIN_DURATION_SECONDS;
         }
@@ -3007,9 +3003,29 @@ mod tests {
         ]);
 
         let rendered = render_output(&result, OutputFormat::Subtitle(SubtitleFormat::Srt)).unwrap();
-        assert!(rendered.contains("1\n00:02:30,000 --> 00:02:31,820\nChissa come saranno ridotto."));
+        assert!(rendered.contains("1\n00:02:30,000 --> 00:03:47,950\nChissa come saranno ridotto."));
         assert!(rendered
             .contains("2\n00:03:48,000 --> 00:03:53,000\nLo sai che non devi allontanarti."));
+    }
+
+    #[test]
+    fn normalized_subtitle_segments_preserve_end_for_single_long_segment() {
+        let normalized = normalized_subtitle_segments(&[TranscriptSegment {
+            start_s: 150.0,
+            end_s: 228.0,
+            text: "Chissa come saranno ridotto.".to_string(),
+            speaker: None,
+        }]);
+
+        assert_eq!(
+            normalized,
+            vec![TranscriptSegment {
+                start_s: 150.0,
+                end_s: 228.0,
+                text: "Chissa come saranno ridotto.".to_string(),
+                speaker: None,
+            }]
+        );
     }
 
     #[test]
