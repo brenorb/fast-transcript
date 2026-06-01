@@ -19,12 +19,14 @@ aliases:\n\
   --raw\n\
   -l, --local\n\
   --backend <coreml|lseend-dihard3|none>\n\
-  --srt\n\
-  --vtt\n\
+  --srt (experimental subtitle output)\n\
+  --vtt (experimental subtitle output)\n\
   -n, --num-speakers <count>\n\
   -t, --threshold <value>\n\
   --chunk <seconds>\n\
   --overlap <seconds>\n\
+notes:\n\
+  subtitle output via --srt/--vtt is experimental and may change\n\
 defaults:\n\
   --speakers timestamps\n\
   --text timestamps\n\

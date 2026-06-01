@@ -22,6 +22,8 @@ fscript lecture.mp3 --backend=none --json --raw
 fscript lecture.mp3 -n 2
 ```
 
+`--srt` and `--vtt` subtitle output are experimental.
+
 That is the whole point of this project. One command. Large audio. No babysitting.
 
 ## Why this exists
@@ -50,7 +52,7 @@ The existing options I tested had clear problems for this use case:
 - runs local speaker diarization by default via `fluidaudiocli process --mode offline`
 - writes `<audio>.speakers.txt` next to the input unless you choose a different output path
 - can alternatively write raw transcript text via `--text`, with timestamps on by default and `--text=plain` as the opt-out
-- can alternatively write subtitle files via `--srt` or `--vtt`
+- can alternatively write experimental subtitle files via `--srt` or `--vtt`
 - can alternatively write speaker-aware text via `--speakers`, defaulting to `HH:MM:SS - SPEAKER_01: ...`
 - cleans pathological repeated-word runs such as `we we we we` into `we... we` by default, with `--raw` as the opt-out
 - stays quiet by default: concise progress in the terminal, transcript JSON on disk
@@ -226,8 +228,9 @@ Cleaning mode:
 
 Subtitle output modes:
 
-- `--srt`: SubRip subtitle file
-- `--vtt`: WebVTT subtitle file
+- `--srt`: experimental SubRip subtitle file
+- `--vtt`: experimental WebVTT subtitle file
+- subtitle output is still experimental and may change
 - if diarization is active, subtitle cues include normalized speaker labels such as `SPEAKER_01: ...`
 - when `--srt` is active and you do not pass an explicit output path, the default file becomes `<audio>.srt`
 - when `--vtt` is active and you do not pass an explicit output path, the default file becomes `<audio>.vtt`
@@ -354,8 +357,8 @@ Alternative output modes:
 - `--text`: transcript text with segment timestamps
 - `--text=plain`: transcript text without timestamps
 - `--json`: structured JSON benchmark/transcript payload
-- `--srt`: subtitle file
-- `--vtt`: subtitle file
+- `--srt`: experimental subtitle file
+- `--vtt`: experimental subtitle file
 
 ## Motivation
 
