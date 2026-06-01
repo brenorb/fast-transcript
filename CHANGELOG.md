@@ -12,6 +12,8 @@
 - support remote inputs with local fallback when platform subtitles are missing or insufficient
 - split the old monolithic binary into focused modules for CLI parsing, audio prep, model handling, output rendering, remote handling, progress reporting, and transcription orchestration
 - validate the release line with Rust tests, clippy, benchmark reruns, and real transcript comparisons against published site artifacts
+- rename the Homebrew tap path to `brenorb/tap`
+- users migrating from the old tap should switch from `brenorb/fast-transcript` to `brenorb/tap`
 
 ## 0.2.9 - 2026-05-26
 
