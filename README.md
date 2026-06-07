@@ -21,6 +21,8 @@ fscript lecture.mp3 -d lseend-dihard3 -t 0.3
 fscript lecture.mp3 -d -n 2
 ```
 
+`--srt` and `--vtt` subtitle output are experimental.
+
 That is the whole point of this project. One command. Large audio. No babysitting.
 
 ## Why this exists
@@ -49,7 +51,7 @@ The existing options I tested had clear problems for this use case:
 - can run optional local speaker diarization as a second pass via `fluidaudiocli process --mode offline`
 - writes `<audio>.transcript.json` next to the input unless you choose a different output path
 - can alternatively write raw transcript text via `--text`, with optional segment timestamps via `--text timestamps`
-- can alternatively write subtitle files via `--srt` or `--vtt`
+- can alternatively write experimental subtitle files via `--srt` or `--vtt`
 - can alternatively write a speaker script text file via `--script`, defaulting to `HH:MM:SS - SPEAKER_01: ...`
 - stays quiet by default: concise progress in the terminal, transcript JSON on disk
 - shows a spinner and chunk progress bar on interactive terminals
@@ -207,8 +209,9 @@ Raw text output modes:
 
 Subtitle output modes:
 
-- `--srt`: SubRip subtitle file
-- `--vtt`: WebVTT subtitle file
+- `--srt`: experimental SubRip subtitle file
+- `--vtt`: experimental WebVTT subtitle file
+- subtitle output is still experimental and may change
 - if diarization is active, subtitle cues include normalized speaker labels such as `SPEAKER_01: ...`
 - when a coarse ASR segment is too large for one cue, `fscript` automatically splits it into shorter subtitle-sized cues and spreads them across the original segment window
 - when `--srt` is active and you do not pass an explicit output path, the default file becomes `<audio>.srt`
@@ -320,8 +323,8 @@ Alternative output modes:
 
 - `--text`: plain transcript text
 - `--text timestamps`: plain transcript text with segment timestamps
-- `--srt`: subtitle file
-- `--vtt`: subtitle file
+- `--srt`: experimental subtitle file
+- `--vtt`: experimental subtitle file
 - `--script` / `--script plain`: diarized speaker script text
 
 ## Motivation

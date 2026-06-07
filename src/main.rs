@@ -216,10 +216,12 @@ aliases:\n\
   -d [{}|{}]\n\
   --script [plain|timestamps]\n\
   --text [plain|timestamps]\n\
-  --srt\n\
-  --vtt\n\
+  --srt (experimental subtitle output)\n\
+  --vtt (experimental subtitle output)\n\
   -n, --num-speakers <count>\n\
   -t, --threshold <value>\n\
+notes:\n\
+  subtitle output via --srt/--vtt is experimental and may change\n\
 defaults:\n\
   --script timestamps\n\
   --text plain\n\
