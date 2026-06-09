@@ -54,6 +54,9 @@ fn main() -> Result<()> {
     }
 
     let args = parse_args(&raw_args)?;
+    if let Some(notice) = &args.diarization_notice {
+        eprintln!("{notice}");
+    }
     let input_source = infer_input_source(&args.input);
     let default_output_path = default_output_path_for_args(&args, &input_source, None);
 

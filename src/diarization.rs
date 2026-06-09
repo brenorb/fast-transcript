@@ -3,6 +3,7 @@ use anyhow::{bail, Context, Result};
 use serde::Deserialize;
 use serde::Serialize;
 use std::collections::BTreeMap;
+use std::env;
 use std::io;
 use std::path::Path;
 use std::process::{Command, Output};
@@ -91,13 +92,45 @@ pub(crate) struct FluidAudioDiarizer<R = SystemCommandRunner> {
 
 impl FluidAudioDiarizer<SystemCommandRunner> {
     pub fn new() -> Self {
-        let binary = std::env::var("FSCRIPT_DIARIZATION_BINARY")
-            .unwrap_or_else(|_| DEFAULT_FLUIDAUDIO_BINARY.to_string());
+        let binary = configured_fluidaudio_binary();
         Self {
             binary,
             runner: SystemCommandRunner,
         }
     }
+}
+
+pub(crate) fn configured_fluidaudio_binary() -> String {
+    env::var("FSCRIPT_DIARIZATION_BINARY").unwrap_or_else(|_| DEFAULT_FLUIDAUDIO_BINARY.to_string())
+}
+
+pub(crate) fn fluidaudio_binary_is_available() -> bool {
+    binary_is_available(&configured_fluidaudio_binary())
+}
+
+fn binary_is_available(binary: &str) -> bool {
+    let path = Path::new(binary);
+    if path.components().count() > 1 {
+        return is_executable_file(path);
+    }
+
+    env::var_os("PATH")
+        .map(|paths| env::split_paths(&paths).any(|dir| is_executable_file(&dir.join(binary))))
+        .unwrap_or(false)
+}
+
+#[cfg(unix)]
+fn is_executable_file(path: &Path) -> bool {
+    use std::os::unix::fs::PermissionsExt;
+
+    std::fs::metadata(path)
+        .map(|metadata| metadata.is_file() && metadata.permissions().mode() & 0o111 != 0)
+        .unwrap_or(false)
+}
+
+#[cfg(not(unix))]
+fn is_executable_file(path: &Path) -> bool {
+    path.is_file()
 }
 
 impl<R> FluidAudioDiarizer<R> {
@@ -149,7 +182,7 @@ impl<R: CommandRunner> SpeakerDiarizer for FluidAudioDiarizer<R> {
             Ok(output) => output,
             Err(err) if err.kind() == io::ErrorKind::NotFound => {
                 bail!(
-                    "speaker diarization requested, but `{}` is not available on PATH. Install {}.",
+                    "speaker diarization requested, but `{}` is not available as an executable. Install {} or point FSCRIPT_DIARIZATION_BINARY at a working fluidaudiocli binary.",
                     self.binary,
                     request.backend.backend_name()
                 );
@@ -249,7 +282,14 @@ pub fn maybe_diarize_segments(
         return Ok((transcript_segments, None));
     };
 
-    let diarization = diarizer.diarize(audio_path, request)?;
+    let diarization = match diarizer.diarize(audio_path, request) {
+        Ok(diarization) => diarization,
+        Err(err) if should_skip_diarization_error(&err.to_string()) => {
+            eprintln!("speaker diarization skipped: {}", err);
+            return Ok((transcript_segments, None));
+        }
+        Err(err) => return Err(err),
+    };
     let merged_segments = merge_speakers_into_segments(&transcript_segments, &diarization.segments);
     let metadata = SpeakerDiarizationMetadata {
         backend: request.backend.backend_name().to_string(),
@@ -258,6 +298,11 @@ pub fn maybe_diarize_segments(
         segment_count: diarization.segments.len(),
     };
     Ok((merged_segments, Some(metadata)))
+}
+
+fn should_skip_diarization_error(message: &str) -> bool {
+    let normalized = message.to_ascii_lowercase();
+    normalized.contains("nospeechdetected") || normalized.contains("no speech detected")
 }
 
 fn overlap_duration(start_a: f64, end_a: f64, start_b: f64, end_b: f64) -> f64 {
@@ -357,6 +402,23 @@ mod tests {
             (
                 Self {
                     output: Err(io::Error::new(io::ErrorKind::NotFound, "missing")),
+                    diarization_json: None,
+                    state: state.clone(),
+                },
+                state,
+            )
+        }
+
+        fn command_failure(stderr: &str) -> (Self, Rc<FakeRunnerState>) {
+            let state = Rc::new(FakeRunnerState::default());
+            let output = Output {
+                status: std::process::ExitStatus::from_raw(1),
+                stdout: Vec::new(),
+                stderr: stderr.as_bytes().to_vec(),
+            };
+            (
+                Self {
+                    output: Ok(output),
                     diarization_json: None,
                     state: state.clone(),
                 },
@@ -586,8 +648,29 @@ mod tests {
             .unwrap_err();
 
         assert!(err.to_string().contains(
-            "speaker diarization requested, but `fluidaudiocli` is not available on PATH"
+            "speaker diarization requested, but `fluidaudiocli` is not available as an executable"
         ));
+    }
+
+    #[test]
+    fn configured_binary_is_available_via_explicit_path() {
+        let tempdir = tempfile::tempdir().unwrap();
+        let binary_path = tempdir.path().join("fluidaudiocli");
+        std::fs::write(&binary_path, "#!/bin/sh\nexit 0\n").unwrap();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let mut permissions = std::fs::metadata(&binary_path).unwrap().permissions();
+            permissions.set_mode(0o755);
+            std::fs::set_permissions(&binary_path, permissions).unwrap();
+        }
+
+        assert!(binary_is_available(binary_path.to_str().unwrap()));
+    }
+
+    #[test]
+    fn configured_binary_is_unavailable_when_path_does_not_exist() {
+        assert!(!binary_is_available("/definitely/missing/fluidaudiocli"));
     }
 
     #[test]
@@ -655,5 +738,44 @@ mod tests {
         assert_eq!(seen_args[6], "--threshold");
         assert_eq!(seen_args[7], "0.3");
         assert_eq!(result.segments[0].speaker, "Speaker 0");
+    }
+
+    #[test]
+    fn maybe_diarize_segments_skips_no_speech_backend_failures() {
+        let (runner, _) = FakeRunner::command_failure(
+            "ERROR: Failed to process audio file (offline mode): noSpeechDetected",
+        );
+        let diarizer = FluidAudioDiarizer::with_runner("fluidaudiocli", runner);
+        let transcript_segments = vec![TranscriptSegment {
+            start_s: 0.0,
+            end_s: 1.0,
+            text: String::new(),
+            speaker: None,
+        }];
+        let request = DiarizationRequest {
+            backend: DiarizationBackend::Coreml,
+            num_speakers: None,
+            threshold: None,
+        };
+
+        let (segments, metadata) = maybe_diarize_segments(
+            &diarizer,
+            Path::new("/tmp/audio.wav"),
+            transcript_segments.clone(),
+            Some(&request),
+        )
+        .unwrap();
+
+        assert_eq!(segments, transcript_segments);
+        assert_eq!(metadata, None);
+    }
+
+    #[test]
+    fn skip_diarization_error_matches_no_speech_variants() {
+        assert!(should_skip_diarization_error("noSpeechDetected"));
+        assert!(should_skip_diarization_error(
+            "No speech detected while clustering"
+        ));
+        assert!(!should_skip_diarization_error("model download failed"));
     }
 }

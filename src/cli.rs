@@ -3,7 +3,7 @@ use directories::ProjectDirs;
 use std::env;
 use std::path::PathBuf;
 
-use crate::diarization::{DiarizationBackend, DiarizationRequest};
+use crate::diarization::{fluidaudio_binary_is_available, DiarizationBackend, DiarizationRequest};
 use crate::types::{CliArgs, OutputFormat, SpeakersFormat, SubtitleFormat, TextFormat};
 
 const DEFAULT_LSEEND_THRESHOLD: f64 = 0.3;
@@ -131,6 +131,13 @@ fn ensure_single_output_path_source(
 }
 
 pub(crate) fn parse_args(raw_args: &[String]) -> Result<CliArgs> {
+    parse_args_with_diarization_availability(raw_args, fluidaudio_binary_is_available())
+}
+
+fn parse_args_with_diarization_availability(
+    raw_args: &[String],
+    fluidaudio_available: bool,
+) -> Result<CliArgs> {
     if raw_args.is_empty() {
         bail!("{}", usage());
     }
@@ -149,7 +156,8 @@ pub(crate) fn parse_args(raw_args: &[String]) -> Result<CliArgs> {
     let mut force_local_for_remote = false;
     let mut chunk_seconds_override = None;
     let mut chunk_overlap_seconds_override = None;
-    let mut diarization_backend = Some(DiarizationBackend::Coreml);
+    let mut diarization_backend = None;
+    let mut diarization_backend_explicit = false;
     let mut diarization_num_speakers = None;
     let mut diarization_threshold = None;
     let mut index = 0usize;
@@ -295,6 +303,7 @@ pub(crate) fn parse_args(raw_args: &[String]) -> Result<CliArgs> {
                 let value = raw_args
                     .get(index + 1)
                     .with_context(|| format!("missing value for --backend\n{}", usage()))?;
+                diarization_backend_explicit = true;
                 diarization_backend = parse_backend_value(value)?;
                 index += 2;
             }
@@ -303,10 +312,12 @@ pub(crate) fn parse_args(raw_args: &[String]) -> Result<CliArgs> {
                     .split_once('=')
                     .map(|(_, value)| value)
                     .with_context(|| format!("missing value for --backend\n{}", usage()))?;
+                diarization_backend_explicit = true;
                 diarization_backend = parse_backend_value(value)?;
                 index += 1;
             }
             "-d" | "--diarize" => {
+                diarization_backend_explicit = true;
                 if let Some(value) = raw_args.get(index + 1) {
                     if let Ok(parsed_backend) = parse_backend_value(value) {
                         diarization_backend = parsed_backend;
@@ -324,6 +335,7 @@ pub(crate) fn parse_args(raw_args: &[String]) -> Result<CliArgs> {
                     .split_once('=')
                     .map(|(_, value)| value)
                     .with_context(|| format!("missing value for --diarize\n{}", usage()))?;
+                diarization_backend_explicit = true;
                 diarization_backend = parse_backend_value(value)?;
                 index += 1;
             }
@@ -409,6 +421,20 @@ pub(crate) fn parse_args(raw_args: &[String]) -> Result<CliArgs> {
 
     let input = input.with_context(|| format!("missing audio path\n{}", usage()))?;
     let output_path = if output_to_stdout { None } else { output_path };
+    let diarization_notice = if diarization_backend.is_none()
+        && !diarization_backend_explicit
+        && !fluidaudio_available
+    {
+        Some(
+                "speaker diarization disabled because `fluidaudiocli` is not installed; install it or set FSCRIPT_DIARIZATION_BINARY to enable speaker labels."
+                    .to_string(),
+            )
+    } else {
+        None
+    };
+    if diarization_backend.is_none() && !diarization_backend_explicit && fluidaudio_available {
+        diarization_backend = Some(DiarizationBackend::Coreml);
+    }
     if diarization_backend.is_none() && diarization_num_speakers.is_some() {
         bail!(
             "--num-speakers requires diarization; remove --num-speakers or choose --backend=coreml"
@@ -467,6 +493,7 @@ pub(crate) fn parse_args(raw_args: &[String]) -> Result<CliArgs> {
         force_local_for_remote,
         chunk_seconds,
         chunk_overlap_seconds,
+        diarization_notice,
         diarization: diarization_backend.map(|backend| DiarizationRequest {
             backend,
             num_speakers: diarization_num_speakers,
@@ -477,7 +504,10 @@ pub(crate) fn parse_args(raw_args: &[String]) -> Result<CliArgs> {
 
 #[cfg(test)]
 mod tests {
-    use super::{default_model_dir, default_model_package, parse_args, version_string};
+    use super::{
+        default_model_dir, default_model_package, parse_args,
+        parse_args_with_diarization_availability, version_string,
+    };
     use crate::diarization::{DiarizationBackend, DiarizationRequest};
     use crate::types::{OutputFormat, SpeakersFormat, SubtitleFormat, TextFormat};
     use std::path::Path;
@@ -503,7 +533,7 @@ mod tests {
     #[test]
     fn parse_args_defaults_to_easy_mode() {
         let args = vec!["audio.mp3".to_string()];
-        let parsed = parse_args(&args).unwrap();
+        let parsed = parse_args_with_diarization_availability(&args, true).unwrap();
         assert_eq!(parsed.input, "audio.mp3");
         assert_eq!(parsed.output_path, None);
         assert!(!parsed.output_to_stdout);
@@ -522,6 +552,7 @@ mod tests {
                 threshold: None,
             })
         );
+        assert_eq!(parsed.diarization_notice, None);
         assert!(path_ends_with(
             &parsed.model_dir,
             &["models", crate::DEFAULT_MODEL_BASENAME]
@@ -792,13 +823,41 @@ mod tests {
     }
 
     #[test]
+    fn parse_args_defaults_to_no_diarization_when_helper_is_missing() {
+        let args = vec!["audio.wav".to_string()];
+        let parsed = parse_args_with_diarization_availability(&args, false).unwrap();
+        assert_eq!(parsed.diarization, None);
+        assert_eq!(
+            parsed.diarization_notice.as_deref(),
+            Some(
+                "speaker diarization disabled because `fluidaudiocli` is not installed; install it or set FSCRIPT_DIARIZATION_BINARY to enable speaker labels."
+            )
+        );
+    }
+
+    #[test]
+    fn parse_args_keeps_explicit_coreml_request_when_helper_is_missing() {
+        let args = vec!["audio.wav".to_string(), "--backend=coreml".to_string()];
+        let parsed = parse_args_with_diarization_availability(&args, false).unwrap();
+        assert_eq!(
+            parsed.diarization,
+            Some(DiarizationRequest {
+                backend: DiarizationBackend::Coreml,
+                num_speakers: None,
+                threshold: None,
+            })
+        );
+        assert_eq!(parsed.diarization_notice, None);
+    }
+
+    #[test]
     fn parse_args_supports_num_speakers_long_flag() {
         let args = vec![
             "audio.wav".to_string(),
             "--num-speakers".to_string(),
             "2".to_string(),
         ];
-        let parsed = parse_args(&args).unwrap();
+        let parsed = parse_args_with_diarization_availability(&args, true).unwrap();
         assert_eq!(
             parsed.diarization,
             Some(DiarizationRequest {
@@ -868,7 +927,7 @@ mod tests {
             "--threshold".to_string(),
             "0.3".to_string(),
         ];
-        let err = parse_args(&args).unwrap_err();
+        let err = parse_args_with_diarization_availability(&args, true).unwrap_err();
         assert!(err
             .to_string()
             .contains("--threshold only works with --backend=lseend-dihard3"));

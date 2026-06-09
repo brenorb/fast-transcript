@@ -65,8 +65,9 @@ The existing options I tested had clear problems for this use case:
 - `ffmpeg`
 - `ffprobe`
 - `yt-dlp` for remote URLs, or `uvx yt-dlp`
-- `fluidaudiocli` on `PATH` for the default speaker-aware mode
-  - use `--backend=none` if you want to skip diarization
+- `fluidaudiocli` on `PATH` if you want speaker-aware diarization
+  - when it is missing, `fscript` warns and continues without diarization
+  - use `--backend=coreml` or `--backend=lseend-dihard3` to require diarization explicitly
 
 ### Install with Homebrew
 
@@ -74,6 +75,8 @@ The existing options I tested had clear problems for this use case:
 brew tap brenorb/tap
 brew install fast-transcript
 ```
+
+On Apple Silicon macOS, the tap also installs `fluidaudio-cli`, so the default speaker-aware mode works out of the box.
 
 If you prefer the fully-qualified formula name:
 
@@ -252,7 +255,8 @@ Environment overrides:
 
 ## Optional diarization
 
-`fscript` keeps the speaker-aware path as the default.
+`fscript` automatically enables speaker diarization when `fluidaudiocli` is available.
+If the helper is missing and you did not request a backend explicitly, `fscript` falls back to plain transcript segments after printing a warning on `stderr`.
 
 By default, it:
 
@@ -263,7 +267,7 @@ By default, it:
 
 Backends:
 
-- `--backend=coreml`: default `FluidInference/speaker-diarization-coreml` path via `fluidaudiocli process --mode offline`
+- `--backend=coreml`: `FluidInference/speaker-diarization-coreml` path via `fluidaudiocli process --mode offline`
 - `--backend=lseend-dihard3`: alternate `FluidInference/ls-eend-coreml` DIHARD III path via `fluidaudiocli lseend --variant dihard3`
   - defaults to `--threshold 0.3`
 - `--backend=none`: skip diarization entirely
@@ -274,7 +278,7 @@ Controls:
 - `-t N` / `--threshold N` overrides the default diarization threshold for `lseend-dihard3`
 - `lseend-dihard3` does not support `--num-speakers`; use the default threshold or override it with `-t` / `--threshold`
 
-If `fluidaudiocli` is missing, `fscript` now returns a clear backend error instead of silently falling back.
+If you explicitly request `--backend=coreml` or `--backend=lseend-dihard3` and `fluidaudiocli` is missing, `fscript` returns a clear backend error instead of silently falling back.
 
 ## Defaults
 
