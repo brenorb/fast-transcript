@@ -134,6 +134,16 @@ cargo install --path .
 
 On macOS, the build now auto-detects the active Xcode or Command Line Tools Clang runtime directories so `cargo test` keeps linking even if your Rust toolchain points at a stale `libclang_rt.osx` path.
 
+### Development
+
+For local development, install the checked-in git hooks once per clone:
+
+```bash
+scripts/install-git-hooks.sh
+```
+
+The pre-commit hook blocks Rust commits that would fail `cargo fmt --check` in CI.
+
 ## Quick start
 
 ```bash
