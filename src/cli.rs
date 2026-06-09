@@ -41,8 +41,10 @@ pub(crate) fn usage() -> String {
         String::new(),
         "Default:".to_string(),
         "  fscript <audio-or-url>".to_string(),
-        "    Default flags: --speakers --diarize coreml --clean --chunk 120 --overlap 2".to_string(),
-        "    If `fluidaudiocli` is unavailable, warns and falls back to plain transcription.".to_string(),
+        "    Default flags: --speakers --diarize coreml --clean --chunk 120 --overlap 2"
+            .to_string(),
+        "    If `fluidaudiocli` is unavailable, warns and falls back to plain transcription."
+            .to_string(),
         String::new(),
         "Output:".to_string(),
         option(
@@ -73,7 +75,10 @@ pub(crate) fn usage() -> String {
             "Enable diarization, optionally choosing the model.",
         ),
         option("-D, --no-diarization", "Disable diarization entirely."),
-        option("-n, --num-speakers N", "Expected speaker count. CoreML only."),
+        option(
+            "-n, --num-speakers N",
+            "Expected speaker count. CoreML only.",
+        ),
         option(
             "-t, --threshold N",
             "Decision threshold. ls-eend-dihard3 only.",
@@ -90,13 +95,22 @@ pub(crate) fn usage() -> String {
         ),
         String::new(),
         "Chunking and model overrides:".to_string(),
-        option("--chunk N, --chunk-seconds N", "Chunk length in seconds. Use 0 to disable."),
+        option(
+            "--chunk N, --chunk-seconds N",
+            "Chunk length in seconds. Use 0 to disable.",
+        ),
         option(
             "--overlap N, --chunk-overlap-seconds N",
             "Chunk overlap in seconds.",
         ),
-        option("--model-dir PATH", "Use an existing extracted model directory."),
-        option("--model-package PATH", "Override the cached model tarball path."),
+        option(
+            "--model-dir PATH",
+            "Use an existing extracted model directory.",
+        ),
+        option(
+            "--model-package PATH",
+            "Override the cached model tarball path.",
+        ),
         option("--model-url URL", "Override the model download URL."),
         String::new(),
         "Defaults summary:".to_string(),
@@ -583,19 +597,19 @@ fn parse_args_with_diarization_status(
 
     let input = input.with_context(|| format!("missing audio path\n{}", usage()))?;
     let output_path = if output_to_stdout { None } else { output_path };
-    let diarization_notice =
-        if diarization_backend.is_none() && !diarization_backend_explicit && !fluidaudio_available {
-            missing_diarization_notice(&fluidaudio_status)
-        } else {
-            None
-        };
+    let diarization_notice = if diarization_backend.is_none()
+        && !diarization_backend_explicit
+        && !fluidaudio_available
+    {
+        missing_diarization_notice(&fluidaudio_status)
+    } else {
+        None
+    };
     if diarization_backend.is_none() && !diarization_backend_explicit && fluidaudio_available {
         diarization_backend = Some(DiarizationBackend::Coreml);
     }
     if diarization_backend.is_none() && diarization_num_speakers.is_some() {
-        bail!(
-            "--num-speakers requires diarization; remove --num-speakers or use --diarize"
-        );
+        bail!("--num-speakers requires diarization; remove --num-speakers or use --diarize");
     }
     if diarization_backend.is_none() && diarization_threshold.is_some() {
         bail!(
@@ -663,12 +677,10 @@ fn parse_args_with_diarization_status(
 mod tests {
     use super::{
         default_model_dir, default_model_package, parse_args,
-        parse_args_with_diarization_availability, version_string,
-        usage,
+        parse_args_with_diarization_availability, usage, version_string,
     };
     use crate::diarization::{
-        missing_diarization_notice, DiarizationBackend, DiarizationRequest,
-        FluidaudioBinaryStatus,
+        missing_diarization_notice, DiarizationBackend, DiarizationRequest, FluidaudioBinaryStatus,
     };
     use crate::types::{OutputFormat, SpeakersFormat, SubtitleFormat, TextFormat};
     use std::path::Path;
@@ -1059,11 +1071,7 @@ mod tests {
 
     #[test]
     fn parse_args_rejects_conflicting_diarization_toggles() {
-        let args = vec![
-            "audio.wav".to_string(),
-            "-d".to_string(),
-            "-D".to_string(),
-        ];
+        let args = vec!["audio.wav".to_string(), "-d".to_string(), "-D".to_string()];
         let err = parse_args(&args).unwrap_err();
         assert!(err
             .to_string()
@@ -1110,11 +1118,10 @@ mod tests {
 
     #[test]
     fn parse_args_uses_override_specific_notice_when_configured_binary_is_missing_on_path() {
-        let notice = missing_diarization_notice(
-            &FluidaudioBinaryStatus::MissingConfiguredBinaryOnPath {
+        let notice =
+            missing_diarization_notice(&FluidaudioBinaryStatus::MissingConfiguredBinaryOnPath {
                 binary: "custom-fluidaudiocli".to_string(),
-            },
-        );
+            });
         assert_eq!(
             notice.as_deref(),
             Some(
@@ -1125,11 +1132,10 @@ mod tests {
 
     #[test]
     fn parse_args_uses_override_specific_notice_when_configured_binary_path_is_invalid() {
-        let notice = missing_diarization_notice(
-            &FluidaudioBinaryStatus::InvalidConfiguredBinaryPath {
+        let notice =
+            missing_diarization_notice(&FluidaudioBinaryStatus::InvalidConfiguredBinaryPath {
                 binary: "/definitely/missing/fluidaudiocli".to_string(),
-            },
-        );
+            });
         assert_eq!(
             notice.as_deref(),
             Some(

@@ -731,11 +731,10 @@ mod tests {
 
     #[test]
     fn missing_diarization_notice_describes_missing_configured_binary_on_path() {
-        let notice = missing_diarization_notice(
-            &FluidaudioBinaryStatus::MissingConfiguredBinaryOnPath {
+        let notice =
+            missing_diarization_notice(&FluidaudioBinaryStatus::MissingConfiguredBinaryOnPath {
                 binary: "custom-fluidaudiocli".to_string(),
-            },
-        );
+            });
         assert_eq!(
             notice.as_deref(),
             Some(
@@ -746,11 +745,10 @@ mod tests {
 
     #[test]
     fn missing_diarization_notice_describes_invalid_configured_binary_path() {
-        let notice = missing_diarization_notice(
-            &FluidaudioBinaryStatus::InvalidConfiguredBinaryPath {
+        let notice =
+            missing_diarization_notice(&FluidaudioBinaryStatus::InvalidConfiguredBinaryPath {
                 binary: "/definitely/missing/fluidaudiocli".to_string(),
-            },
-        );
+            });
         assert_eq!(
             notice.as_deref(),
             Some(
