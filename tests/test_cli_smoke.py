@@ -43,6 +43,11 @@ class CliSmokeTests(unittest.TestCase):
             check=True,
         )
         cls.binaries = available_binaries()
+        cls.modern_binaries = [
+            (label, binary)
+            for label, binary in cls.binaries
+            if cls.binary_supports_new_diarization_flags(binary)
+        ]
         cls.shared_tmpdir = tempfile.TemporaryDirectory(prefix="fscript-cli-smoke-")
         cls.shared_root = Path(cls.shared_tmpdir.name)
         cls.fixture_audio = cls.create_spoken_wav(cls.shared_root)
@@ -50,6 +55,18 @@ class CliSmokeTests(unittest.TestCase):
     @classmethod
     def tearDownClass(cls) -> None:
         cls.shared_tmpdir.cleanup()
+
+    @classmethod
+    def binary_supports_new_diarization_flags(cls, binary: Path) -> bool:
+        result = subprocess.run(
+            [str(binary), "--help"],
+            cwd=ROOT,
+            text=True,
+            capture_output=True,
+            check=False,
+            timeout=60,
+        )
+        return "--no-diarization" in result.stdout
 
     @classmethod
     def create_spoken_wav(cls, directory: Path) -> Path:
@@ -192,12 +209,20 @@ JSON
             with self.subTest(binary=label, flag="--help"):
                 result = self.run_cli(binary, "--help")
                 self.assertEqual(result.returncode, 0, result.stderr)
-                self.assertIn("usage: fscript", result.stdout)
+                if self.binary_supports_new_diarization_flags(binary):
+                    self.assertIn("Usage:", result.stdout)
+                    self.assertIn("Output modes:", result.stdout)
+                    self.assertIn("Examples:", result.stdout)
+                else:
+                    self.assertIn("usage: fscript", result.stdout)
 
             with self.subTest(binary=label, flag="-h"):
                 result = self.run_cli(binary, "-h")
                 self.assertEqual(result.returncode, 0, result.stderr)
-                self.assertIn("usage: fscript", result.stdout)
+                if self.binary_supports_new_diarization_flags(binary):
+                    self.assertIn("Usage:", result.stdout)
+                else:
+                    self.assertIn("usage: fscript", result.stdout)
 
             with self.subTest(binary=label, flag="--version"):
                 result = self.run_cli(binary, "--version")
@@ -210,7 +235,7 @@ JSON
                 self.assertIn("fscript 1.0.0", result.stdout)
 
     def test_output_formats_and_output_path_variants(self) -> None:
-        for label, binary in self.binaries:
+        for label, binary in self.modern_binaries:
             with tempfile.TemporaryDirectory(prefix=f"fscript-output-{label}-") as tmpdir:
                 root = Path(tmpdir)
                 audio_path = self.audio_copy(root)
@@ -226,8 +251,7 @@ JSON
                         "name": "json-stdout-flag",
                         "args": [
                             str(audio_path),
-                            "--backend",
-                            "none",
+                            "-D",
                             "--json",
                             "--stdout",
                         ],
@@ -238,7 +262,7 @@ JSON
                         "args": [
                             str(audio_path),
                             "-",
-                            "--backend=none",
+                            "--no-diarization",
                             "--text=timestamps",
                         ],
                         "stdout_mode": "timestamped",
@@ -248,7 +272,7 @@ JSON
                         "args": [
                             str(audio_path),
                             str(output_dir),
-                            "--backend=none",
+                            "-D",
                             "--text",
                         ],
                         "file_path": output_dir / "speech.transcript.txt",
@@ -258,8 +282,7 @@ JSON
                         "name": "text-plain-short-output-flag",
                         "args": [
                             str(audio_path),
-                            "--backend",
-                            "none",
+                            "--no-diarization",
                             "--text=plain",
                             "-o",
                             str(explicit_output),
@@ -272,7 +295,7 @@ JSON
                         "args": [
                             str(audio_path),
                             str(output_dir),
-                            "--backend=none",
+                            "-D",
                             "--speakers",
                             "timestamps",
                         ],
@@ -283,7 +306,7 @@ JSON
                         "name": "speakers-plain-output-equals",
                         "args": [
                             str(audio_path),
-                            "--backend=none",
+                            "--no-diarization",
                             "--speakers=plain",
                             f"--output={equals_output}",
                         ],
@@ -295,7 +318,7 @@ JSON
                         "args": [
                             str(audio_path),
                             str(srt_output),
-                            "--backend=none",
+                            "-D",
                             "--srt",
                             "--clean",
                         ],
@@ -307,7 +330,7 @@ JSON
                         "args": [
                             str(audio_path),
                             str(vtt_output),
-                            "--backend=none",
+                            "--no-diarization",
                             "--vtt",
                             "--raw",
                         ],
@@ -336,7 +359,7 @@ JSON
         if not DEFAULT_MODEL_DIR.exists():
             self.skipTest(f"missing default model dir at {DEFAULT_MODEL_DIR}")
 
-        for label, binary in self.binaries:
+        for label, binary in self.modern_binaries:
             with tempfile.TemporaryDirectory(prefix=f"fscript-chunk-{label}-") as tmpdir:
                 root = Path(tmpdir)
                 audio_path = self.audio_copy(root)
@@ -346,7 +369,7 @@ JSON
                     result = self.run_cli(
                         binary,
                         str(audio_path),
-                        "--backend=none",
+                        "-D",
                         "--json",
                         "--stdout",
                         "--chunk",
@@ -364,8 +387,7 @@ JSON
                     result = self.run_cli(
                         binary,
                         str(audio_path),
-                        "--backend",
-                        "none",
+                        "--no-diarization",
                         "--json",
                         "--stdout",
                         "--chunk-seconds",
@@ -386,7 +408,7 @@ JSON
                     self.assertEqual(payload["model_dir"], str(DEFAULT_MODEL_DIR))
 
     def test_diarization_backend_aliases_and_options(self) -> None:
-        for label, binary in self.binaries:
+        for label, binary in self.modern_binaries:
             with tempfile.TemporaryDirectory(prefix=f"fscript-diarize-{label}-") as tmpdir:
                 root = Path(tmpdir)
                 audio_path = self.audio_copy(root)
@@ -395,10 +417,10 @@ JSON
 
                 cases = [
                     {
-                        "name": "backend-coreml-long-flag",
+                        "name": "diarize-coreml-long-flag",
                         "args": [
                             str(audio_path),
-                            "--backend",
+                            "--diarize",
                             "coreml",
                             "--num-speakers",
                             "2",
@@ -415,10 +437,11 @@ JSON
                         "expected_backend_fragment": "process --mode offline",
                     },
                     {
-                        "name": "backend-coreml-equals",
+                        "name": "short-diarize-coreml-value",
                         "args": [
                             str(audio_path),
-                            "--backend=coreml",
+                            "-d",
+                            "coreml",
                             "--json",
                             "--stdout",
                         ],
@@ -448,10 +471,10 @@ JSON
                         "expected_backend_fragment": "process --mode offline",
                     },
                     {
-                        "name": "backend-lseend-with-threshold",
+                        "name": "diarize-lseend-with-threshold",
                         "args": [
                             str(audio_path),
-                            "--backend",
+                            "--diarize",
                             "lseend-dihard3",
                             "--threshold",
                             "0.4",
@@ -468,10 +491,11 @@ JSON
                         "expected_backend_fragment": "ls-eend-coreml",
                     },
                     {
-                        "name": "backend-lseend-default-threshold",
+                        "name": "short-diarize-lseend-default-threshold",
                         "args": [
                             str(audio_path),
-                            "--backend=lseend-dihard3",
+                            "-d",
+                            "lseend-dihard3",
                             "--json",
                             "--stdout",
                         ],
@@ -526,7 +550,7 @@ JSON
         if shutil.which("yt-dlp") is None:
             self.skipTest("yt-dlp is required for remote CLI smoke tests")
 
-        for label, binary in self.binaries:
+        for label, binary in self.modern_binaries:
             with tempfile.TemporaryDirectory(prefix=f"fscript-remote-{label}-") as tmpdir:
                 root = Path(tmpdir)
                 self.audio_copy(root)
@@ -538,7 +562,7 @@ JSON
                                 binary,
                                 remote_url,
                                 flag,
-                                "--backend=none",
+                                "-D",
                                 "--json",
                                 "--stdout",
                             )

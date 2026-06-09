@@ -3,43 +3,101 @@ use directories::ProjectDirs;
 use std::env;
 use std::path::PathBuf;
 
-use crate::diarization::{fluidaudio_binary_is_available, DiarizationBackend, DiarizationRequest};
+use crate::diarization::{
+    fluidaudio_binary_status, missing_diarization_notice, DiarizationBackend, DiarizationRequest,
+    FluidaudioBinaryStatus,
+};
 use crate::types::{CliArgs, OutputFormat, SpeakersFormat, SubtitleFormat, TextFormat};
 
 const DEFAULT_LSEEND_THRESHOLD: f64 = 0.3;
 
 pub(crate) fn usage() -> String {
-    format!(
-        "usage: fscript <audio-or-url> [output-path | -o PATH | - | --stdout] [--speakers[=plain] | --text[=plain] | --json | --srt | --vtt] [--backend coreml|lseend-dihard3|none] [-n N | --num-speakers N] [-t N | --threshold N] [-l | --local] [--chunk N] [--overlap N] [--model-dir PATH] [--model-package PATH] [--model-url URL]\n\
-aliases:\n\
-  -o, --output <path>\n\
-  --speakers[=plain]\n\
-  --text[=plain]\n\
-  --json\n\
-  --raw\n\
-  -l, --local\n\
-  --backend <coreml|lseend-dihard3|none>\n\
-  --srt (experimental subtitle output)\n\
-  --vtt (experimental subtitle output)\n\
-  -n, --num-speakers <count>\n\
-  -t, --threshold <value>\n\
-  --chunk <seconds>\n\
-  --overlap <seconds>\n\
-notes:\n\
-  subtitle output via --srt/--vtt is experimental and may change\n\
-defaults:\n\
-  --speakers timestamps\n\
-  --text timestamps\n\
-  --backend coreml\n\
-  --backend=lseend-dihard3 => --threshold 0.3\n\
-  clean output on\n\
-  --model-dir {}\n\
-  --model-package {}\n\
-  --chunk 120\n\
-  --overlap 2",
-        default_model_dir().display(),
-        default_model_package().display()
-    )
+    fn option(name: &str, description: &str) -> String {
+        format!("  {name:<44} {description}")
+    }
+
+    let default_model_dir = default_model_dir();
+    let default_model_package = default_model_package();
+
+    [
+        "Usage:".to_string(),
+        "  fscript <audio-or-url> [output-path]".to_string(),
+        "  fscript <audio-or-url> -o PATH".to_string(),
+        "  fscript <audio-or-url> --stdout".to_string(),
+        "  fscript <audio-or-url> -".to_string(),
+        String::new(),
+        "Output modes:".to_string(),
+        option(
+            "--speakers[=plain]",
+            "Speaker-aware transcript. Default output mode.",
+        ),
+        option(
+            "--text[=plain|timestamps]",
+            "Transcript text; plain omits timestamps.",
+        ),
+        option("--json", "Full JSON result with timings and metadata."),
+        option("--srt", "Experimental SubRip subtitle output."),
+        option("--vtt", "Experimental WebVTT subtitle output."),
+        String::new(),
+        "Output destination:".to_string(),
+        option("[output-path]", "Write to a file, or inside a directory if it exists."),
+        option("-o, --output PATH", "Explicit output path."),
+        option("--stdout, -", "Write transcript contents to stdout."),
+        option("--raw", "Disable repeated-word cleanup for this run."),
+        option("-c, --clean", "Force cleaned output for this run."),
+        String::new(),
+        "Diarization:".to_string(),
+        option(
+            "-d, --diarize [coreml|lseend-dihard3]",
+            "Enable diarization, optionally choosing the model.",
+        ),
+        option("-D, --no-diarization", "Disable diarization entirely."),
+        option("-n, --num-speakers N", "Expected speaker count. CoreML only."),
+        option(
+            "-t, --threshold N",
+            "Decision threshold. ls-eend-dihard3 only.",
+        ),
+        option(
+            "--backend coreml|lseend-dihard3|none",
+            "Legacy alias for older scripts.",
+        ),
+        String::new(),
+        "Remote input:".to_string(),
+        option(
+            "-l, --local, --prefer-local-for-remote",
+            "Always download audio and transcribe locally.",
+        ),
+        String::new(),
+        "Chunking and model overrides:".to_string(),
+        option("--chunk N, --chunk-seconds N", "Chunk length in seconds. Use 0 to disable."),
+        option(
+            "--overlap N, --chunk-overlap-seconds N",
+            "Chunk overlap in seconds.",
+        ),
+        option("--model-dir PATH", "Use an existing extracted model directory."),
+        option("--model-package PATH", "Override the cached model tarball path."),
+        option("--model-url URL", "Override the model download URL."),
+        String::new(),
+        "Defaults:".to_string(),
+        option("Output mode", "--speakers with timestamps."),
+        option("Diarization", "coreml when `fluidaudiocli` is available."),
+        option(
+            "ls-eend threshold",
+            &format!("{DEFAULT_LSEEND_THRESHOLD} when selected."),
+        ),
+        option("Cleaning", "On."),
+        option("Chunking", "--chunk 120 with --overlap 2."),
+        option("Model dir", &default_model_dir.display().to_string()),
+        option("Model package", &default_model_package.display().to_string()),
+        String::new(),
+        "Examples:".to_string(),
+        "  fscript lecture.mp3".to_string(),
+        "  fscript lecture.mp3 notes/".to_string(),
+        "  fscript lecture.mp3 --text=plain".to_string(),
+        "  fscript lecture.mp3 --diarize lseend-dihard3".to_string(),
+        "  fscript lecture.mp3 -D --json --raw".to_string(),
+    ]
+    .join("\n")
 }
 
 pub(crate) fn version_string() -> String {
@@ -88,17 +146,42 @@ fn default_model_url() -> String {
     env::var("FSCRIPT_MODEL_URL").unwrap_or_else(|_| crate::DEFAULT_MODEL_URL.to_string())
 }
 
+fn parse_diarization_model_value(value: &str) -> Result<DiarizationBackend> {
+    DiarizationBackend::from_cli_value(value).with_context(|| {
+        format!("invalid diarization mode {value:?}; expected coreml or lseend-dihard3")
+    })
+}
+
 fn parse_backend_value(value: &str) -> Result<Option<DiarizationBackend>> {
     match value {
         "none" => Ok(None),
-        value => DiarizationBackend::from_cli_value(value)
-            .map(Some)
-            .with_context(|| {
-                format!(
-                    "invalid --backend value {value:?}; expected coreml, lseend-dihard3, or none"
-                )
-            }),
+        value => parse_diarization_model_value(value).map(Some),
     }
+}
+
+fn set_explicit_diarization_backend(
+    diarization_backend: &mut Option<DiarizationBackend>,
+    diarization_backend_explicit: &mut bool,
+    diarization_selection_source: &mut Option<&'static str>,
+    source_name: &'static str,
+    requested_backend: Option<DiarizationBackend>,
+) -> Result<()> {
+    if let Some(previous_source) = *diarization_selection_source {
+        if *diarization_backend != requested_backend {
+            if (*diarization_backend).is_some() != requested_backend.is_some() {
+                bail!("cannot combine --diarize with --no-diarization; choose one");
+            }
+            bail!(
+                "cannot combine multiple diarization selections ({previous_source} and {source_name}); choose one"
+            );
+        }
+        return Ok(());
+    }
+
+    *diarization_backend_explicit = true;
+    *diarization_selection_source = Some(source_name);
+    *diarization_backend = requested_backend;
+    Ok(())
 }
 
 fn ensure_single_output_format(
@@ -131,16 +214,31 @@ fn ensure_single_output_path_source(
 }
 
 pub(crate) fn parse_args(raw_args: &[String]) -> Result<CliArgs> {
-    parse_args_with_diarization_availability(raw_args, fluidaudio_binary_is_available())
+    parse_args_with_diarization_status(raw_args, fluidaudio_binary_status())
 }
 
+#[cfg(test)]
 fn parse_args_with_diarization_availability(
     raw_args: &[String],
     fluidaudio_available: bool,
 ) -> Result<CliArgs> {
+    let status = if fluidaudio_available {
+        FluidaudioBinaryStatus::Available
+    } else {
+        FluidaudioBinaryStatus::MissingDefaultBinary
+    };
+    parse_args_with_diarization_status(raw_args, status)
+}
+
+fn parse_args_with_diarization_status(
+    raw_args: &[String],
+    fluidaudio_status: FluidaudioBinaryStatus,
+) -> Result<CliArgs> {
     if raw_args.is_empty() {
         bail!("{}", usage());
     }
+
+    let fluidaudio_available = matches!(fluidaudio_status, FluidaudioBinaryStatus::Available);
 
     let mut model_dir = default_model_dir();
     let mut model_package = default_model_package();
@@ -158,6 +256,7 @@ fn parse_args_with_diarization_availability(
     let mut chunk_overlap_seconds_override = None;
     let mut diarization_backend = None;
     let mut diarization_backend_explicit = false;
+    let mut diarization_selection_source = None;
     let mut diarization_num_speakers = None;
     let mut diarization_threshold = None;
     let mut index = 0usize;
@@ -303,8 +402,13 @@ fn parse_args_with_diarization_availability(
                 let value = raw_args
                     .get(index + 1)
                     .with_context(|| format!("missing value for --backend\n{}", usage()))?;
-                diarization_backend_explicit = true;
-                diarization_backend = parse_backend_value(value)?;
+                set_explicit_diarization_backend(
+                    &mut diarization_backend,
+                    &mut diarization_backend_explicit,
+                    &mut diarization_selection_source,
+                    "--backend",
+                    parse_backend_value(value)?,
+                )?;
                 index += 2;
             }
             flag if flag.starts_with("--backend=") => {
@@ -312,22 +416,41 @@ fn parse_args_with_diarization_availability(
                     .split_once('=')
                     .map(|(_, value)| value)
                     .with_context(|| format!("missing value for --backend\n{}", usage()))?;
-                diarization_backend_explicit = true;
-                diarization_backend = parse_backend_value(value)?;
+                set_explicit_diarization_backend(
+                    &mut diarization_backend,
+                    &mut diarization_backend_explicit,
+                    &mut diarization_selection_source,
+                    "--backend",
+                    parse_backend_value(value)?,
+                )?;
                 index += 1;
             }
             "-d" | "--diarize" => {
-                diarization_backend_explicit = true;
+                let mut requested_backend = Some(DiarizationBackend::Coreml);
                 if let Some(value) = raw_args.get(index + 1) {
-                    if let Ok(parsed_backend) = parse_backend_value(value) {
-                        diarization_backend = parsed_backend;
+                    if value == "none" {
+                        bail!("use --no-diarization or -D instead of `--diarize none`");
+                    }
+                    if let Ok(parsed_backend) = parse_diarization_model_value(value) {
+                        requested_backend = Some(parsed_backend);
+                        set_explicit_diarization_backend(
+                            &mut diarization_backend,
+                            &mut diarization_backend_explicit,
+                            &mut diarization_selection_source,
+                            "--diarize",
+                            requested_backend,
+                        )?;
                         index += 2;
                         continue;
                     }
                 }
-                if diarization_backend.is_none() {
-                    diarization_backend = Some(DiarizationBackend::Coreml);
-                }
+                set_explicit_diarization_backend(
+                    &mut diarization_backend,
+                    &mut diarization_backend_explicit,
+                    &mut diarization_selection_source,
+                    "--diarize",
+                    requested_backend,
+                )?;
                 index += 1;
             }
             flag if flag.starts_with("--diarize=") => {
@@ -335,8 +458,26 @@ fn parse_args_with_diarization_availability(
                     .split_once('=')
                     .map(|(_, value)| value)
                     .with_context(|| format!("missing value for --diarize\n{}", usage()))?;
-                diarization_backend_explicit = true;
-                diarization_backend = parse_backend_value(value)?;
+                if value == "none" {
+                    bail!("use --no-diarization or -D instead of `--diarize none`");
+                }
+                set_explicit_diarization_backend(
+                    &mut diarization_backend,
+                    &mut diarization_backend_explicit,
+                    &mut diarization_selection_source,
+                    "--diarize",
+                    Some(parse_diarization_model_value(value)?),
+                )?;
+                index += 1;
+            }
+            "-D" | "--no-diarization" => {
+                set_explicit_diarization_backend(
+                    &mut diarization_backend,
+                    &mut diarization_backend_explicit,
+                    &mut diarization_selection_source,
+                    "--no-diarization",
+                    None,
+                )?;
                 index += 1;
             }
             "--num-speakers" | "-n" => {
@@ -421,35 +562,30 @@ fn parse_args_with_diarization_availability(
 
     let input = input.with_context(|| format!("missing audio path\n{}", usage()))?;
     let output_path = if output_to_stdout { None } else { output_path };
-    let diarization_notice = if diarization_backend.is_none()
-        && !diarization_backend_explicit
-        && !fluidaudio_available
-    {
-        Some(
-                "speaker diarization disabled because `fluidaudiocli` is not installed; install it or set FSCRIPT_DIARIZATION_BINARY to enable speaker labels."
-                    .to_string(),
-            )
-    } else {
-        None
-    };
+    let diarization_notice =
+        if diarization_backend.is_none() && !diarization_backend_explicit && !fluidaudio_available {
+            missing_diarization_notice(&fluidaudio_status)
+        } else {
+            None
+        };
     if diarization_backend.is_none() && !diarization_backend_explicit && fluidaudio_available {
         diarization_backend = Some(DiarizationBackend::Coreml);
     }
     if diarization_backend.is_none() && diarization_num_speakers.is_some() {
         bail!(
-            "--num-speakers requires diarization; remove --num-speakers or choose --backend=coreml"
+            "--num-speakers requires diarization; remove --num-speakers or use --diarize"
         );
     }
     if diarization_backend.is_none() && diarization_threshold.is_some() {
         bail!(
-            "--threshold requires diarization; remove --threshold or choose --backend=lseend-dihard3"
+            "--threshold requires diarization; remove --threshold or use `--diarize lseend-dihard3`"
         );
     }
     if diarization_num_speakers.is_some()
         && diarization_backend == Some(DiarizationBackend::LseendDihard3)
     {
         bail!(
-            "--num-speakers is not supported with --backend=lseend-dihard3; remove --num-speakers or switch to --backend=coreml"
+            "--num-speakers is not supported with `--diarize lseend-dihard3`; remove --num-speakers or switch to coreml"
         );
     }
     if diarization_backend == Some(DiarizationBackend::LseendDihard3)
@@ -461,7 +597,7 @@ fn parse_args_with_diarization_availability(
         && diarization_backend != Some(DiarizationBackend::LseendDihard3)
     {
         bail!(
-            "--threshold only works with --backend=lseend-dihard3; remove --threshold or switch backends"
+            "--threshold only works with `--diarize lseend-dihard3`; remove --threshold or switch diarization modes"
         );
     }
 
@@ -507,8 +643,12 @@ mod tests {
     use super::{
         default_model_dir, default_model_package, parse_args,
         parse_args_with_diarization_availability, version_string,
+        usage,
     };
-    use crate::diarization::{DiarizationBackend, DiarizationRequest};
+    use crate::diarization::{
+        missing_diarization_notice, DiarizationBackend, DiarizationRequest,
+        FluidaudioBinaryStatus,
+    };
     use crate::types::{OutputFormat, SpeakersFormat, SubtitleFormat, TextFormat};
     use std::path::Path;
     use std::path::PathBuf;
@@ -573,6 +713,20 @@ mod tests {
             &default_model_package(),
             &[crate::DEFAULT_MODEL_PACKAGE_NAME]
         ));
+    }
+
+    #[test]
+    fn usage_groups_flags_into_readable_sections() {
+        let help = usage();
+        assert!(help.contains("Usage:\n"));
+        assert!(help.contains("Output modes:\n"));
+        assert!(help.contains("Diarization:\n"));
+        assert!(help.contains("Remote input:\n"));
+        assert!(help.contains("Defaults:\n"));
+        assert!(help.contains("Examples:\n"));
+        assert!(help.contains("--speakers[=plain]"));
+        assert!(help.contains("-d, --diarize [coreml|lseend-dihard3]"));
+        assert!(help.contains("-D, --no-diarization"));
     }
 
     #[test]
@@ -798,6 +952,98 @@ mod tests {
     }
 
     #[test]
+    fn parse_args_supports_no_diarization_long_flag() {
+        let args = vec!["audio.wav".to_string(), "--no-diarization".to_string()];
+        let parsed = parse_args(&args).unwrap();
+        assert_eq!(parsed.diarization, None);
+        assert_eq!(parsed.diarization_notice, None);
+    }
+
+    #[test]
+    fn parse_args_supports_no_diarization_short_flag() {
+        let args = vec!["audio.wav".to_string(), "-D".to_string()];
+        let parsed = parse_args(&args).unwrap();
+        assert_eq!(parsed.diarization, None);
+        assert_eq!(parsed.diarization_notice, None);
+    }
+
+    #[test]
+    fn parse_args_supports_bare_diarize_flag() {
+        let args = vec!["audio.wav".to_string(), "--diarize".to_string()];
+        let parsed = parse_args_with_diarization_availability(&args, true).unwrap();
+        assert_eq!(
+            parsed.diarization,
+            Some(DiarizationRequest {
+                backend: DiarizationBackend::Coreml,
+                num_speakers: None,
+                threshold: None,
+            })
+        );
+    }
+
+    #[test]
+    fn parse_args_supports_short_diarize_flag_with_coreml_value() {
+        let args = vec![
+            "audio.wav".to_string(),
+            "-d".to_string(),
+            "coreml".to_string(),
+        ];
+        let parsed = parse_args_with_diarization_availability(&args, true).unwrap();
+        assert_eq!(
+            parsed.diarization,
+            Some(DiarizationRequest {
+                backend: DiarizationBackend::Coreml,
+                num_speakers: None,
+                threshold: None,
+            })
+        );
+    }
+
+    #[test]
+    fn parse_args_supports_diarize_long_flag_with_lseend_value() {
+        let args = vec![
+            "audio.wav".to_string(),
+            "--diarize".to_string(),
+            "lseend-dihard3".to_string(),
+        ];
+        let parsed = parse_args_with_diarization_availability(&args, true).unwrap();
+        assert_eq!(
+            parsed.diarization,
+            Some(DiarizationRequest {
+                backend: DiarizationBackend::LseendDihard3,
+                num_speakers: None,
+                threshold: Some(0.3),
+            })
+        );
+    }
+
+    #[test]
+    fn parse_args_rejects_diarize_none_value() {
+        let args = vec![
+            "audio.wav".to_string(),
+            "--diarize".to_string(),
+            "none".to_string(),
+        ];
+        let err = parse_args(&args).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("use --no-diarization or -D instead of `--diarize none`"));
+    }
+
+    #[test]
+    fn parse_args_rejects_conflicting_diarization_toggles() {
+        let args = vec![
+            "audio.wav".to_string(),
+            "-d".to_string(),
+            "-D".to_string(),
+        ];
+        let err = parse_args(&args).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("cannot combine --diarize with --no-diarization"));
+    }
+
+    #[test]
     fn parse_args_supports_backend_none() {
         let args = vec!["audio.wav".to_string(), "--backend=none".to_string()];
         let parsed = parse_args(&args).unwrap();
@@ -830,7 +1076,37 @@ mod tests {
         assert_eq!(
             parsed.diarization_notice.as_deref(),
             Some(
-                "speaker diarization disabled because `fluidaudiocli` is not installed; install it or set FSCRIPT_DIARIZATION_BINARY to enable speaker labels."
+                "speaker diarization disabled because `fluidaudiocli` is not available on PATH; this installation may be incomplete. Reinstall the bundled helper or set FSCRIPT_DIARIZATION_BINARY to a working fluidaudiocli binary."
+            )
+        );
+    }
+
+    #[test]
+    fn parse_args_uses_override_specific_notice_when_configured_binary_is_missing_on_path() {
+        let notice = missing_diarization_notice(
+            &FluidaudioBinaryStatus::MissingConfiguredBinaryOnPath {
+                binary: "custom-fluidaudiocli".to_string(),
+            },
+        );
+        assert_eq!(
+            notice.as_deref(),
+            Some(
+                "speaker diarization disabled because FSCRIPT_DIARIZATION_BINARY is set to `custom-fluidaudiocli`, but that command is not available on PATH; falling back to plain transcription."
+            )
+        );
+    }
+
+    #[test]
+    fn parse_args_uses_override_specific_notice_when_configured_binary_path_is_invalid() {
+        let notice = missing_diarization_notice(
+            &FluidaudioBinaryStatus::InvalidConfiguredBinaryPath {
+                binary: "/definitely/missing/fluidaudiocli".to_string(),
+            },
+        );
+        assert_eq!(
+            notice.as_deref(),
+            Some(
+                "speaker diarization disabled because FSCRIPT_DIARIZATION_BINARY points to `/definitely/missing/fluidaudiocli`, but that path is not an executable file; falling back to plain transcription."
             )
         );
     }
@@ -930,7 +1206,7 @@ mod tests {
         let err = parse_args_with_diarization_availability(&args, true).unwrap_err();
         assert!(err
             .to_string()
-            .contains("--threshold only works with --backend=lseend-dihard3"));
+            .contains("--threshold only works with `--diarize lseend-dihard3`"));
     }
 
     #[test]
@@ -944,7 +1220,7 @@ mod tests {
         let err = parse_args(&args).unwrap_err();
         assert!(err
             .to_string()
-            .contains("--num-speakers is not supported with --backend=lseend-dihard3"));
+            .contains("--num-speakers is not supported with `--diarize lseend-dihard3`"));
     }
 
     #[test]

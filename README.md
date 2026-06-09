@@ -17,8 +17,8 @@ fscript lecture.mp3 --raw
 fscript lecture.mp3 --srt
 fscript lecture.mp3 --vtt
 fscript lecture.mp3 --json
-fscript lecture.mp3 --backend=lseend-dihard3
-fscript lecture.mp3 --backend=none --json --raw
+fscript lecture.mp3 --diarize lseend-dihard3
+fscript lecture.mp3 -D --json --raw
 fscript lecture.mp3 -n 2
 ```
 
@@ -67,7 +67,7 @@ The existing options I tested had clear problems for this use case:
 - `yt-dlp` for remote URLs, or `uvx yt-dlp`
 - `fluidaudiocli` on `PATH` if you want speaker-aware diarization
   - when it is missing, `fscript` warns and continues without diarization
-  - use `--backend=coreml` or `--backend=lseend-dihard3` to require diarization explicitly
+  - use `-d`, `--diarize`, or `--diarize lseend-dihard3` to require diarization explicitly
 
 ### Install with Homebrew
 
@@ -156,7 +156,7 @@ For remote URLs, the default speaker-aware flow is:
 2. download the remote audio
 3. run the normal local transcription + diarization pipeline
 
-If you switch to `--backend=none`, `fscript` can still use platform-provided manual subtitles directly when they are available unless you also force `--local`.
+If you switch to `-D` or `--no-diarization`, `fscript` can still use platform-provided manual subtitles directly when they are available unless you also force `--local`.
 
 ## Usage
 
@@ -173,8 +173,8 @@ fscript <audio-or-url> --raw
 fscript <audio-or-url> --json
 fscript <audio-or-url> --srt
 fscript <audio-or-url> --vtt
-fscript <audio-or-url> --backend=lseend-dihard3
-fscript <audio-or-url> --backend=none --json --raw
+fscript <audio-or-url> --diarize lseend-dihard3
+fscript <audio-or-url> -D --json --raw
 fscript <audio-or-url> -n 2
 fscript --version
 ```
@@ -204,8 +204,8 @@ fscript lecture.wav --raw
 fscript lecture.wav --json
 fscript lecture.wav --srt
 fscript lecture.wav --vtt
-fscript lecture.wav --backend=lseend-dihard3
-fscript lecture.wav --backend=none --json --raw
+fscript lecture.wav --diarize lseend-dihard3
+fscript lecture.wav -D --json --raw
 fscript lecture.wav -n 2
 fscript lecture.wav --chunk 180 --overlap 3
 fscript lecture.wav --chunk 0
@@ -256,7 +256,7 @@ Environment overrides:
 ## Optional diarization
 
 `fscript` automatically enables speaker diarization when `fluidaudiocli` is available.
-If the helper is missing and you did not request a backend explicitly, `fscript` falls back to plain transcript segments after printing a warning on `stderr`.
+If the helper is missing and you did not request diarization explicitly, `fscript` falls back to plain transcript segments after printing a warning on `stderr`.
 
 By default, it:
 
@@ -265,12 +265,14 @@ By default, it:
 3. runs a separate `fluidaudiocli` diarization subprocess
 4. merges diarization windows into ASR segments by temporal overlap
 
-Backends:
+Modes:
 
-- `--backend=coreml`: `FluidInference/speaker-diarization-coreml` path via `fluidaudiocli process --mode offline`
-- `--backend=lseend-dihard3`: alternate `FluidInference/ls-eend-coreml` DIHARD III path via `fluidaudiocli lseend --variant dihard3`
+- `-d` / `--diarize`: enable diarization explicitly with the default `coreml` model
+- `-d coreml` / `--diarize coreml`: `FluidInference/speaker-diarization-coreml` path via `fluidaudiocli process --mode offline`
+- `-d lseend-dihard3` / `--diarize lseend-dihard3`: alternate `FluidInference/ls-eend-coreml` DIHARD III path via `fluidaudiocli lseend --variant dihard3`
   - defaults to `--threshold 0.3`
-- `--backend=none`: skip diarization entirely
+- `-D` / `--no-diarization`: skip diarization entirely
+- `--backend=coreml|lseend-dihard3|none`: legacy alias kept for backwards compatibility
 
 Controls:
 
@@ -278,7 +280,7 @@ Controls:
 - `-t N` / `--threshold N` overrides the default diarization threshold for `lseend-dihard3`
 - `lseend-dihard3` does not support `--num-speakers`; use the default threshold or override it with `-t` / `--threshold`
 
-If you explicitly request `--backend=coreml` or `--backend=lseend-dihard3` and `fluidaudiocli` is missing, `fscript` returns a clear backend error instead of silently falling back.
+If you explicitly request `-d`, `--diarize`, or a concrete diarization model and `fluidaudiocli` is missing, `fscript` returns a clear backend error instead of silently falling back.
 
 ## Defaults
 
@@ -291,7 +293,7 @@ If you explicitly request `--backend=coreml` or `--backend=lseend-dihard3` and `
 - model URL: `https://huggingface.co/brenorb/parakeet-tdt-0.6b-v3-int8-onnx-bundle/resolve/main/parakeet-v3-int8.tar.gz?download=1`
 - chunk seconds: `120`
 - chunk overlap seconds: `2`
-- default backend: `coreml`
+- default diarization mode: `coreml` when `fluidaudiocli` is available
 - cleaning: on
 - default output path: `<audio>.speakers.txt`
 - output path with `--json`: `<audio>.transcript.json`

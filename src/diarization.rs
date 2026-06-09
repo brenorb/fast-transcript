@@ -90,6 +90,14 @@ pub(crate) struct FluidAudioDiarizer<R = SystemCommandRunner> {
     runner: R,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum FluidaudioBinaryStatus {
+    Available,
+    MissingDefaultBinary,
+    MissingConfiguredBinaryOnPath { binary: String },
+    InvalidConfiguredBinaryPath { binary: String },
+}
+
 impl FluidAudioDiarizer<SystemCommandRunner> {
     pub fn new() -> Self {
         let binary = configured_fluidaudio_binary();
@@ -104,8 +112,45 @@ pub(crate) fn configured_fluidaudio_binary() -> String {
     env::var("FSCRIPT_DIARIZATION_BINARY").unwrap_or_else(|_| DEFAULT_FLUIDAUDIO_BINARY.to_string())
 }
 
-pub(crate) fn fluidaudio_binary_is_available() -> bool {
-    binary_is_available(&configured_fluidaudio_binary())
+pub(crate) fn fluidaudio_binary_status() -> FluidaudioBinaryStatus {
+    let configured_binary = configured_fluidaudio_binary();
+    if binary_is_available(&configured_binary) {
+        return FluidaudioBinaryStatus::Available;
+    }
+
+    if env::var_os("FSCRIPT_DIARIZATION_BINARY").is_some() {
+        let path = Path::new(&configured_binary);
+        if path.components().count() > 1 {
+            FluidaudioBinaryStatus::InvalidConfiguredBinaryPath {
+                binary: configured_binary,
+            }
+        } else {
+            FluidaudioBinaryStatus::MissingConfiguredBinaryOnPath {
+                binary: configured_binary,
+            }
+        }
+    } else {
+        FluidaudioBinaryStatus::MissingDefaultBinary
+    }
+}
+
+pub(crate) fn missing_diarization_notice(status: &FluidaudioBinaryStatus) -> Option<String> {
+    match status {
+        FluidaudioBinaryStatus::Available => None,
+        FluidaudioBinaryStatus::MissingDefaultBinary => Some(
+            "speaker diarization disabled because `fluidaudiocli` is not available on PATH; this installation may be incomplete. Reinstall the bundled helper or set FSCRIPT_DIARIZATION_BINARY to a working fluidaudiocli binary.".to_string(),
+        ),
+        FluidaudioBinaryStatus::MissingConfiguredBinaryOnPath { binary } => Some(
+            format!(
+                "speaker diarization disabled because FSCRIPT_DIARIZATION_BINARY is set to `{binary}`, but that command is not available on PATH; falling back to plain transcription."
+            ),
+        ),
+        FluidaudioBinaryStatus::InvalidConfiguredBinaryPath { binary } => Some(
+            format!(
+                "speaker diarization disabled because FSCRIPT_DIARIZATION_BINARY points to `{binary}`, but that path is not an executable file; falling back to plain transcription."
+            ),
+        ),
+    }
 }
 
 fn binary_is_available(binary: &str) -> bool {
@@ -671,6 +716,47 @@ mod tests {
     #[test]
     fn configured_binary_is_unavailable_when_path_does_not_exist() {
         assert!(!binary_is_available("/definitely/missing/fluidaudiocli"));
+    }
+
+    #[test]
+    fn missing_diarization_notice_describes_missing_default_binary() {
+        let notice = missing_diarization_notice(&FluidaudioBinaryStatus::MissingDefaultBinary);
+        assert_eq!(
+            notice.as_deref(),
+            Some(
+                "speaker diarization disabled because `fluidaudiocli` is not available on PATH; this installation may be incomplete. Reinstall the bundled helper or set FSCRIPT_DIARIZATION_BINARY to a working fluidaudiocli binary."
+            )
+        );
+    }
+
+    #[test]
+    fn missing_diarization_notice_describes_missing_configured_binary_on_path() {
+        let notice = missing_diarization_notice(
+            &FluidaudioBinaryStatus::MissingConfiguredBinaryOnPath {
+                binary: "custom-fluidaudiocli".to_string(),
+            },
+        );
+        assert_eq!(
+            notice.as_deref(),
+            Some(
+                "speaker diarization disabled because FSCRIPT_DIARIZATION_BINARY is set to `custom-fluidaudiocli`, but that command is not available on PATH; falling back to plain transcription."
+            )
+        );
+    }
+
+    #[test]
+    fn missing_diarization_notice_describes_invalid_configured_binary_path() {
+        let notice = missing_diarization_notice(
+            &FluidaudioBinaryStatus::InvalidConfiguredBinaryPath {
+                binary: "/definitely/missing/fluidaudiocli".to_string(),
+            },
+        );
+        assert_eq!(
+            notice.as_deref(),
+            Some(
+                "speaker diarization disabled because FSCRIPT_DIARIZATION_BINARY points to `/definitely/missing/fluidaudiocli`, but that path is not an executable file; falling back to plain transcription."
+            )
+        );
     }
 
     #[test]
