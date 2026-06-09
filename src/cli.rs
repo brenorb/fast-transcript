@@ -46,7 +46,7 @@ pub(crate) fn usage() -> String {
         String::new(),
         "Output:".to_string(),
         option(
-            "--speakers[=plain]",
+            "--speakers[=plain|timestamps]",
             "Speaker-aware transcript. Default output mode.",
         ),
         option(
@@ -750,7 +750,7 @@ mod tests {
         assert!(help.contains("Remote input:\n"));
         assert!(help.contains("Defaults summary:\n"));
         assert!(help.contains("Examples:\n"));
-        assert!(help.contains("--speakers[=plain]"));
+        assert!(help.contains("--speakers[=plain|timestamps]"));
         assert!(help.contains("-d, --diarize [coreml|lseend-dihard3]"));
         assert!(help.contains("-D, --no-diarization"));
         assert!(!help.contains("/Users/"));

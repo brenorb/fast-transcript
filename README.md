@@ -167,6 +167,7 @@ fscript <audio-or-url> --stdout
 fscript <audio-or-url> -
 fscript <audio-or-url> --speakers
 fscript <audio-or-url> --speakers=plain
+fscript <audio-or-url> --speakers=timestamps
 fscript <audio-or-url> --text
 fscript <audio-or-url> --text=plain
 fscript <audio-or-url> --raw
@@ -198,6 +199,7 @@ fscript lecture.wav -o custom-output.txt
 fscript lecture.wav --stdout
 fscript lecture.wav --speakers
 fscript lecture.wav --speakers=plain
+fscript lecture.wav --speakers=timestamps
 fscript lecture.wav --text
 fscript lecture.wav --text=plain
 fscript lecture.wav --raw
@@ -241,6 +243,7 @@ Subtitle output modes:
 Speaker-aware output modes:
 
 - `--speakers`: speaker-aware output with timestamps, for example `00:12:34 - SPEAKER_01: ...`
+- `--speakers=timestamps`: explicit alias for the default speaker-aware timestamped output
 - `--speakers=plain`: speaker-aware output without timestamps, for example `SPEAKER_01: ...`
 - if diarization is disabled or a segment has no speaker label, the line falls back to plain segment text without an `UNKNOWN:` prefix
 - when no output mode is passed, `--speakers` is the default
@@ -359,6 +362,7 @@ When diarization is enabled, each transcript segment may include:
 Alternative output modes:
 
 - `--speakers`: speaker-aware text with timestamps
+- `--speakers=timestamps`: explicit speaker-aware text with timestamps
 - `--speakers=plain`: speaker-aware text without timestamps
 - `--text`: transcript text with segment timestamps
 - `--text=plain`: transcript text without timestamps

@@ -213,6 +213,7 @@ JSON
                     self.assertIn("Usage:", result.stdout)
                     self.assertIn("Default:", result.stdout)
                     self.assertIn("Output:", result.stdout)
+                    self.assertIn("--speakers[=plain|timestamps]", result.stdout)
                     self.assertIn("Examples:", result.stdout)
                 else:
                     self.assertIn("usage: fscript", result.stdout)
