@@ -211,7 +211,8 @@ JSON
                 self.assertEqual(result.returncode, 0, result.stderr)
                 if self.binary_supports_new_diarization_flags(binary):
                     self.assertIn("Usage:", result.stdout)
-                    self.assertIn("Output modes:", result.stdout)
+                    self.assertIn("Default:", result.stdout)
+                    self.assertIn("Output:", result.stdout)
                     self.assertIn("Examples:", result.stdout)
                 else:
                     self.assertIn("usage: fscript", result.stdout)

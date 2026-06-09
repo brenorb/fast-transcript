@@ -16,17 +16,35 @@ pub(crate) fn usage() -> String {
         format!("  {name:<44} {description}")
     }
 
+    fn display_help_path(path: &std::path::Path) -> String {
+        let Some(home) = env::var_os("HOME").map(PathBuf::from) else {
+            return path.display().to_string();
+        };
+
+        if let Ok(stripped) = path.strip_prefix(&home) {
+            if stripped.as_os_str().is_empty() {
+                "~".to_string()
+            } else {
+                format!("~/{}", stripped.display())
+            }
+        } else {
+            path.display().to_string()
+        }
+    }
+
     let default_model_dir = default_model_dir();
     let default_model_package = default_model_package();
 
     [
         "Usage:".to_string(),
-        "  fscript <audio-or-url> [output-path]".to_string(),
-        "  fscript <audio-or-url> -o PATH".to_string(),
-        "  fscript <audio-or-url> --stdout".to_string(),
-        "  fscript <audio-or-url> -".to_string(),
+        "  fscript <audio-or-url> [output-path | -o PATH | - | --stdout] [options]".to_string(),
         String::new(),
-        "Output modes:".to_string(),
+        "Default:".to_string(),
+        "  fscript <audio-or-url>".to_string(),
+        "    Default flags: --speakers --diarize coreml --clean --chunk 120 --overlap 2".to_string(),
+        "    If `fluidaudiocli` is unavailable, warns and falls back to plain transcription.".to_string(),
+        String::new(),
+        "Output:".to_string(),
         option(
             "--speakers[=plain]",
             "Speaker-aware transcript. Default output mode.",
@@ -39,7 +57,7 @@ pub(crate) fn usage() -> String {
         option("--srt", "Experimental SubRip subtitle output."),
         option("--vtt", "Experimental WebVTT subtitle output."),
         String::new(),
-        "Output destination:".to_string(),
+        "Destination:".to_string(),
         option("[output-path]", "Write to a file, or inside a directory if it exists."),
         option("-o, --output PATH", "Explicit output path."),
         option("--stdout, -", "Write transcript contents to stdout."),
@@ -78,7 +96,7 @@ pub(crate) fn usage() -> String {
         option("--model-package PATH", "Override the cached model tarball path."),
         option("--model-url URL", "Override the model download URL."),
         String::new(),
-        "Defaults:".to_string(),
+        "Defaults summary:".to_string(),
         option("Output mode", "--speakers with timestamps."),
         option("Diarization", "coreml when `fluidaudiocli` is available."),
         option(
@@ -87,8 +105,8 @@ pub(crate) fn usage() -> String {
         ),
         option("Cleaning", "On."),
         option("Chunking", "--chunk 120 with --overlap 2."),
-        option("Model dir", &default_model_dir.display().to_string()),
-        option("Model package", &default_model_package.display().to_string()),
+        option("Model dir", &display_help_path(&default_model_dir)),
+        option("Model package", &display_help_path(&default_model_package)),
         String::new(),
         "Examples:".to_string(),
         "  fscript lecture.mp3".to_string(),
@@ -719,14 +737,22 @@ mod tests {
     fn usage_groups_flags_into_readable_sections() {
         let help = usage();
         assert!(help.contains("Usage:\n"));
-        assert!(help.contains("Output modes:\n"));
+        assert!(help.contains(
+            "  fscript <audio-or-url> [output-path | -o PATH | - | --stdout] [options]"
+        ));
+        assert!(help.contains("Default:\n"));
+        assert!(help.contains(
+            "Default flags: --speakers --diarize coreml --clean --chunk 120 --overlap 2"
+        ));
+        assert!(help.contains("Output:\n"));
         assert!(help.contains("Diarization:\n"));
         assert!(help.contains("Remote input:\n"));
-        assert!(help.contains("Defaults:\n"));
+        assert!(help.contains("Defaults summary:\n"));
         assert!(help.contains("Examples:\n"));
         assert!(help.contains("--speakers[=plain]"));
         assert!(help.contains("-d, --diarize [coreml|lseend-dihard3]"));
         assert!(help.contains("-D, --no-diarization"));
+        assert!(!help.contains("/Users/"));
     }
 
     #[test]
