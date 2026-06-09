@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.1 - 2026-06-09
+
+- clarify `--speakers` help to document the explicit `timestamps` alias
+- tighten the `fscript --help` layout around the default invocation and grouped option sections
+- default to `coreml` diarization when `fluidaudiocli` is available, with descriptive warnings before falling back to plain transcription
+- sanitize user-specific home directory paths in help output
+
 ## 1.0.0 - 2026-05-31
 
 - redesign the CLI around a v1 default flow: `fscript <audio>` now writes a cleaned, timestamped, speaker-aware transcript next to the input

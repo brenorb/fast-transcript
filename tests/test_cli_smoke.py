@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import socketserver
 import subprocess
@@ -15,6 +16,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 RELEASE_BINARY = ROOT / "target" / "release" / "fscript"
 HOMEBREW_BINARY = Path("/opt/homebrew/bin/fscript")
+PACKAGE_VERSION = next(
+    line.split('"')[1]
+    for line in (ROOT / "Cargo.toml").read_text(encoding="utf-8").splitlines()
+    if line.startswith("version = ")
+)
 DEFAULT_MODEL_DIR = (
     Path.home()
     / "Library"
@@ -229,12 +235,18 @@ JSON
             with self.subTest(binary=label, flag="--version"):
                 result = self.run_cli(binary, "--version")
                 self.assertEqual(result.returncode, 0, result.stderr)
-                self.assertIn("fscript 1.0.0", result.stdout)
+                if label == "release":
+                    self.assertIn(f"fscript {PACKAGE_VERSION}", result.stdout)
+                else:
+                    self.assertRegex(result.stdout, r"^fscript \d+\.\d+\.\d+\n?$")
 
             with self.subTest(binary=label, flag="-V"):
                 result = self.run_cli(binary, "-V")
                 self.assertEqual(result.returncode, 0, result.stderr)
-                self.assertIn("fscript 1.0.0", result.stdout)
+                if label == "release":
+                    self.assertIn(f"fscript {PACKAGE_VERSION}", result.stdout)
+                else:
+                    self.assertRegex(result.stdout, r"^fscript \d+\.\d+\.\d+\n?$")
 
     def test_output_formats_and_output_path_variants(self) -> None:
         for label, binary in self.modern_binaries:
