@@ -37,7 +37,7 @@ pub(crate) fn usage() -> String {
 
     [
         "Usage:".to_string(),
-        "  fscript <audio-or-url> [output-path | -o PATH | - | --stdout] [options]".to_string(),
+        "  fscript <audio-or-url> [destination] [options]".to_string(),
         String::new(),
         "Default:".to_string(),
         "  fscript <audio-or-url>".to_string(),
@@ -58,7 +58,10 @@ pub(crate) fn usage() -> String {
         option("--vtt", "Experimental WebVTT subtitle output."),
         String::new(),
         "Destination:".to_string(),
-        option("[output-path]", "Write to a file, or inside a directory if it exists."),
+        option(
+            "[destination]",
+            "Output file, output directory, or `-` / `--stdout`.",
+        ),
         option("-o, --output PATH", "Explicit output path."),
         option("--stdout, -", "Write transcript contents to stdout."),
         option("--raw", "Disable repeated-word cleanup for this run."),
@@ -737,9 +740,7 @@ mod tests {
     fn usage_groups_flags_into_readable_sections() {
         let help = usage();
         assert!(help.contains("Usage:\n"));
-        assert!(help.contains(
-            "  fscript <audio-or-url> [output-path | -o PATH | - | --stdout] [options]"
-        ));
+        assert!(help.contains("  fscript <audio-or-url> [destination] [options]"));
         assert!(help.contains("Default:\n"));
         assert!(help.contains(
             "Default flags: --speakers --diarize coreml --clean --chunk 120 --overlap 2"
