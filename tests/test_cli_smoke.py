@@ -589,6 +589,60 @@ JSON
                         for expected_arg in case["expected_args"]:
                             self.assertIn(expected_arg, seen_args)
 
+    def test_text_output_ignores_diarization_requests(self) -> None:
+        release_binary = [entry for entry in self.modern_binaries if entry[0] == "release"]
+        for label, binary in release_binary:
+            with tempfile.TemporaryDirectory(prefix=f"fscript-text-no-diarize-{label}-") as tmpdir:
+                root = Path(tmpdir)
+                audio_path = self.audio_copy(root)
+                helper_path, args_path = self.write_fake_diarization_helper(root)
+                env = {"FSCRIPT_DIARIZATION_BINARY": str(helper_path)}
+
+                cases = [
+                    {
+                        "name": "plain-text-ignores-coreml-request",
+                        "args": [
+                            str(audio_path),
+                            "--text=plain",
+                            "--diarize",
+                            "coreml",
+                            "--num-speakers",
+                            "2",
+                            "--stdout",
+                        ],
+                        "validator": self.assert_plain_text,
+                    },
+                    {
+                        "name": "timestamped-text-ignores-lseend-request",
+                        "args": [
+                            str(audio_path),
+                            "--text",
+                            "--diarize",
+                            "lseend-dihard3",
+                            "--threshold",
+                            "0.45",
+                            "--stdout",
+                        ],
+                        "validator": self.assert_timestamped_text,
+                    },
+                ]
+
+                for case in cases:
+                    with self.subTest(binary=label, case=case["name"]):
+                        if args_path.exists():
+                            args_path.unlink()
+                        result = self.run_cli(binary, *case["args"], env=env)
+                        self.assertEqual(result.returncode, 0, result.stderr)
+                        case["validator"](result.stdout)
+                        self.assertFalse(
+                            args_path.exists(),
+                            "text output should not invoke the diarization helper",
+                        )
+                        self.assertIn(
+                            "--text output ignores diarization flags; continuing without diarization.",
+                            result.stderr,
+                        )
+
     def test_remote_local_aliases(self) -> None:
         if shutil.which("yt-dlp") is None:
             self.skipTest("yt-dlp is required for remote CLI smoke tests")

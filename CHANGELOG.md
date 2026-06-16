@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.1 - 2026-06-16
+
+- make `--text`, `--text=plain`, `--text=compact`, and `--text=timestamps` always suppress diarization
+- ignore explicit diarization flags in text modes with a warning instead of running diarization anyway
+- add parser and CLI smoke coverage so text outputs never invoke the diarization helper
+
 ## 1.1.0 - 2026-06-16
 
 - change `--text=plain` to preserve one transcript line per segment instead of flattening everything into a single line

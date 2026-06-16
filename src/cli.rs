@@ -55,7 +55,7 @@ pub(crate) fn usage() -> String {
         ),
         option(
             "--text[=plain|compact|timestamps]",
-            "Transcript text; plain keeps lines, compact flattens to one line.",
+            "Transcript text; text modes never run diarization.",
         ),
         option("--json", "Full JSON result with timings and metadata."),
         option("--srt", "Experimental SubRip subtitle output."),
@@ -608,44 +608,57 @@ fn parse_args_with_diarization_status(
 
     let input = input.with_context(|| format!("missing input path\n{}", usage()))?;
     let output_path = if output_to_stdout { None } else { output_path };
-    let diarization_notice = if diarization_backend.is_none()
-        && !diarization_backend_explicit
-        && !fluidaudio_available
-    {
-        missing_diarization_notice(&fluidaudio_status)
+    let diarization_notice = if matches!(output_format, OutputFormat::Text(_)) {
+        let ignored_diarization_flags = diarization_backend.is_some()
+            || diarization_num_speakers.is_some()
+            || diarization_threshold.is_some();
+        diarization_backend = None;
+        diarization_num_speakers = None;
+        diarization_threshold = None;
+        ignored_diarization_flags.then_some(
+            "--text output ignores diarization flags; continuing without diarization.".to_string(),
+        )
     } else {
-        None
+        let notice = if diarization_backend.is_none()
+            && !diarization_backend_explicit
+            && !fluidaudio_available
+        {
+            missing_diarization_notice(&fluidaudio_status)
+        } else {
+            None
+        };
+        if diarization_backend.is_none() && !diarization_backend_explicit && fluidaudio_available {
+            diarization_backend = Some(DiarizationBackend::Coreml);
+        }
+        if diarization_backend.is_none() && diarization_num_speakers.is_some() {
+            bail!("--num-speakers requires diarization; remove --num-speakers or use --diarize");
+        }
+        if diarization_backend.is_none() && diarization_threshold.is_some() {
+            bail!(
+                "--threshold requires diarization; remove --threshold or use `--diarize lseend-dihard3`"
+            );
+        }
+        if diarization_num_speakers.is_some()
+            && diarization_backend == Some(DiarizationBackend::LseendDihard3)
+        {
+            bail!(
+                "--num-speakers is not supported with `--diarize lseend-dihard3`; remove --num-speakers or switch to coreml"
+            );
+        }
+        if diarization_backend == Some(DiarizationBackend::LseendDihard3)
+            && diarization_threshold.is_none()
+        {
+            diarization_threshold = Some(DEFAULT_LSEEND_THRESHOLD);
+        }
+        if diarization_threshold.is_some()
+            && diarization_backend != Some(DiarizationBackend::LseendDihard3)
+        {
+            bail!(
+                "--threshold only works with `--diarize lseend-dihard3`; remove --threshold or switch diarization modes"
+            );
+        }
+        notice
     };
-    if diarization_backend.is_none() && !diarization_backend_explicit && fluidaudio_available {
-        diarization_backend = Some(DiarizationBackend::Coreml);
-    }
-    if diarization_backend.is_none() && diarization_num_speakers.is_some() {
-        bail!("--num-speakers requires diarization; remove --num-speakers or use --diarize");
-    }
-    if diarization_backend.is_none() && diarization_threshold.is_some() {
-        bail!(
-            "--threshold requires diarization; remove --threshold or use `--diarize lseend-dihard3`"
-        );
-    }
-    if diarization_num_speakers.is_some()
-        && diarization_backend == Some(DiarizationBackend::LseendDihard3)
-    {
-        bail!(
-            "--num-speakers is not supported with `--diarize lseend-dihard3`; remove --num-speakers or switch to coreml"
-        );
-    }
-    if diarization_backend == Some(DiarizationBackend::LseendDihard3)
-        && diarization_threshold.is_none()
-    {
-        diarization_threshold = Some(DEFAULT_LSEEND_THRESHOLD);
-    }
-    if diarization_threshold.is_some()
-        && diarization_backend != Some(DiarizationBackend::LseendDihard3)
-    {
-        bail!(
-            "--threshold only works with `--diarize lseend-dihard3`; remove --threshold or switch diarization modes"
-        );
-    }
 
     let requested_chunk_seconds = chunk_seconds_override.unwrap_or(crate::DEFAULT_CHUNK_SECONDS);
     let (chunk_seconds, chunk_overlap_seconds) = if requested_chunk_seconds == 0.0 {
@@ -1058,6 +1071,42 @@ mod tests {
             parsed.output_format,
             OutputFormat::Text(TextFormat::Timestamped)
         );
+    }
+
+    #[test]
+    fn parse_args_text_output_disables_default_diarization() {
+        let args = vec!["audio.wav".to_string(), "--text=plain".to_string()];
+        let parsed = parse_args_with_diarization_availability(&args, true).unwrap();
+        assert_eq!(parsed.diarization, None);
+        assert_eq!(parsed.diarization_notice, None);
+    }
+
+    #[test]
+    fn parse_args_text_output_ignores_explicit_diarization_flags() {
+        let args = vec![
+            "audio.wav".to_string(),
+            "--text=plain".to_string(),
+            "--diarize".to_string(),
+            "lseend-dihard3".to_string(),
+            "--num-speakers".to_string(),
+            "2".to_string(),
+            "--threshold".to_string(),
+            "0.45".to_string(),
+        ];
+        let parsed = parse_args_with_diarization_availability(&args, true).unwrap();
+        assert_eq!(parsed.diarization, None);
+        assert_eq!(
+            parsed.diarization_notice.as_deref(),
+            Some("--text output ignores diarization flags; continuing without diarization.")
+        );
+    }
+
+    #[test]
+    fn parse_args_text_output_skips_missing_helper_notice() {
+        let args = vec!["audio.wav".to_string(), "--text".to_string()];
+        let parsed = parse_args_with_diarization_availability(&args, false).unwrap();
+        assert_eq!(parsed.diarization, None);
+        assert_eq!(parsed.diarization_notice, None);
     }
 
     #[test]

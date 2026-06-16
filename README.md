@@ -53,6 +53,7 @@ The existing options I tested had clear problems for this use case:
 - runs local speaker diarization by default via `fluidaudiocli process --mode offline`
 - writes `<input>.speakers.txt` next to the input unless you choose a different output path
 - can alternatively write raw transcript text via `--text`, with timestamps on by default, `--text=plain` for one line per segment, and `--text=compact` for a single flattened line
+  - text modes never run diarization; explicit diarization flags are ignored with a warning
 - can alternatively write experimental subtitle files via `--srt` or `--vtt`
 - can alternatively write speaker-aware text via `--speakers`, defaulting to `HH:MM:SS - SPEAKER_01: ...`
 - cleans pathological repeated-word runs such as `we we we we` into `we... we` by default, with `--raw` as the opt-out
@@ -238,6 +239,7 @@ Raw text output modes:
 - `--text`: transcript text with segment timestamps, one line per segment with `HH:MM:SS - ...`
 - `--text=plain`: transcript text without timestamps or speaker labels, keeping one line per segment
 - `--text=compact`: transcript text without timestamps or speaker labels, flattened to a single line
+- text modes never run diarization; if you pass `-d`, `--diarize`, `--backend`, `--num-speakers`, or `--threshold`, `fscript` warns and continues without diarization
 - when `--text` is active and you do not pass an explicit output path, the default file becomes `<input>.transcript.txt`
 
 Cleaning mode:
@@ -292,6 +294,11 @@ Modes:
   - defaults to `--threshold 0.3`
 - `-D` / `--no-diarization`: skip diarization entirely
 - `--backend=coreml|lseend-dihard3|none`: legacy alias kept for backwards compatibility
+
+Text-mode precedence:
+
+- `--text`, `--text=plain`, and `--text=compact` always disable diarization
+- if you combine a text mode with diarization flags, `fscript` warns and keeps the text mode semantics instead of running diarization
 
 Controls:
 
