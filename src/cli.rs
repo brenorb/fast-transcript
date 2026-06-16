@@ -54,8 +54,8 @@ pub(crate) fn usage() -> String {
             "Speaker-aware transcript. Default output mode.",
         ),
         option(
-            "--text[=plain|timestamps]",
-            "Transcript text; plain omits timestamps and keeps one line per segment.",
+            "--text[=plain|compact|timestamps]",
+            "Transcript text; plain keeps lines, compact flattens to one line.",
         ),
         option("--json", "Full JSON result with timings and metadata."),
         option("--srt", "Experimental SubRip subtitle output."),
@@ -131,6 +131,7 @@ pub(crate) fn usage() -> String {
         "  fscript lecture.mp3".to_string(),
         "  fscript lecture.mp3 notes/".to_string(),
         "  fscript lecture.mp3 --text=plain".to_string(),
+        "  fscript lecture.mp3 --text=compact".to_string(),
         "  fscript lecture.mp3 --diarize lseend-dihard3".to_string(),
         "  fscript lecture.mp3 -D --json --raw".to_string(),
     ]
@@ -416,7 +417,9 @@ fn parse_args_with_diarization_status(
                     .map(|(_, value)| value)
                     .with_context(|| format!("missing value for --text\n{}", usage()))?;
                 let text_format = TextFormat::from_cli_value(value).with_context(|| {
-                    format!("invalid --text value {value:?}; expected plain or timestamps")
+                    format!(
+                        "invalid --text value {value:?}; expected plain, compact, or timestamps"
+                    )
                 })?;
                 output_format = OutputFormat::Text(text_format);
                 index += 1;
@@ -963,8 +966,13 @@ mod tests {
 
     #[test]
     fn parse_args_fuzzes_unknown_short_flags_across_valid_contexts() {
-        let output_modes: &[&[&str]] =
-            &[&[], &["--json"], &["--text=plain"], &["--speakers=plain"]];
+        let output_modes: &[&[&str]] = &[
+            &[],
+            &["--json"],
+            &["--text=plain"],
+            &["--text=compact"],
+            &["--speakers=plain"],
+        ];
         let destinations: &[&[&str]] = &[&[], &["out.txt"], &["--output", "out.txt"], &["-"]];
         let diarization_modes: &[&[&str]] = &[&[], &["-D"], &["--diarize", "coreml"]];
         let chunking_modes: &[&[&str]] = &[&[], &["--chunk", "30", "--overlap", "1"]];
@@ -1020,6 +1028,16 @@ mod tests {
         let args = vec!["audio.wav".to_string(), "--text=plain".to_string()];
         let parsed = parse_args(&args).unwrap();
         assert_eq!(parsed.output_format, OutputFormat::Text(TextFormat::Plain));
+    }
+
+    #[test]
+    fn parse_args_supports_compact_text_output() {
+        let args = vec!["audio.wav".to_string(), "--text=compact".to_string()];
+        let parsed = parse_args(&args).unwrap();
+        assert_eq!(
+            parsed.output_format,
+            OutputFormat::Text(TextFormat::Compact)
+        );
     }
 
     #[test]

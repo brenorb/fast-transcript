@@ -39,6 +39,7 @@ impl SpeakersFormat {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum TextFormat {
     Plain,
+    Compact,
     Timestamped,
 }
 
@@ -46,6 +47,7 @@ impl TextFormat {
     pub(crate) fn from_cli_value(value: &str) -> Option<Self> {
         match value {
             "plain" => Some(Self::Plain),
+            "compact" => Some(Self::Compact),
             "timestamps" => Some(Self::Timestamped),
             _ => None,
         }

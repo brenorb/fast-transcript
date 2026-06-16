@@ -75,6 +75,18 @@ class CliSmokeTests(unittest.TestCase):
         return "--no-diarization" in result.stdout
 
     @classmethod
+    def binary_supports_compact_text_output(cls, binary: Path) -> bool:
+        result = subprocess.run(
+            [str(binary), "--help"],
+            cwd=ROOT,
+            text=True,
+            capture_output=True,
+            check=False,
+            timeout=60,
+        )
+        return "--text[=plain|compact|timestamps]" in result.stdout
+
+    @classmethod
     def create_spoken_wav(cls, directory: Path) -> Path:
         aiff_path = directory / "speech.aiff"
         wav_path = directory / "speech.wav"
@@ -293,11 +305,12 @@ JSON
                         "validator": self.assert_timestamped_text,
                     },
                     {
-                        "name": "text-plain-short-output-flag",
+                        "name": "text-compact-short-output-flag",
+                        "requires_compact_text": True,
                         "args": [
                             str(audio_path),
                             "--no-diarization",
-                            "--text=plain",
+                            "--text=compact",
                             "-o",
                             str(explicit_output),
                         ],
@@ -355,6 +368,10 @@ JSON
 
                 for case in cases:
                     with self.subTest(binary=label, case=case["name"]):
+                        if case.get("requires_compact_text") and not self.binary_supports_compact_text_output(
+                            binary
+                        ):
+                            self.skipTest("binary does not support compact text output yet")
                         result = self.run_cli(binary, *case["args"])
                         self.assertEqual(result.returncode, 0, result.stderr)
                         if case.get("stdout_mode") == "json":

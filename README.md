@@ -13,6 +13,7 @@ fscript lecture.mp3
 fscript lecture.mp3 notes/
 fscript lecture.mp3 --text
 fscript lecture.mp3 --text=plain
+fscript lecture.mp3 --text=compact
 fscript lecture.mp3 --raw
 fscript lecture.mp3 --srt
 fscript lecture.mp3 --vtt
@@ -51,7 +52,7 @@ The existing options I tested had clear problems for this use case:
 - uses **120s chunks** with **2s overlap** by default
 - runs local speaker diarization by default via `fluidaudiocli process --mode offline`
 - writes `<input>.speakers.txt` next to the input unless you choose a different output path
-- can alternatively write raw transcript text via `--text`, with timestamps on by default and `--text=plain` as the opt-out while keeping one line per segment
+- can alternatively write raw transcript text via `--text`, with timestamps on by default, `--text=plain` for one line per segment, and `--text=compact` for a single flattened line
 - can alternatively write experimental subtitle files via `--srt` or `--vtt`
 - can alternatively write speaker-aware text via `--speakers`, defaulting to `HH:MM:SS - SPEAKER_01: ...`
 - cleans pathological repeated-word runs such as `we we we we` into `we... we` by default, with `--raw` as the opt-out
@@ -180,6 +181,7 @@ fscript <media-or-url> --speakers=plain
 fscript <media-or-url> --speakers=timestamps
 fscript <media-or-url> --text
 fscript <media-or-url> --text=plain
+fscript <media-or-url> --text=compact
 fscript <media-or-url> --raw
 fscript <media-or-url> --json
 fscript <media-or-url> --srt
@@ -214,6 +216,7 @@ fscript lecture.wav --speakers=plain
 fscript lecture.wav --speakers=timestamps
 fscript lecture.wav --text
 fscript lecture.wav --text=plain
+fscript lecture.wav --text=compact
 fscript lecture.wav --raw
 fscript lecture.wav --json
 fscript lecture.wav --srt
@@ -234,6 +237,7 @@ Raw text output modes:
 
 - `--text`: transcript text with segment timestamps, one line per segment with `HH:MM:SS - ...`
 - `--text=plain`: transcript text without timestamps or speaker labels, keeping one line per segment
+- `--text=compact`: transcript text without timestamps or speaker labels, flattened to a single line
 - when `--text` is active and you do not pass an explicit output path, the default file becomes `<input>.transcript.txt`
 
 Cleaning mode:
@@ -377,7 +381,8 @@ Alternative output modes:
 - `--speakers=timestamps`: explicit speaker-aware text with timestamps
 - `--speakers=plain`: speaker-aware text without timestamps
 - `--text`: transcript text with segment timestamps
-- `--text=plain`: transcript text without timestamps
+- `--text=plain`: transcript text without timestamps, one line per segment
+- `--text=compact`: transcript text without timestamps, flattened to one line
 - `--json`: structured JSON benchmark/transcript payload
 - `--srt`: experimental subtitle file
 - `--vtt`: experimental subtitle file

@@ -306,6 +306,10 @@ fn render_plain_text(result: &BenchmarkResult) -> String {
     result.text.trim().to_string()
 }
 
+fn render_compact_text(result: &BenchmarkResult) -> String {
+    result.text.trim().replace("\n", " ").trim().to_string()
+}
+
 fn normalized_speaker_label(speaker: Option<&str>) -> Option<String> {
     speaker
         .map(str::trim)
@@ -456,6 +460,7 @@ pub(crate) fn render_output(
         )
         .join("\n")),
         OutputFormat::Text(TextFormat::Plain) => Ok(render_plain_text(effective_result)),
+        OutputFormat::Text(TextFormat::Compact) => Ok(render_compact_text(effective_result)),
         OutputFormat::Text(TextFormat::Timestamped) => Ok(render_timestamped_text_lines(
             effective_result.segments.as_deref().unwrap_or(&[]),
         )
@@ -871,6 +876,29 @@ mod tests {
         assert_eq!(
             render_output(&result, OutputFormat::Text(TextFormat::Plain), false).unwrap(),
             "Primeira frase.\nSegunda frase."
+        );
+    }
+
+    #[test]
+    fn render_output_supports_compact_text() {
+        let result = sample_result(vec![
+            TranscriptSegment {
+                start_s: 0.0,
+                end_s: 1.0,
+                text: "Primeira frase.".to_string(),
+                speaker: None,
+            },
+            TranscriptSegment {
+                start_s: 1.0,
+                end_s: 2.0,
+                text: "Segunda frase.".to_string(),
+                speaker: None,
+            },
+        ]);
+
+        assert_eq!(
+            render_output(&result, OutputFormat::Text(TextFormat::Compact), false).unwrap(),
+            "Primeira frase. Segunda frase."
         );
     }
 
