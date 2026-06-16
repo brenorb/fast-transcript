@@ -19,10 +19,12 @@ jobs:
       matrix:
         include:
           - os: macos-latest
-            asset_suffix: macos
+            asset_suffix: macos-arm64
+            artifact_name: macos
             python_version: "3.12"
           - os: ubuntu-latest
-            asset_suffix: linux
+            asset_suffix: linux-x86_64
+            artifact_name: linux
             python_version: "3.12"
     runs-on: ${{ matrix.os }}
     steps:
@@ -47,9 +49,20 @@ jobs:
           shasum -a 256 "dist/${archive}" > "dist/${archive}.sha256"
       - name: Build PyPI wheel
         run: uv run --no-project --with build python scripts/build_pypi_wheel.py --out-dir dist-pypi
+      - name: Validate release binary and wheel stay in sync
+        run: uv run --no-project python -m unittest tests/test_release_artifacts.py
+      - name: Smoke test installed wheel entrypoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m venv .wheel-smoke
+          . .wheel-smoke/bin/activate
+          python -m pip install dist-pypi/*.whl
+          fscript --version
+          fscript --help >/dev/null
       - uses: actions/upload-artifact@v5
         with:
-          name: ${{ matrix.asset_suffix }}
+          name: ${{ matrix.artifact_name }}
           path: dist/*
           if-no-files-found: error
       - uses: actions/upload-artifact@v5

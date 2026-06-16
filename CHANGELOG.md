@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.2 - 2026-06-16
+
+- document local video files as valid `fscript` inputs alongside audio files and remote media URLs
+- switch help and README usage examples from `<audio-or-url>` to `<media-or-url>` so the CLI surface matches real behavior
+- add release artifact checks so the built binary and the published PyPI wheel must expose the same version and help output
+- restore architecture-specific GitHub release archive names so Homebrew and the release workflow target the same asset names
+
 ## 1.0.1 - 2026-06-09
 
 - clarify `--speakers` help to document the explicit `timestamps` alias

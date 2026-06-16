@@ -33,6 +33,14 @@ jobs:
         run: uv run --no-project python -m unittest tests/test_pypi_wrapper.py
       - name: Build wheel
         run: uv run --no-project --with build python scripts/build_pypi_wheel.py --out-dir dist-pypi
-      - name: Smoke test wheel with uvx
+      - name: Validate release binary and wheel stay in sync
+        run: uv run --no-project python -m unittest tests/test_release_artifacts.py
+      - name: Smoke test installed wheel entrypoint
         shell: bash
-        run: uvx --from dist-pypi/*.whl fscript --help
+        run: |
+          set -euo pipefail
+          python -m venv .wheel-smoke
+          . .wheel-smoke/bin/activate
+          python -m pip install dist-pypi/*.whl
+          fscript --version
+          fscript --help >/dev/null

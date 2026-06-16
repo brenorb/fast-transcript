@@ -7,12 +7,35 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+import re
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_BINARY = REPO_ROOT / "target" / "release" / ("fscript.exe" if os.name == "nt" else "fscript")
 STAGE_FILES = ["pyproject.toml", "setup.py", "Cargo.toml", "README.md", "LICENSE"]
 STAGE_DIRS = ["python"]
+
+
+def cargo_version() -> str:
+    cargo_toml = (REPO_ROOT / "Cargo.toml").read_text(encoding="utf-8")
+    match = re.search(r'^version\s*=\s*"([^"]+)"', cargo_toml, re.MULTILINE)
+    if match is None:
+        raise SystemExit("could not read version from Cargo.toml")
+    return match.group(1)
+
+
+def binary_version(binary_path: Path) -> str:
+    completed = subprocess.run(
+        [str(binary_path), "--version"],
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+    version = completed.stdout.strip()
+    prefix = "fscript "
+    if not version.startswith(prefix):
+        raise SystemExit(f"unexpected --version output from {binary_path}: {version!r}")
+    return version[len(prefix) :]
 
 
 def parse_args() -> argparse.Namespace:
@@ -42,6 +65,14 @@ def main() -> int:
 
     if not binary_path.exists():
         raise SystemExit(f"missing built binary: {binary_path}")
+
+    expected_version = cargo_version()
+    actual_version = binary_version(binary_path)
+    if actual_version != expected_version:
+        raise SystemExit(
+            "built binary version does not match Cargo.toml: "
+            f"{actual_version} != {expected_version}. Rebuild the release binary first."
+        )
 
     out_dir.mkdir(parents=True, exist_ok=True)
 
