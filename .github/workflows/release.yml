@@ -19,10 +19,10 @@ jobs:
       matrix:
         include:
           - os: macos-latest
-            asset_suffix: macos-arm64
+            asset_suffix: macos
             python_version: "3.12"
           - os: ubuntu-latest
-            asset_suffix: linux-x86_64
+            asset_suffix: linux
             python_version: "3.12"
     runs-on: ${{ matrix.os }}
     steps:
@@ -83,7 +83,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v5
         with:
-          name: pypi-macos-arm64
+          name: pypi-macos
           path: dist-pypi
       - name: Collect wheels
         shell: bash
