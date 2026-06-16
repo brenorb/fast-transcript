@@ -43,14 +43,14 @@ The existing options I tested had clear problems for this use case:
 - downloads the default **Parakeet TDT 0.6B v3 int8** model automatically if it is missing
 - stores the extracted model in a persistent per-user application data directory
 - keeps the downloaded tarball in the user cache directory
-- accepts `mp3`, `wav`, and other audio formats supported by `ffmpeg`
+- accepts local audio/video files in formats supported by `ffmpeg`
 - accepts remote `http(s)` video/audio URLs supported by `yt-dlp`
 - prefers platform-provided manual subtitles for remote URLs when available
 - falls back to downloading remote audio and transcribing locally when only auto-captions exist or no captions exist
 - auto-converts unsupported audio to **16 kHz mono PCM16 WAV**
 - uses **120s chunks** with **2s overlap** by default
 - runs local speaker diarization by default via `fluidaudiocli process --mode offline`
-- writes `<audio>.speakers.txt` next to the input unless you choose a different output path
+- writes `<input>.speakers.txt` next to the input unless you choose a different output path
 - can alternatively write raw transcript text via `--text`, with timestamps on by default and `--text=plain` as the opt-out
 - can alternatively write experimental subtitle files via `--srt` or `--vtt`
 - can alternatively write speaker-aware text via `--speakers`, defaulting to `HH:MM:SS - SPEAKER_01: ...`
@@ -171,24 +171,26 @@ If you switch to `-D` or `--no-diarization`, `fscript` can still use platform-pr
 ## Usage
 
 ```bash
-fscript <audio-or-url> [output-path]
-fscript <audio-or-url> -o output-path
-fscript <audio-or-url> --stdout
-fscript <audio-or-url> -
-fscript <audio-or-url> --speakers
-fscript <audio-or-url> --speakers=plain
-fscript <audio-or-url> --speakers=timestamps
-fscript <audio-or-url> --text
-fscript <audio-or-url> --text=plain
-fscript <audio-or-url> --raw
-fscript <audio-or-url> --json
-fscript <audio-or-url> --srt
-fscript <audio-or-url> --vtt
-fscript <audio-or-url> --diarize lseend-dihard3
-fscript <audio-or-url> -D --json --raw
-fscript <audio-or-url> -n 2
+fscript <media-or-url> [output-path]
+fscript <media-or-url> -o output-path
+fscript <media-or-url> --stdout
+fscript <media-or-url> -
+fscript <media-or-url> --speakers
+fscript <media-or-url> --speakers=plain
+fscript <media-or-url> --speakers=timestamps
+fscript <media-or-url> --text
+fscript <media-or-url> --text=plain
+fscript <media-or-url> --raw
+fscript <media-or-url> --json
+fscript <media-or-url> --srt
+fscript <media-or-url> --vtt
+fscript <media-or-url> --diarize lseend-dihard3
+fscript <media-or-url> -D --json --raw
+fscript <media-or-url> -n 2
 fscript --version
 ```
+
+`<media-or-url>` can be a local audio file, a local video file, or a supported remote media URL.
 
 When `fscript` writes the transcript to a file, it keeps progress and human-readable status on `stderr` and prints only the final absolute transcript path on `stdout`.
 That makes it easy to compose in shell scripts:
@@ -232,7 +234,7 @@ Raw text output modes:
 
 - `--text`: transcript text with segment timestamps, one line per segment with `HH:MM:SS - ...`
 - `--text=plain`: transcript text without timestamps or speaker labels
-- when `--text` is active and you do not pass an explicit output path, the default file becomes `<audio>.transcript.txt`
+- when `--text` is active and you do not pass an explicit output path, the default file becomes `<input>.transcript.txt`
 
 Cleaning mode:
 
@@ -247,8 +249,8 @@ Subtitle output modes:
 - `--vtt`: experimental WebVTT subtitle file
 - subtitle output is still experimental and may change
 - if diarization is active, subtitle cues include normalized speaker labels such as `SPEAKER_01: ...`
-- when `--srt` is active and you do not pass an explicit output path, the default file becomes `<audio>.srt`
-- when `--vtt` is active and you do not pass an explicit output path, the default file becomes `<audio>.vtt`
+- when `--srt` is active and you do not pass an explicit output path, the default file becomes `<input>.srt`
+- when `--vtt` is active and you do not pass an explicit output path, the default file becomes `<input>.vtt`
 
 Speaker-aware output modes:
 
@@ -257,7 +259,7 @@ Speaker-aware output modes:
 - `--speakers=plain`: speaker-aware output without timestamps, for example `SPEAKER_01: ...`
 - if diarization is disabled or a segment has no speaker label, the line falls back to plain segment text without an `UNKNOWN:` prefix
 - when no output mode is passed, `--speakers` is the default
-- when `--speakers` is active and you do not pass an explicit output path, the default file becomes `<audio>.speakers.txt`
+- when `--speakers` is active and you do not pass an explicit output path, the default file becomes `<input>.speakers.txt`
 
 Environment overrides:
 
@@ -308,12 +310,12 @@ If you explicitly request `-d`, `--diarize`, or a concrete diarization model and
 - chunk overlap seconds: `2`
 - default diarization mode: `coreml` when `fluidaudiocli` is available
 - cleaning: on
-- default output path: `<audio>.speakers.txt`
-- output path with `--json`: `<audio>.transcript.json`
-- output path with `--text`: `<audio>.transcript.txt`
-- output path with `--srt`: `<audio>.srt`
-- output path with `--vtt`: `<audio>.vtt`
-- output path with `--speakers`: `<audio>.speakers.txt`
+- default output path: `<input>.speakers.txt`
+- output path with `--json`: `<input>.transcript.json`
+- output path with `--text`: `<input>.transcript.txt`
+- output path with `--srt`: `<input>.srt`
+- output path with `--vtt`: `<input>.vtt`
+- output path with `--speakers`: `<input>.speakers.txt`
 
 ## Benchmarks
 

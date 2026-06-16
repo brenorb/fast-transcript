@@ -37,11 +37,13 @@ pub(crate) fn usage() -> String {
 
     [
         "Usage:".to_string(),
-        "  fscript <audio-or-url> [destination] [options]".to_string(),
+        "  fscript <media-or-url> [destination] [options]".to_string(),
         String::new(),
         "Default:".to_string(),
-        "  fscript <audio-or-url>".to_string(),
+        "  fscript <media-or-url>".to_string(),
         "    Default flags: --speakers --diarize coreml --clean --chunk 120 --overlap 2"
+            .to_string(),
+        "    Accepts local audio/video files or remote media URLs; video inputs are transcribed from their audio stream."
             .to_string(),
         "    If `fluidaudiocli` is unavailable, warns and falls back to plain transcription."
             .to_string(),
@@ -601,7 +603,7 @@ fn parse_args_with_diarization_status(
         }
     }
 
-    let input = input.with_context(|| format!("missing audio path\n{}", usage()))?;
+    let input = input.with_context(|| format!("missing input path\n{}", usage()))?;
     let output_path = if output_to_stdout { None } else { output_path };
     let diarization_notice = if diarization_backend.is_none()
         && !diarization_backend_explicit
@@ -770,10 +772,13 @@ mod tests {
     fn usage_groups_flags_into_readable_sections() {
         let help = usage();
         assert!(help.contains("Usage:\n"));
-        assert!(help.contains("  fscript <audio-or-url> [destination] [options]"));
+        assert!(help.contains("  fscript <media-or-url> [destination] [options]"));
         assert!(help.contains("Default:\n"));
         assert!(help.contains(
             "Default flags: --speakers --diarize coreml --clean --chunk 120 --overlap 2"
+        ));
+        assert!(help.contains(
+            "Accepts local audio/video files or remote media URLs; video inputs are transcribed from their audio stream."
         ));
         assert!(help.contains("Output:\n"));
         assert!(help.contains("Diarization:\n"));
