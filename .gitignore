@@ -8,3 +8,8 @@ build/
 .venv/
 uv.lock
 __pycache__/
+fuzz/target/
+fuzz/artifacts/
+fuzz/Cargo.lock
+fuzz/corpus/cli_args/*
+!fuzz/corpus/cli_args/seed_*.txt

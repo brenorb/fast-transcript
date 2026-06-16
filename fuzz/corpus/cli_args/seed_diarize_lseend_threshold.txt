@@ -1,0 +1,7 @@
+audio.wav
+--diarize
+lseend-dihard3
+--threshold
+0.45
+--json
+--stdout

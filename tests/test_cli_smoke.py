@@ -369,6 +369,18 @@ JSON
                             self.assertEqual(written_path.resolve(), expected_path)
                             case["validator"](expected_path.read_text(encoding="utf-8"))
 
+    def test_unknown_short_flag_does_not_become_output_path(self) -> None:
+        for label, binary in self.modern_binaries:
+            with tempfile.TemporaryDirectory(prefix=f"fscript-unknown-flag-{label}-") as tmpdir:
+                root = Path(tmpdir)
+                audio_path = self.audio_copy(root)
+
+                result = self.run_cli(binary, str(audio_path), "-Z", cwd=root)
+
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn('unknown argument "-Z"', result.stderr)
+                self.assertFalse((root / "-Z").exists())
+
     def test_chunk_and_model_override_flags(self) -> None:
         if not DEFAULT_MODEL_DIR.exists():
             self.skipTest(f"missing default model dir at {DEFAULT_MODEL_DIR}")

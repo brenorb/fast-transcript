@@ -1,0 +1,4 @@
+audio.wav
+-D
+--json
+--stdout

@@ -1,0 +1,4 @@
+audio.wav
+--output
+out.txt
+--stdout

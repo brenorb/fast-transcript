@@ -1,0 +1,18 @@
+name: Fuzz
+
+on:
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  cli-parser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@nightly
+      - name: Install cargo-fuzz
+        run: cargo install cargo-fuzz --locked
+      - name: Run parser fuzz target
+        run: rustup run nightly cargo fuzz run cli_args --sanitizer address -- -max_total_time=60

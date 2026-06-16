@@ -565,6 +565,12 @@ fn parse_args_with_diarization_status(
                 index += 2;
             }
             flag if flag.starts_with("--") => bail!("unknown argument {flag:?}\n{}", usage()),
+            flag if flag.starts_with('-') && flag != "-" => {
+                bail!(
+                    "unknown argument {flag:?}; if you meant a path starting with `-`, prefix it with `./`\n{}",
+                    usage()
+                )
+            }
             value => {
                 if input.is_none() {
                     input = Some(value.to_string());
@@ -701,6 +707,18 @@ mod tests {
             current = parent;
         }
         true
+    }
+
+    fn lcg_next(state: &mut u64) -> u64 {
+        *state = state
+            .wrapping_mul(6364136223846793005)
+            .wrapping_add(1442695040888963407);
+        *state
+    }
+
+    fn choose_slice<'a>(state: &mut u64, options: &'a [&'a [&'a str]]) -> &'a [&'a str] {
+        let index = (lcg_next(state) as usize) % options.len();
+        options[index]
     }
 
     #[test]
@@ -901,6 +919,85 @@ mod tests {
         let args = vec!["audio.wav".to_string(), "--script".to_string()];
         let err = parse_args(&args).unwrap_err();
         assert!(err.to_string().contains("unknown argument"));
+    }
+
+    #[test]
+    fn parse_args_rejects_unknown_short_flag_instead_of_treating_it_as_output_path() {
+        let args = vec!["audio.wav".to_string(), "-Z".to_string()];
+        let err = parse_args(&args).unwrap_err();
+        assert!(err.to_string().contains("unknown argument \"-Z\""));
+    }
+
+    #[test]
+    fn parse_args_distinguishes_short_flags_from_hyphen_prefixed_paths() {
+        let stdout = parse_args(&["audio.wav".to_string(), "-".to_string()]).unwrap();
+        assert!(stdout.output_to_stdout);
+        assert_eq!(stdout.output_path, None);
+
+        let no_diarization = parse_args(&["audio.wav".to_string(), "-D".to_string()]).unwrap();
+        assert_eq!(no_diarization.diarization, None);
+        assert_eq!(no_diarization.output_path, None);
+
+        let explicit_hyphen_path =
+            parse_args(&["audio.wav".to_string(), "./-D".to_string()]).unwrap();
+        assert_eq!(
+            explicit_hyphen_path.output_path,
+            Some(PathBuf::from("./-D"))
+        );
+
+        let explicit_unknown_hyphen_path =
+            parse_args(&["audio.wav".to_string(), "./-Z".to_string()]).unwrap();
+        assert_eq!(
+            explicit_unknown_hyphen_path.output_path,
+            Some(PathBuf::from("./-Z"))
+        );
+
+        let err = parse_args(&["audio.wav".to_string(), "-Z".to_string()]).unwrap_err();
+        assert!(err.to_string().contains("unknown argument \"-Z\""));
+    }
+
+    #[test]
+    fn parse_args_fuzzes_unknown_short_flags_across_valid_contexts() {
+        let output_modes: &[&[&str]] =
+            &[&[], &["--json"], &["--text=plain"], &["--speakers=plain"]];
+        let destinations: &[&[&str]] = &[&[], &["out.txt"], &["--output", "out.txt"], &["-"]];
+        let diarization_modes: &[&[&str]] = &[&[], &["-D"], &["--diarize", "coreml"]];
+        let chunking_modes: &[&[&str]] = &[&[], &["--chunk", "30", "--overlap", "1"]];
+
+        let mut state = 0x5EED_u64;
+        for _ in 0..256 {
+            let invalid_flag = format!("-{}", (b'J' + (lcg_next(&mut state) % 10) as u8) as char);
+            let mut groups = vec![vec!["audio.wav".to_string()]];
+            for token_group in [
+                choose_slice(&mut state, output_modes),
+                choose_slice(&mut state, destinations),
+                choose_slice(&mut state, diarization_modes),
+                choose_slice(&mut state, chunking_modes),
+            ] {
+                if !token_group.is_empty() {
+                    groups.push(
+                        token_group
+                            .iter()
+                            .map(|token| (*token).to_string())
+                            .collect(),
+                    );
+                }
+            }
+
+            let insert_group = 1 + (lcg_next(&mut state) as usize % groups.len());
+            groups.insert(insert_group, vec![invalid_flag.clone()]);
+
+            let args = groups.into_iter().flatten().collect::<Vec<_>>();
+
+            let err = parse_args_with_diarization_availability(&args, true).unwrap_err();
+            assert!(
+                err.to_string()
+                    .contains(&format!("unknown argument {:?}", invalid_flag)),
+                "expected unknown short flag rejection for args {:?}, got {:?}",
+                args,
+                err
+            );
+        }
     }
 
     #[test]

@@ -1,0 +1,7 @@
+audio.wav
+--diarize
+coreml
+--num-speakers
+2
+--json
+--stdout

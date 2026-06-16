@@ -1,0 +1,4 @@
+audio.wav
+--no-diarization
+--vtt
+--raw

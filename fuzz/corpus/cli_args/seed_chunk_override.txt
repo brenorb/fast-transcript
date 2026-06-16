@@ -1,0 +1,8 @@
+audio.wav
+-D
+--json
+--stdout
+--chunk
+30
+--overlap
+1
