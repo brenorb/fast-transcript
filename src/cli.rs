@@ -41,7 +41,7 @@ pub(crate) fn usage() -> String {
         String::new(),
         "Default:".to_string(),
         "  fscript <media-or-url>".to_string(),
-        "    Default flags: --speakers --diarize coreml --clean --chunk 120 --overlap 2"
+        "    Default flags: --speakers=timestamps --diarize coreml --clean --chunk 120 --overlap 2"
             .to_string(),
         "    Accepts local audio/video files or remote media URLs; video inputs are transcribed from their audio stream."
             .to_string(),
@@ -791,7 +791,7 @@ mod tests {
         assert!(help.contains("  fscript <media-or-url> [destination] [options]"));
         assert!(help.contains("Default:\n"));
         assert!(help.contains(
-            "Default flags: --speakers --diarize coreml --clean --chunk 120 --overlap 2"
+            "Default flags: --speakers=timestamps --diarize coreml --clean --chunk 120 --overlap 2"
         ));
         assert!(help.contains(
             "Accepts local audio/video files or remote media URLs; video inputs are transcribed from their audio stream."

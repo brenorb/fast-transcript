@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.2 - 2026-06-16
+
+- make the help text spell out the real default as `--speakers=timestamps` instead of the shorter `--speakers` alias
+
 ## 1.1.1 - 2026-06-16
 
 - make `--text`, `--text=plain`, `--text=compact`, and `--text=timestamps` always suppress diarization
