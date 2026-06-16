@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.0 - 2026-06-16
+
+- change `--text=plain` to preserve one transcript line per segment instead of flattening everything into a single line
+- add `--text=compact` for the previous single-line text output behavior
+- update CLI help, README examples, and smoke coverage so the text output modes are explicit
+
 ## 1.0.3 - 2026-06-16
 
 - fix the release workflow artifact naming so the PyPI publish job downloads the macOS wheel artifact produced by the build matrix
