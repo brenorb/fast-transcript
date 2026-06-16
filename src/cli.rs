@@ -55,7 +55,7 @@ pub(crate) fn usage() -> String {
         ),
         option(
             "--text[=plain|timestamps]",
-            "Transcript text; plain omits timestamps.",
+            "Transcript text; plain omits timestamps and keeps one line per segment.",
         ),
         option("--json", "Full JSON result with timings and metadata."),
         option("--srt", "Experimental SubRip subtitle output."),

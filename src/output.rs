@@ -293,6 +293,19 @@ fn segment_display_text(segment: &TranscriptSegment, include_speaker: bool) -> S
     }
 }
 
+fn render_plain_text(result: &BenchmarkResult) -> String {
+    if let Some(segments) = result.segments.as_deref() {
+        return segments
+            .iter()
+            .map(|segment| segment.text.trim())
+            .filter(|text| !text.is_empty())
+            .collect::<Vec<_>>()
+            .join("\n");
+    }
+
+    result.text.trim().to_string()
+}
+
 fn normalized_speaker_label(speaker: Option<&str>) -> Option<String> {
     speaker
         .map(str::trim)
@@ -442,12 +455,7 @@ pub(crate) fn render_output(
             true,
         )
         .join("\n")),
-        OutputFormat::Text(TextFormat::Plain) => Ok(effective_result
-            .text
-            .trim()
-            .replace("\n", " ")
-            .trim()
-            .to_string()),
+        OutputFormat::Text(TextFormat::Plain) => Ok(render_plain_text(effective_result)),
         OutputFormat::Text(TextFormat::Timestamped) => Ok(render_timestamped_text_lines(
             effective_result.segments.as_deref().unwrap_or(&[]),
         )
@@ -831,7 +839,38 @@ mod tests {
 
         assert_eq!(
             render_output(&result, OutputFormat::Text(TextFormat::Plain), false).unwrap(),
-            "Primeira frase. Segunda frase."
+            "Primeira frase.\nSegunda frase."
+        );
+    }
+
+    #[test]
+    fn render_output_plain_text_falls_back_to_result_text_without_segments() {
+        let result = BenchmarkResult {
+            input_source: "input.wav".to_string(),
+            model_dir: "model".to_string(),
+            audio_path: "input.wav".to_string(),
+            prepared_audio_path: "input.wav".to_string(),
+            used_ffmpeg_normalization: false,
+            used_local_model: true,
+            transcript_source: "local".to_string(),
+            audio_seconds: 1.0,
+            load_seconds: 0.1,
+            transcribe_seconds: 0.2,
+            total_inside_seconds: 0.3,
+            seconds_per_audio_second: 0.3,
+            realtime_speedup: 3.33,
+            text: "Primeira frase.\nSegunda frase.".to_string(),
+            chunk_seconds: None,
+            chunk_overlap_seconds: 0.0,
+            chunk_count: 1,
+            chunks: vec![],
+            segments: None,
+            speaker_diarization: None,
+        };
+
+        assert_eq!(
+            render_output(&result, OutputFormat::Text(TextFormat::Plain), false).unwrap(),
+            "Primeira frase.\nSegunda frase."
         );
     }
 

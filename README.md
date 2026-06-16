@@ -51,7 +51,7 @@ The existing options I tested had clear problems for this use case:
 - uses **120s chunks** with **2s overlap** by default
 - runs local speaker diarization by default via `fluidaudiocli process --mode offline`
 - writes `<input>.speakers.txt` next to the input unless you choose a different output path
-- can alternatively write raw transcript text via `--text`, with timestamps on by default and `--text=plain` as the opt-out
+- can alternatively write raw transcript text via `--text`, with timestamps on by default and `--text=plain` as the opt-out while keeping one line per segment
 - can alternatively write experimental subtitle files via `--srt` or `--vtt`
 - can alternatively write speaker-aware text via `--speakers`, defaulting to `HH:MM:SS - SPEAKER_01: ...`
 - cleans pathological repeated-word runs such as `we we we we` into `we... we` by default, with `--raw` as the opt-out
@@ -233,7 +233,7 @@ fscript https://www.youtube.com/watch?v=QSdh8Gj0mEg --local
 Raw text output modes:
 
 - `--text`: transcript text with segment timestamps, one line per segment with `HH:MM:SS - ...`
-- `--text=plain`: transcript text without timestamps or speaker labels
+- `--text=plain`: transcript text without timestamps or speaker labels, keeping one line per segment
 - when `--text` is active and you do not pass an explicit output path, the default file becomes `<input>.transcript.txt`
 
 Cleaning mode:
