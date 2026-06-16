@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.3 - 2026-06-16
+
+- fix the release workflow artifact naming so the PyPI publish job downloads the macOS wheel artifact produced by the build matrix
+- keep the release archive naming aligned with Homebrew while restoring a successful PyPI publish path
+
 ## 1.0.2 - 2026-06-16
 
 - document local video files as valid `fscript` inputs alongside audio files and remote media URLs

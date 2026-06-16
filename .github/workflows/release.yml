@@ -67,7 +67,7 @@ jobs:
           if-no-files-found: error
       - uses: actions/upload-artifact@v5
         with:
-          name: pypi-${{ matrix.asset_suffix }}
+          name: pypi-${{ matrix.artifact_name }}
           path: dist-pypi/*.whl
           if-no-files-found: error
 
