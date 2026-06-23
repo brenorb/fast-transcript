@@ -1,5 +1,9 @@
 # Local AGENTS Notes
 
+## Important
+
+- After a push, work is only done after CI is fully green. If CI is working, we need to wait be sure it finishes green.
+
 ## External Binaries
 
 - Don't conclude an integration binary is missing just because `which` fails.
