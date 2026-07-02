@@ -414,13 +414,13 @@
       "user_story": "As a user, the app should choose a supported subtitle format automatically.",
       "expected_behavior": "If any track for the chosen language is `vtt`, the app requests VTT; otherwise it requests `json3`.",
       "evidence": "src/remote.rs:54; src/remote.rs:233",
-      "coverage": "No",
+      "coverage": "Yes",
       "audit_status": "Audited",
-      "test_status": "Not started",
-      "issue_status": "Coverage gap",
-      "fix_status": "Not started",
-      "retest_status": "Not started",
-      "notes": "Selection logic is implemented but not unit-tested directly."
+      "test_status": "Passed",
+      "issue_status": "None logged",
+      "fix_status": "Not needed",
+      "retest_status": "Passed",
+      "notes": "Release-only CLI smoke tests now prove that manual subtitle shortcutting selects `json3` by default and prefers `vtt` when the chosen language exposes a VTT track."
     },
     {
       "feature_id": "FT-REMOTE-06",
@@ -459,13 +459,13 @@
       "user_story": "As a user, when clean manual subtitles exist I want the app to use them instead of running local ASR.",
       "expected_behavior": "For remote input, if `--local` is not forced and diarization is not active, the app tries to download manual subtitles; when non-empty subtitle text exists it returns a `remote-manual-subtitle` benchmark result and writes output without local transcription.",
       "evidence": "src/lib.rs:84; src/lib.rs:135; src/remote.rs:233",
-      "coverage": "Partial",
+      "coverage": "Yes",
       "audit_status": "Audited",
-      "test_status": "Not started",
-      "issue_status": "Coverage gap",
-      "fix_status": "Not started",
-      "retest_status": "Not started",
-      "notes": "Times, speed, and local-model markers are zeroed in the manual subtitle result; README now matches the narrower condition that this path only applies when diarization is inactive and `--local` is not set."
+      "test_status": "Passed",
+      "issue_status": "None logged",
+      "fix_status": "Not needed",
+      "retest_status": "Passed",
+      "notes": "Release-only CLI smoke tests now prove the manual subtitle shortcut path for both json3 and VTT tracks; the manual-subtitle benchmark result still zeroes timing and local-model markers, and the README matches the narrower condition that this path only applies when diarization is inactive and `--local` is not set."
     },
     {
       "feature_id": "FT-REMOTE-09",
