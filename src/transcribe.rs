@@ -330,6 +330,8 @@ pub(crate) fn transcribe_audio_input(
     )?;
 
     let total_inside_seconds = load_seconds + transcribe_seconds;
+    let (seconds_per_audio_second, realtime_speedup) =
+        derived_benchmark_speeds(audio_seconds, total_inside_seconds);
     Ok(BenchmarkResult {
         input_source: input_source.to_string(),
         model_dir: args.model_dir.display().to_string(),
@@ -342,8 +344,8 @@ pub(crate) fn transcribe_audio_input(
         load_seconds,
         transcribe_seconds,
         total_inside_seconds,
-        seconds_per_audio_second: total_inside_seconds / audio_seconds,
-        realtime_speedup: audio_seconds / total_inside_seconds,
+        seconds_per_audio_second,
+        realtime_speedup,
         text,
         chunk_seconds: args.chunk_seconds,
         chunk_overlap_seconds: args.chunk_overlap_seconds,
@@ -354,10 +356,20 @@ pub(crate) fn transcribe_audio_input(
     })
 }
 
+fn derived_benchmark_speeds(audio_seconds: f64, total_inside_seconds: f64) -> (f64, f64) {
+    if audio_seconds <= 0.0 || !audio_seconds.is_finite() || total_inside_seconds <= 0.0 {
+        return (0.0, 0.0);
+    }
+    (
+        total_inside_seconds / audio_seconds,
+        audio_seconds / total_inside_seconds,
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::{
-        build_chunk_ranges, merge_chunk_texts, merge_transcript_segments,
+        build_chunk_ranges, derived_benchmark_speeds, merge_chunk_texts, merge_transcript_segments,
         transcript_segments_from_text,
     };
     use crate::types::TranscriptSegment;
@@ -418,5 +430,12 @@ mod tests {
                 speaker: None,
             }]
         );
+    }
+
+    #[test]
+    fn derived_benchmark_speeds_stay_finite_for_zero_length_audio() {
+        let (seconds_per_audio_second, realtime_speedup) = derived_benchmark_speeds(0.0, 0.25);
+        assert_eq!(seconds_per_audio_second, 0.0);
+        assert_eq!(realtime_speedup, 0.0);
     }
 }
