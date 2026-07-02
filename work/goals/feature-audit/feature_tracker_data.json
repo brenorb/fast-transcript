@@ -386,11 +386,11 @@
       "evidence": "src/remote.rs:217; src/lib.rs:85",
       "coverage": "No",
       "audit_status": "Audited",
-      "test_status": "Not started",
-      "issue_status": "Coverage gap",
-      "fix_status": "Not started",
-      "retest_status": "Not started",
-      "notes": "Failure paths are defined but not unit-tested."
+      "test_status": "Passed",
+      "issue_status": "None logged",
+      "fix_status": "Not needed",
+      "retest_status": "Passed",
+      "notes": "Verified in an end-to-end run on 2026-07-01 with the README sample YouTube URL; failure paths are still not unit-tested."
     },
     {
       "feature_id": "FT-REMOTE-04",
@@ -476,11 +476,11 @@
       "evidence": "src/remote.rs:296; src/lib.rs:99; tests/test_cli_smoke.py:646",
       "coverage": "Partial",
       "audit_status": "Audited",
-      "test_status": "Not started",
-      "issue_status": "Coverage gap",
-      "fix_status": "Not started",
-      "retest_status": "Not started",
-      "notes": "Remote alias smoke tests cover `-l/--local/--prefer-local-for-remote` but not download failure paths."
+      "test_status": "Passed",
+      "issue_status": "None logged",
+      "fix_status": "Not needed",
+      "retest_status": "Passed",
+      "notes": "Remote alias smoke tests cover the forced-local flags, and a full run on 2026-07-01 against the README sample YouTube URL completed with `transcript_source = downloaded-audio-local-model`."
     },
     {
       "feature_id": "FT-DIAR-01",
