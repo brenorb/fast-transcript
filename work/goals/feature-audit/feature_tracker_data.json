@@ -11,10 +11,10 @@
       "evidence": "src/lib.rs:53; src/cli.rs:14; tests/test_cli_smoke.py:225; tests/test_release_artifacts.py:31",
       "coverage": "Yes",
       "audit_status": "Audited",
-      "test_status": "Not started",
+      "test_status": "Passed",
       "issue_status": "None logged",
       "fix_status": "Not needed",
-      "retest_status": "Not started",
+      "retest_status": "Passed",
       "notes": "Short-circuit precedence over invalid trailing args is code-defined but not explicitly smoke-tested."
     },
     {
@@ -56,10 +56,10 @@
       "evidence": "src/cli.rs:241; src/cli.rs:349; src/cli.rs:890",
       "coverage": "Yes",
       "audit_status": "Audited",
-      "test_status": "Not started",
+      "test_status": "Passed",
       "issue_status": "None logged",
       "fix_status": "Not needed",
-      "retest_status": "Not started",
+      "retest_status": "Passed",
       "notes": "Messages vary slightly by path but enforce the same contract."
     },
     {
@@ -71,10 +71,10 @@
       "evidence": "src/cli.rs:572; src/cli.rs:945; tests/test_cli_smoke.py:389",
       "coverage": "Yes",
       "audit_status": "Audited",
-      "test_status": "Not started",
+      "test_status": "Passed",
       "issue_status": "None logged",
       "fix_status": "Not needed",
-      "retest_status": "Not started",
+      "retest_status": "Passed",
       "notes": "Prevents accidental creation of files like `-Z`."
     },
     {
@@ -101,10 +101,10 @@
       "evidence": "src/output.rs:115; src/output.rs:320; src/output.rs:730",
       "coverage": "Yes",
       "audit_status": "Audited",
-      "test_status": "Not started",
+      "test_status": "Passed",
       "issue_status": "Edge behavior only",
       "fix_status": "Not started",
-      "retest_status": "Not started",
+      "retest_status": "Passed",
       "notes": "If `segments` is absent, speaker output renders as an empty string."
     },
     {
@@ -116,10 +116,10 @@
       "evidence": "src/output.rs:296; src/output.rs:309; src/output.rs:388; src/output.rs:828",
       "coverage": "Yes",
       "audit_status": "Audited",
-      "test_status": "Not started",
+      "test_status": "Passed",
       "issue_status": "Missing-segment gap",
       "fix_status": "Not started",
-      "retest_status": "Not started",
+      "retest_status": "Passed",
       "notes": "Timestamped text with no segments renders empty output."
     },
     {
@@ -131,10 +131,10 @@
       "evidence": "src/cli.rs:611; src/cli.rs:1077; tests/test_cli_smoke.py:592",
       "coverage": "Yes",
       "audit_status": "Audited",
-      "test_status": "Not started",
+      "test_status": "Passed",
       "issue_status": "None logged",
       "fix_status": "Not needed",
-      "retest_status": "Not started",
+      "retest_status": "Passed",
       "notes": "Missing-helper warnings are intentionally suppressed in text mode."
     },
     {
@@ -176,10 +176,10 @@
       "evidence": "src/cli.rs:361; src/output.rs:164; src/output.rs:202; src/output.rs:803",
       "coverage": "Yes",
       "audit_status": "Audited",
-      "test_status": "Not started",
+      "test_status": "Passed",
       "issue_status": "None logged",
       "fix_status": "Not needed",
-      "retest_status": "Not started",
+      "retest_status": "Passed",
       "notes": "Ordinary repetition and longer words are intentionally left alone."
     },
     {
@@ -281,10 +281,10 @@
       "evidence": "src/cli.rs:663; src/transcribe.rs:14; tests/test_cli_smoke.py:401",
       "coverage": "Yes",
       "audit_status": "Audited",
-      "test_status": "Not started",
+      "test_status": "Passed",
       "issue_status": "None logged",
       "fix_status": "Not needed",
-      "retest_status": "Not started",
+      "retest_status": "Passed",
       "notes": "Sample rounding can shift exact chunk boundaries slightly."
     },
     {
@@ -326,10 +326,10 @@
       "evidence": "src/transcribe.rs:325; src/diarization.rs:320; src/diarization.rs:614",
       "coverage": "Yes",
       "audit_status": "Audited",
-      "test_status": "Not started",
+      "test_status": "Passed",
       "issue_status": "Overlap with CLI feature",
       "fix_status": "Not needed",
-      "retest_status": "Not started",
+      "retest_status": "Passed",
       "notes": "Kept as pipeline behavior because it changes the post-ASR data shape."
     },
     {
@@ -356,10 +356,10 @@
       "evidence": "src/remote.rs:29; src/remote.rs:343",
       "coverage": "Yes",
       "audit_status": "Audited",
-      "test_status": "Not started",
+      "test_status": "Passed",
       "issue_status": "None logged",
       "fix_status": "Not needed",
-      "retest_status": "Not started",
+      "retest_status": "Passed",
       "notes": "Non-HTTP remote schemes are not supported."
     },
     {
@@ -401,10 +401,10 @@
       "evidence": "src/remote.rs:37; src/remote.rs:356",
       "coverage": "Yes",
       "audit_status": "Audited",
-      "test_status": "Not started",
+      "test_status": "Passed",
       "issue_status": "None logged",
       "fix_status": "Not needed",
-      "retest_status": "Not started",
+      "retest_status": "Passed",
       "notes": "This is only based on manual subtitles; auto-captions are not used for the shortcut path."
     },
     {
@@ -431,10 +431,10 @@
       "evidence": "src/remote.rs:98; src/remote.rs:117; src/remote.rs:383",
       "coverage": "Yes",
       "audit_status": "Audited",
-      "test_status": "Not started",
+      "test_status": "Passed",
       "issue_status": "None logged",
       "fix_status": "Not needed",
-      "retest_status": "Not started",
+      "retest_status": "Passed",
       "notes": "Style metadata on timing lines is ignored after the end timestamp."
     },
     {
@@ -446,10 +446,10 @@
       "evidence": "src/remote.rs:167; src/remote.rs:185; src/remote.rs:417",
       "coverage": "Yes",
       "audit_status": "Audited",
-      "test_status": "Not started",
+      "test_status": "Passed",
       "issue_status": "None logged",
       "fix_status": "Not needed",
-      "retest_status": "Not started",
+      "retest_status": "Passed",
       "notes": "Malformed payloads return a parsing error."
     },
     {
@@ -491,10 +491,10 @@
       "evidence": "src/diarization.rs:111; src/diarization.rs:115; src/diarization.rs:700",
       "coverage": "Yes",
       "audit_status": "Audited",
-      "test_status": "Not started",
+      "test_status": "Passed",
       "issue_status": "None logged",
       "fix_status": "Not needed",
-      "retest_status": "Not started",
+      "retest_status": "Passed",
       "notes": "Repo instructions explicitly warn not to rely only on `which` when reasoning about this binary."
     },
     {
@@ -506,10 +506,10 @@
       "evidence": "src/diarization.rs:137; src/diarization.rs:722; src/diarization.rs:733; src/diarization.rs:747",
       "coverage": "Yes",
       "audit_status": "Audited",
-      "test_status": "Not started",
+      "test_status": "Passed",
       "issue_status": "None logged",
       "fix_status": "Not needed",
-      "retest_status": "Not started",
+      "retest_status": "Passed",
       "notes": "Default-mode parsing surfaces these notices instead of hard-failing."
     },
     {
@@ -521,10 +521,10 @@
       "evidence": "src/diarization.rs:192; src/diarization.rs:680; src/diarization.rs:760; src/diarization.rs:794; tests/test_cli_smoke.py:453",
       "coverage": "Yes",
       "audit_status": "Audited",
-      "test_status": "Not started",
+      "test_status": "Passed",
       "issue_status": "None logged",
       "fix_status": "Not needed",
-      "retest_status": "Not started",
+      "retest_status": "Passed",
       "notes": "Smoke tests verify the arguments written to a fake helper."
     },
     {
@@ -536,10 +536,10 @@
       "evidence": "src/diarization.rs:257; src/diarization.rs:286; src/diarization.rs:320; src/diarization.rs:497; src/diarization.rs:548",
       "coverage": "Yes",
       "audit_status": "Audited",
-      "test_status": "Not started",
+      "test_status": "Passed",
       "issue_status": "None logged",
       "fix_status": "Not needed",
-      "retest_status": "Not started",
+      "retest_status": "Passed",
       "notes": "lseend payloads may omit speaker_count and still parse successfully."
     },
     {
@@ -551,10 +551,10 @@
       "evidence": "src/diarization.rs:320; src/diarization.rs:348; src/diarization.rs:828; src/diarization.rs:858",
       "coverage": "Yes",
       "audit_status": "Audited",
-      "test_status": "Not started",
+      "test_status": "Passed",
       "issue_status": "None logged",
       "fix_status": "Not needed",
-      "retest_status": "Not started",
+      "retest_status": "Passed",
       "notes": "This is a targeted resilience escape hatch, not a general suppress-all-errors rule."
     },
     {
