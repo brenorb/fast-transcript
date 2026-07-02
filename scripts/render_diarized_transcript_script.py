@@ -11,7 +11,7 @@ SIMPLE_SPEAKER_RE = re.compile(r"^S(\d+)$")
 FORMATTED_SPEAKER_RE = re.compile(r"^SPEAKER_(\d+)$")
 
 
-def normalize_speaker_label(label: str, unknown_label: str = "UNKNOWN") -> str:
+def normalize_speaker_label(label: str, unknown_label: str = "") -> str:
     cleaned = label.strip()
     if not cleaned:
         return unknown_label
@@ -31,7 +31,7 @@ def render_script_lines(
     segments: Iterable[dict[str, object]],
     *,
     merge_consecutive: bool = True,
-    unknown_label: str = "UNKNOWN",
+    unknown_label: str = "",
 ) -> list[str]:
     lines: list[str] = []
     current_speaker: str | None = None
@@ -45,7 +45,8 @@ def render_script_lines(
             return
         text = " ".join(part for part in current_parts if part).strip()
         if text:
-            lines.append(f"{current_speaker}: {text}")
+            prefix = f"{current_speaker}: " if current_speaker else ""
+            lines.append(f"{prefix}{text}")
         current_speaker = None
         current_parts = []
 
@@ -83,7 +84,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("input_json", type=Path)
     parser.add_argument("output_txt", nargs="?", type=Path)
     parser.add_argument("--no-merge-consecutive", action="store_true")
-    parser.add_argument("--unknown-speaker-label", default="UNKNOWN")
+    parser.add_argument("--unknown-speaker-label", default="")
     return parser.parse_args()
 
 

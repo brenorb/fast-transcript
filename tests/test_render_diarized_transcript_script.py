@@ -37,6 +37,13 @@ class RenderDiarizedTranscriptScriptTests(unittest.TestCase):
             ],
         )
 
+    def test_render_script_lines_omits_unknown_label_by_default(self) -> None:
+        segments = [{"text": "Sem speaker."}]
+        self.assertEqual(
+            render_script_lines(segments),
+            ["Sem speaker."],
+        )
+
     def test_render_script_lines_supports_unknown_speaker_label(self) -> None:
         segments = [{"text": "Sem speaker."}]
         self.assertEqual(
