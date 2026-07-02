@@ -90,14 +90,22 @@ fn handle_remote_input(args: &CliArgs, input_source: &InputSource, url: &str) ->
     );
 
     if !args.force_local_for_remote && args.diarization.is_none() {
-        if let Some(transcript) = download_manual_remote_transcript(url, &info)? {
-            let result = manual_subtitle_result(url, transcript);
-            return write_or_print_result_with_status(
-                args,
-                &result,
-                resolved_output_path,
-                "done: used manual subtitles via yt-dlp",
-            );
+        match download_manual_remote_transcript(url, &info) {
+            Ok(Some(transcript)) => {
+                let result = manual_subtitle_result(url, transcript);
+                return write_or_print_result_with_status(
+                    args,
+                    &result,
+                    resolved_output_path,
+                    "done: used manual subtitles via yt-dlp",
+                );
+            }
+            Ok(None) => {}
+            Err(error) => {
+                eprintln!(
+                    "warning: manual subtitle download failed; falling back to remote audio download: {error}"
+                );
+            }
         }
     }
 

@@ -201,6 +201,77 @@ JSON
         url = f"http://127.0.0.1:{server.server_address[1]}/speech.wav"
         return server, thread, url
 
+    def write_fake_yt_dlp(
+        self,
+        directory: Path,
+        *,
+        source_audio: Path,
+        subtitle_behavior: str,
+    ) -> Path:
+        helper_path = directory / "yt-dlp"
+        helper_path.write_text(
+            f"""#!/bin/sh
+set -eu
+
+subtitle_behavior="{subtitle_behavior}"
+source_audio="{source_audio}"
+
+replace_template() {{
+  template="$1"
+  extension="$2"
+  printf '%s' "$template" | sed 's/%(id)s/fake-remote/g' | sed "s/%(ext)s/$extension/g"
+}}
+
+if [ "${{1-}}" = "--version" ]; then
+  echo "2026.07.01"
+  exit 0
+fi
+
+case " $* " in
+  *" --dump-single-json "*)
+    cat <<'JSON'
+{{"id":"fake-remote","title":"Fake Remote","subtitles":{{"en":[{{"ext":"json3"}}]}}}}
+JSON
+    exit 0
+    ;;
+esac
+
+output_template=""
+previous=""
+for arg in "$@"; do
+  if [ "$previous" = "--output" ]; then
+    output_template="$arg"
+    break
+  fi
+  previous="$arg"
+done
+
+case " $* " in
+  *" --write-subs "*)
+    if [ "$subtitle_behavior" = "download-fails" ]; then
+      echo "simulated subtitle download failure" >&2
+      exit 1
+    fi
+
+    subtitle_path="$(replace_template "$output_template" json3)"
+    mkdir -p "$(dirname "$subtitle_path")"
+    printf '%s' '{{invalid json3 payload' > "$subtitle_path"
+    exit 0
+    ;;
+  *)
+    audio_path="$(replace_template "$output_template" wav)"
+    mkdir -p "$(dirname "$audio_path")"
+    cp "$source_audio" "$audio_path"
+    printf '%s\n' "$audio_path"
+    exit 0
+    ;;
+esac
+""",
+            encoding="utf-8",
+        )
+        helper_path.chmod(0o755)
+        return helper_path
+
     def assert_timestamped_text(self, text: str) -> None:
         stripped = text.strip()
         self.assertTrue(stripped, "expected timestamped text output")
@@ -747,6 +818,76 @@ JSON
                     server.shutdown()
                     server.server_close()
                     thread.join(timeout=5)
+
+    def test_remote_manual_subtitle_download_failure_falls_back_to_audio(self) -> None:
+        release_binary = [entry for entry in self.modern_binaries if entry[0] == "release"]
+        for label, binary in release_binary:
+            with tempfile.TemporaryDirectory(prefix=f"fscript-remote-fallback-{label}-") as tmpdir:
+                root = Path(tmpdir)
+                audio_path = self.audio_copy(root)
+                self.write_fake_yt_dlp(
+                    root,
+                    source_audio=audio_path,
+                    subtitle_behavior="download-fails",
+                )
+                env = {"PATH": f"{root}:{os.environ['PATH']}"}
+                remote_url = "https://example.test/manual-subtitles"
+
+                result = self.run_cli(
+                    binary,
+                    remote_url,
+                    "-D",
+                    "--json",
+                    "--stdout",
+                    env=env,
+                )
+
+                self.assertEqual(result.returncode, 0, result.stderr)
+                payload = json.loads(result.stdout)
+                self.assertEqual(payload["input_source"], remote_url)
+                self.assertEqual(
+                    payload["transcript_source"],
+                    "downloaded-audio-local-model",
+                )
+                self.assertIn(
+                    "manual subtitle download failed; falling back to remote audio download",
+                    result.stderr,
+                )
+
+    def test_remote_manual_subtitle_parse_failure_falls_back_to_audio(self) -> None:
+        release_binary = [entry for entry in self.modern_binaries if entry[0] == "release"]
+        for label, binary in release_binary:
+            with tempfile.TemporaryDirectory(prefix=f"fscript-remote-fallback-{label}-") as tmpdir:
+                root = Path(tmpdir)
+                audio_path = self.audio_copy(root)
+                self.write_fake_yt_dlp(
+                    root,
+                    source_audio=audio_path,
+                    subtitle_behavior="bad-json3",
+                )
+                env = {"PATH": f"{root}:{os.environ['PATH']}"}
+                remote_url = "https://example.test/manual-subtitles"
+
+                result = self.run_cli(
+                    binary,
+                    remote_url,
+                    "-D",
+                    "--json",
+                    "--stdout",
+                    env=env,
+                )
+
+                self.assertEqual(result.returncode, 0, result.stderr)
+                payload = json.loads(result.stdout)
+                self.assertEqual(payload["input_source"], remote_url)
+                self.assertEqual(
+                    payload["transcript_source"],
+                    "downloaded-audio-local-model",
+                )
+                self.assertIn(
+                    "manual subtitle download failed; falling back to remote audio download",
+                    result.stderr,
+                )
 
 
 if __name__ == "__main__":
