@@ -17,6 +17,8 @@ jobs:
         run: cargo fmt --check
       - name: Test
         run: cargo test --locked
+      - name: Publish dry run
+        run: cargo publish --dry-run --locked
 
   pypi-wheel:
     runs-on: ubuntu-latest
