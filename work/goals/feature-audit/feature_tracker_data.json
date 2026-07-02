@@ -144,13 +144,13 @@
       "user_story": "As a script consumer, I can parse a stable machine-readable result object.",
       "expected_behavior": "`--json` pretty-prints `BenchmarkResult`; field names are snake_case; optional `segments`, per-segment `speaker`, and `speaker_diarization` are omitted when absent; cleaning applies before serialization when enabled.",
       "evidence": "src/types.rs:105; src/types.rs:124; src/output.rs:441; README.md:376",
-      "coverage": "Partial",
+      "coverage": "Yes",
       "audit_status": "Audited",
-      "test_status": "Not started",
-      "issue_status": "Coverage gap",
-      "fix_status": "Not started",
-      "retest_status": "Not started",
-      "notes": "Tests assert some fields but do not lock the full schema."
+      "test_status": "Passed",
+      "issue_status": "None logged",
+      "fix_status": "Not needed",
+      "retest_status": "Passed",
+      "notes": "Unit coverage now asserts core JSON field names and values and proves optional `segments` and `speaker_diarization` fields are omitted when absent."
     },
     {
       "feature_id": "FT-CLI-11",
@@ -159,13 +159,13 @@
       "user_story": "As a user, I can export subtitles from transcript segments.",
       "expected_behavior": "`--srt` renders numbered cues with `HH:MM:SS,mmm`; `--vtt` renders `WEBVTT` plus `HH:MM:SS.mmm` cues; both skip empty or non-positive-duration segments; speaker labels are prefixed when present.",
       "evidence": "src/output.rs:402; src/output.rs:420; src/output.rs:929; README.md:262",
-      "coverage": "Partial",
+      "coverage": "Yes",
       "audit_status": "Audited",
-      "test_status": "Not started",
-      "issue_status": "Coverage gap",
-      "fix_status": "Not started",
-      "retest_status": "Not started",
-      "notes": "VTT with no valid cues becomes just `WEBVTT`; empty-SRT behavior is code-defined but lightly tested."
+      "test_status": "Passed",
+      "issue_status": "None logged",
+      "fix_status": "Not needed",
+      "retest_status": "Passed",
+      "notes": "Unit coverage now directly proves SRT and VTT rendering, including speaker prefixes and skipping empty or non-positive segments; VTT with no valid cues still becomes just `WEBVTT`."
     },
     {
       "feature_id": "FT-CLI-12",
@@ -296,11 +296,11 @@
       "evidence": "src/transcribe.rs:64; src/transcribe.rs:123; src/transcribe.rs:164",
       "coverage": "Yes",
       "audit_status": "Audited",
-      "test_status": "Not started",
+      "test_status": "Passed",
       "issue_status": "None logged",
       "fix_status": "Not needed",
-      "retest_status": "Not started",
-      "notes": "Dedup depends on normalization that strips non-alphanumeric edges."
+      "retest_status": "Passed",
+      "notes": "Unit coverage now directly exercises case-insensitive overlap dedup and the punctuation rule for one-word overlaps; dedup still depends on normalization that strips non-alphanumeric edges."
     },
     {
       "feature_id": "FT-LP-06",
@@ -311,11 +311,11 @@
       "evidence": "src/transcribe.rs:123; src/transcribe.rs:140; src/transcribe.rs:164",
       "coverage": "Yes",
       "audit_status": "Audited",
-      "test_status": "Not started",
+      "test_status": "Passed",
       "issue_status": "None logged",
       "fix_status": "Not needed",
-      "retest_status": "Not started",
-      "notes": "Only temporally overlapping segments are candidates for merge."
+      "retest_status": "Passed",
+      "notes": "Unit coverage now directly exercises both fallback-segment creation when model segments are missing/invalid and overlap-based segment merging; only temporally overlapping segments are candidates for merge."
     },
     {
       "feature_id": "FT-LP-07",
@@ -369,13 +369,13 @@
       "user_story": "As a user, remote features should still work when `yt-dlp` is available via `uvx` instead of PATH.",
       "expected_behavior": "The app first checks `yt-dlp --version`; if that fails it checks `uvx yt-dlp --version`; if that succeeds, later commands run through `uvx yt-dlp`; otherwise it falls back to plain `yt-dlp` and lets execution fail clearly.",
       "evidence": "src/remote.rs:77; README.md:75",
-      "coverage": "No",
+      "coverage": "Yes",
       "audit_status": "Audited",
-      "test_status": "Not started",
-      "issue_status": "Coverage gap",
-      "fix_status": "Not started",
-      "retest_status": "Not started",
-      "notes": "Important repo contract, currently untested in-code."
+      "test_status": "Passed",
+      "issue_status": "None logged",
+      "fix_status": "Not needed",
+      "retest_status": "Passed",
+      "notes": "Release-only CLI smoke tests now prove the remote manual-subtitle shortcut still works when `yt-dlp` is absent from PATH but `uvx yt-dlp` is available."
     },
     {
       "feature_id": "FT-REMOTE-03",
