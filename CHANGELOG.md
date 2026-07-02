@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.3 - 2026-06-24
+
+- add a crates.io trusted-publishing path to the tagged GitHub release workflow
+- add `cargo publish --dry-run --locked` to CI so packaging regressions fail before release
+- document the one-time crates.io publisher setup and make `cargo install fast-transcript` a first-class install path
+- clarify the install and packaging docs around PyPI wheels, release archives, remote output defaults, and the diarized transcript helper script
+
 ## 1.1.2 - 2026-06-16
 
 - make the help text spell out the real default as `--speakers=timestamps` instead of the shorter `--speakers` alias
