@@ -192,7 +192,7 @@ mod tests {
         );
         write_shell_script(
             &ffmpeg,
-            "#!/bin/sh\nout=\"${@: -1}\"\nmkdir -p \"$(dirname \"$out\")\"\nprintf '%s' normalized > \"$out\"\n",
+            "#!/bin/sh\nfor out do :; done\nmkdir -p \"$(dirname \"$out\")\"\nprintf '%s' normalized > \"$out\"\n",
         );
 
         let prepared = normalize_audio_with(
