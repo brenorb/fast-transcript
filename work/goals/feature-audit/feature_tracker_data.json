@@ -249,13 +249,13 @@
       "user_story": "As a user, media should be normalized only when the input audio is not already in the supported format.",
       "expected_behavior": "`ffprobe` inspects the first audio stream; the app accepts audio as-is only when it is 16 kHz mono PCM16; otherwise `ffmpeg` writes a temp `<stem>.16k_mono.wav` and marks the run as normalized.",
       "evidence": "src/audio.rs:35; src/audio.rs:43; src/types.rs:71",
-      "coverage": "Partial",
+      "coverage": "Yes",
       "audit_status": "Audited",
-      "test_status": "Not started",
-      "issue_status": "Coverage gap",
-      "fix_status": "Not started",
-      "retest_status": "Not started",
-      "notes": "Missing `ffprobe` or `ffmpeg` hard-fails the run."
+      "test_status": "Passed",
+      "issue_status": "None logged",
+      "fix_status": "Not needed",
+      "retest_status": "Passed",
+      "notes": "Unit coverage now proves supported 16 kHz mono PCM16 audio is reused without running ffmpeg and unsupported audio is normalized into a temp WAV; missing `ffprobe` or `ffmpeg` still hard-fails the run."
     },
     {
       "feature_id": "FT-LP-03",
@@ -339,13 +339,13 @@
       "user_story": "As a user, long chunked runs should show lightweight progress instead of silent waiting.",
       "expected_behavior": "Chunked transcription starts `ChunkProgressReporter`; interactive stderr gets a spinner plus fixed-width progress bar, while non-TTY stderr gets coarse progress lines and a final completion line.",
       "evidence": "src/transcribe.rs:211; src/progress.rs:7; src/progress.rs:29",
-      "coverage": "Partial",
+      "coverage": "Yes",
       "audit_status": "Audited",
-      "test_status": "Not started",
-      "issue_status": "Coverage gap",
-      "fix_status": "Not started",
-      "retest_status": "Not started",
-      "notes": "Formatting is tested; thread and join behavior are not."
+      "test_status": "Passed",
+      "issue_status": "None logged",
+      "fix_status": "Not needed",
+      "retest_status": "Passed",
+      "notes": "Unit coverage now proves interactive and non-interactive reporter lifecycles, including the background-thread join path, and locks the coarse non-TTY status messages alongside the existing formatting tests."
     },
     {
       "feature_id": "FT-REMOTE-01",
