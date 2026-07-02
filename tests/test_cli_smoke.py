@@ -398,6 +398,38 @@ JSON
                 self.assertIn('unknown argument "-Z"', result.stderr)
                 self.assertFalse((root / "-Z").exists())
 
+    def test_invalid_spaced_optional_values_do_not_become_output_paths(self) -> None:
+        cases = [
+            {
+                "name": "speakers",
+                "args": ["--speakers", "banana"],
+                "message": 'invalid --speakers value "banana"; expected plain or timestamps',
+            },
+            {
+                "name": "text",
+                "args": ["--text", "banana"],
+                "message": 'invalid --text value "banana"; expected plain, compact, or timestamps',
+            },
+            {
+                "name": "diarize",
+                "args": ["--diarize", "banana"],
+                "message": 'invalid --diarize value "banana"; expected coreml or lseend-dihard3',
+            },
+        ]
+
+        release_binary = [entry for entry in self.modern_binaries if entry[0] == "release"]
+        for label, binary in release_binary:
+            with tempfile.TemporaryDirectory(prefix=f"fscript-invalid-spaced-{label}-") as tmpdir:
+                root = Path(tmpdir)
+                audio_path = self.audio_copy(root)
+
+                for case in cases:
+                    with self.subTest(binary=label, case=case["name"]):
+                        result = self.run_cli(binary, str(audio_path), *case["args"], cwd=root)
+                        self.assertNotEqual(result.returncode, 0)
+                        self.assertIn(case["message"], result.stderr)
+                        self.assertFalse((root / "banana").exists())
+
     def test_chunk_and_model_override_flags(self) -> None:
         if not DEFAULT_MODEL_DIR.exists():
             self.skipTest(f"missing default model dir at {DEFAULT_MODEL_DIR}")

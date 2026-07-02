@@ -251,6 +251,29 @@ fn ensure_single_output_path_source(
     Ok(())
 }
 
+fn reject_ambiguous_optional_flag_value(
+    raw_args: &[String],
+    index: usize,
+    input_already_set: bool,
+    flag_name: &str,
+    expected_values: &str,
+) -> Result<()> {
+    if !input_already_set {
+        return Ok(());
+    }
+
+    let Some(value) = raw_args.get(index + 1) else {
+        return Ok(());
+    };
+    if value.starts_with('-') {
+        return Ok(());
+    }
+
+    bail!(
+        "invalid {flag_name} value {value:?}; expected {expected_values}. If you meant an output path, pass it before {flag_name} or use --output."
+    );
+}
+
 pub(crate) fn parse_args(raw_args: &[String]) -> Result<CliArgs> {
     parse_args_with_diarization_status(raw_args, fluidaudio_binary_status())
 }
@@ -384,6 +407,13 @@ fn parse_args_with_diarization_status(
                         continue;
                     }
                 }
+                reject_ambiguous_optional_flag_value(
+                    raw_args,
+                    index,
+                    input.is_some(),
+                    "--speakers",
+                    "plain or timestamps",
+                )?;
                 index += 1;
             }
             flag if flag.starts_with("--speakers=") => {
@@ -408,6 +438,13 @@ fn parse_args_with_diarization_status(
                         continue;
                     }
                 }
+                reject_ambiguous_optional_flag_value(
+                    raw_args,
+                    index,
+                    input.is_some(),
+                    "--text",
+                    "plain, compact, or timestamps",
+                )?;
                 index += 1;
             }
             flag if flag.starts_with("--text=") => {
@@ -484,6 +521,13 @@ fn parse_args_with_diarization_status(
                         continue;
                     }
                 }
+                reject_ambiguous_optional_flag_value(
+                    raw_args,
+                    index,
+                    input.is_some(),
+                    "--diarize",
+                    "coreml or lseend-dihard3",
+                )?;
                 set_explicit_diarization_backend(
                     &mut diarization_backend,
                     &mut diarization_backend_explicit,
@@ -936,6 +980,20 @@ mod tests {
     }
 
     #[test]
+    fn parse_args_rejects_invalid_spaced_speakers_value_after_input() {
+        let args = vec![
+            "audio.wav".to_string(),
+            "--speakers".to_string(),
+            "banana".to_string(),
+        ];
+        let err = parse_args(&args).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("invalid --speakers value \"banana\"; expected plain or timestamps"));
+        assert!(err.to_string().contains("If you meant an output path"));
+    }
+
+    #[test]
     fn parse_args_rejects_removed_script_flag() {
         let args = vec!["audio.wav".to_string(), "--script".to_string()];
         let err = parse_args(&args).unwrap_err();
@@ -1071,6 +1129,20 @@ mod tests {
             parsed.output_format,
             OutputFormat::Text(TextFormat::Timestamped)
         );
+    }
+
+    #[test]
+    fn parse_args_rejects_invalid_spaced_text_value_after_input() {
+        let args = vec![
+            "audio.wav".to_string(),
+            "--text".to_string(),
+            "banana".to_string(),
+        ];
+        let err = parse_args(&args).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("invalid --text value \"banana\"; expected plain, compact, or timestamps"));
+        assert!(err.to_string().contains("If you meant an output path"));
     }
 
     #[test]
@@ -1236,6 +1308,20 @@ mod tests {
         assert!(err
             .to_string()
             .contains("use --no-diarization or -D instead of `--diarize none`"));
+    }
+
+    #[test]
+    fn parse_args_rejects_invalid_spaced_diarize_value_after_input() {
+        let args = vec![
+            "audio.wav".to_string(),
+            "--diarize".to_string(),
+            "banana".to_string(),
+        ];
+        let err = parse_args(&args).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("invalid --diarize value \"banana\"; expected coreml or lseend-dihard3"));
+        assert!(err.to_string().contains("If you meant an output path"));
     }
 
     #[test]

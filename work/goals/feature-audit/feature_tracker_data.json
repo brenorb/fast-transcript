@@ -86,11 +86,11 @@
       "evidence": "src/types.rs:23; src/cli.rs:225; src/cli.rs:919; README.md:183",
       "coverage": "Yes",
       "audit_status": "Audited",
-      "test_status": "Not started",
-      "issue_status": "Parser edge case",
-      "fix_status": "Not started",
-      "retest_status": "Not started",
-      "notes": "Space-separated invalid optional values can fall through as positional args instead of erroring immediately."
+      "test_status": "Passed",
+      "issue_status": "Resolved",
+      "fix_status": "Complete",
+      "retest_status": "Passed",
+      "notes": "Verified by new unit and CLI smoke tests: invalid spaced values after `--speakers` or `--text` now error instead of becoming positional output paths."
     },
     {
       "feature_id": "FT-CLI-07",
@@ -191,11 +191,11 @@
       "evidence": "src/cli.rs:187; src/cli.rs:441; src/cli.rs:611; src/cli.rs:1178; tests/test_cli_smoke.py:453",
       "coverage": "Yes",
       "audit_status": "Audited",
-      "test_status": "Not started",
-      "issue_status": "Parser edge case",
-      "fix_status": "Not started",
-      "retest_status": "Not started",
-      "notes": "`--diarize none` is rejected in favor of `-D`; invalid spaced values after bare `--diarize` can be reinterpreted positionally."
+      "test_status": "Passed",
+      "issue_status": "Resolved",
+      "fix_status": "Complete",
+      "retest_status": "Passed",
+      "notes": "`--diarize none` is still rejected in favor of `-D`, and invalid spaced values after bare `--diarize` now error instead of being reinterpreted as positional output paths."
     },
     {
       "feature_id": "FT-CLI-14",
