@@ -122,9 +122,36 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
+      - name: Check whether crate version is already published
+        id: crate-state
+        shell: bash
+        run: |
+          set -euo pipefail
+          read -r crate_name crate_version <<EOF
+          $(cargo metadata --no-deps --format-version 1 | python3 -c 'import json, sys; pkg = json.load(sys.stdin)["packages"][0]; print(pkg["name"], pkg["version"])')
+          EOF
+          api_url="https://crates.io/api/v1/crates/${crate_name}"
+          published_version=""
+          if published_version="$(curl -fsSL "${api_url}" | python3 -c 'import json, sys; print(json.load(sys.stdin)["crate"]["newest_version"])' 2>/dev/null)"; then
+            :
+          else
+            published_version=""
+          fi
+
+          if [ "${published_version}" = "${crate_version}" ]; then
+            echo "already_published=true" >> "$GITHUB_OUTPUT"
+            echo "${crate_name} ${crate_version} is already published on crates.io; skipping publish."
+          else
+            echo "already_published=false" >> "$GITHUB_OUTPUT"
+          fi
       - uses: rust-lang/crates-io-auth-action@v1
+        if: steps.crate-state.outputs.already_published != 'true'
         id: auth
       - name: Publish crate to crates.io
+        if: steps.crate-state.outputs.already_published != 'true'
         run: cargo publish --locked
         env:
           CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
+      - name: Skip crates.io publish
+        if: steps.crate-state.outputs.already_published == 'true'
+        run: echo "Publish skipped because this version is already available on crates.io."
