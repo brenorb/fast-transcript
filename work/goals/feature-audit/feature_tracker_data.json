@@ -45,7 +45,7 @@
       "issue_status": "Resolved",
       "fix_status": "Complete",
       "retest_status": "Passed",
-      "notes": "Smoke coverage already proved normal destination modes, and the parser now rejects `--output` followed by another flag instead of writing to a file literally named after that flag."
+      "notes": "Smoke coverage already proved normal destination modes; the parser now rejects `--output` followed by another flag instead of writing to a file literally named after that flag; and slash-suffixed missing destinations such as `exports/` now resolve as directory intent using the default output filename."
     },
     {
       "feature_id": "FT-CLI-04",
@@ -477,10 +477,10 @@
       "coverage": "Partial",
       "audit_status": "Audited",
       "test_status": "Passed",
-      "issue_status": "None logged",
-      "fix_status": "Not needed",
+      "issue_status": "Resolved",
+      "fix_status": "Complete",
       "retest_status": "Passed",
-      "notes": "Remote alias smoke tests cover the forced-local flags, and a full run on 2026-07-01 against the README sample YouTube URL completed with `transcript_source = downloaded-audio-local-model`."
+      "notes": "Remote alias smoke tests cover the forced-local flags; a full run on 2026-07-01 against the README sample YouTube URL completed with `transcript_source = downloaded-audio-local-model`; and release-only smoke tests now prove subtitle download and json3 parse failures fall back to downloaded audio instead of aborting."
     },
     {
       "feature_id": "FT-DIAR-01",
