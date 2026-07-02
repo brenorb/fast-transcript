@@ -61,13 +61,30 @@ pub(crate) fn resolve_output_target_path(
         current_dir.join(output_path)
     };
 
-    if candidate.is_dir() {
+    if candidate.is_dir() || has_trailing_path_separator(output_path) {
         let file_name = default_output_path
             .file_name()
             .unwrap_or_else(|| std::ffi::OsStr::new("transcript.txt"));
         candidate.join(file_name)
     } else {
         candidate
+    }
+}
+
+fn has_trailing_path_separator(path: &Path) -> bool {
+    let value = path.as_os_str().to_string_lossy();
+    if value.is_empty() {
+        return false;
+    }
+
+    #[cfg(windows)]
+    {
+        value.ends_with('/') || value.ends_with('\\')
+    }
+
+    #[cfg(not(windows))]
+    {
+        value.ends_with(std::path::MAIN_SEPARATOR)
     }
 }
 
@@ -675,6 +692,21 @@ mod tests {
             Path::new("/tmp/audio.speakers.txt"),
         );
         assert_eq!(resolved, directory.join("audio.speakers.txt"));
+    }
+
+    #[test]
+    fn resolve_output_target_path_uses_default_filename_for_missing_directory_with_trailing_slash()
+    {
+        let temp = tempdir().unwrap();
+        let cwd = temp.path();
+
+        let resolved = resolve_output_target_path(
+            Path::new("exports/"),
+            cwd,
+            Path::new("/tmp/audio.speakers.txt"),
+        );
+
+        assert_eq!(resolved, cwd.join("exports").join("audio.speakers.txt"));
     }
 
     #[test]
