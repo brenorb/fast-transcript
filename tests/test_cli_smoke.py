@@ -229,9 +229,15 @@ fi
 
 case " $* " in
   *" --dump-single-json "*)
-    cat <<'JSON'
+    if [ "$subtitle_behavior" = "success-vtt" ]; then
+      cat <<'JSON'
+{{"id":"fake-remote","title":"Fake Remote","subtitles":{{"en":[{{"ext":"vtt"}}]}}}}
+JSON
+    else
+      cat <<'JSON'
 {{"id":"fake-remote","title":"Fake Remote","subtitles":{{"en":[{{"ext":"json3"}}]}}}}
 JSON
+    fi
     exit 0
     ;;
 esac
@@ -253,8 +259,30 @@ case " $* " in
       exit 1
     fi
 
-    subtitle_path="$(replace_template "$output_template" json3)"
+    extension="json3"
+    if [ "$subtitle_behavior" = "success-vtt" ]; then
+      extension="vtt"
+    fi
+    subtitle_path="$(replace_template "$output_template" "$extension")"
     mkdir -p "$(dirname "$subtitle_path")"
+    if [ "$subtitle_behavior" = "success-json3" ]; then
+      cat > "$subtitle_path" <<'JSON'
+{{"events":[{{"tStartMs":0,"dDurationMs":1200,"segs":[{{"utf8":"Primeira frase. "}}]}},{{"tStartMs":1200,"dDurationMs":1300,"segs":[{{"utf8":"Segunda frase."}}]}}]}}
+JSON
+      exit 0
+    fi
+    if [ "$subtitle_behavior" = "success-vtt" ]; then
+      cat > "$subtitle_path" <<'VTT'
+WEBVTT
+
+00:00:00.000 --> 00:00:01.200
+Primeira frase.
+
+00:00:01.200 --> 00:00:02.500
+Segunda frase.
+VTT
+      exit 0
+    fi
     printf '%s' '{{invalid json3 payload' > "$subtitle_path"
     exit 0
     ;;
@@ -888,6 +916,70 @@ esac
                     "manual subtitle download failed; falling back to remote audio download",
                     result.stderr,
                 )
+
+    def test_remote_manual_subtitle_shortcut_uses_json3_tracks(self) -> None:
+        release_binary = [entry for entry in self.modern_binaries if entry[0] == "release"]
+        for label, binary in release_binary:
+            with tempfile.TemporaryDirectory(prefix=f"fscript-remote-shortcut-{label}-") as tmpdir:
+                root = Path(tmpdir)
+                audio_path = self.audio_copy(root)
+                self.write_fake_yt_dlp(
+                    root,
+                    source_audio=audio_path,
+                    subtitle_behavior="success-json3",
+                )
+                env = {"PATH": f"{root}:{os.environ['PATH']}"}
+                remote_url = "https://example.test/manual-subtitles"
+
+                result = self.run_cli(
+                    binary,
+                    remote_url,
+                    "-D",
+                    "--json",
+                    "--stdout",
+                    env=env,
+                )
+
+                self.assertEqual(result.returncode, 0, result.stderr)
+                payload = json.loads(result.stdout)
+                self.assertEqual(payload["input_source"], remote_url)
+                self.assertEqual(payload["transcript_source"], "remote-manual-subtitle")
+                self.assertFalse(payload["used_local_model"])
+                self.assertEqual(payload["text"], "Primeira frase. Segunda frase.")
+                self.assertEqual(len(payload["segments"]), 2)
+                self.assertNotIn("falling back to remote audio download", result.stderr)
+
+    def test_remote_manual_subtitle_shortcut_uses_vtt_tracks(self) -> None:
+        release_binary = [entry for entry in self.modern_binaries if entry[0] == "release"]
+        for label, binary in release_binary:
+            with tempfile.TemporaryDirectory(prefix=f"fscript-remote-shortcut-{label}-") as tmpdir:
+                root = Path(tmpdir)
+                audio_path = self.audio_copy(root)
+                self.write_fake_yt_dlp(
+                    root,
+                    source_audio=audio_path,
+                    subtitle_behavior="success-vtt",
+                )
+                env = {"PATH": f"{root}:{os.environ['PATH']}"}
+                remote_url = "https://example.test/manual-subtitles"
+
+                result = self.run_cli(
+                    binary,
+                    remote_url,
+                    "-D",
+                    "--json",
+                    "--stdout",
+                    env=env,
+                )
+
+                self.assertEqual(result.returncode, 0, result.stderr)
+                payload = json.loads(result.stdout)
+                self.assertEqual(payload["input_source"], remote_url)
+                self.assertEqual(payload["transcript_source"], "remote-manual-subtitle")
+                self.assertFalse(payload["used_local_model"])
+                self.assertEqual(payload["text"], "Primeira frase. Segunda frase.")
+                self.assertEqual(len(payload["segments"]), 2)
+                self.assertNotIn("falling back to remote audio download", result.stderr)
 
 
 if __name__ == "__main__":
