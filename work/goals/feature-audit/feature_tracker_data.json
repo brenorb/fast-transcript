@@ -41,11 +41,11 @@
       "evidence": "src/cli.rs:304; src/output.rs:53; src/output.rs:92; src/output.rs:477; tests/test_cli_smoke.py:263",
       "coverage": "Yes",
       "audit_status": "Audited",
-      "test_status": "Not started",
-      "issue_status": "None logged",
-      "fix_status": "Not needed",
-      "retest_status": "Not started",
-      "notes": "Existing directories receive the default filename inside them."
+      "test_status": "Passed",
+      "issue_status": "Resolved",
+      "fix_status": "Complete",
+      "retest_status": "Passed",
+      "notes": "Smoke coverage already proved normal destination modes, and the parser now rejects `--output` followed by another flag instead of writing to a file literally named after that flag."
     },
     {
       "feature_id": "FT-CLI-04",
@@ -206,11 +206,11 @@
       "evidence": "src/cli.rs:328; src/cli.rs:546; src/cli.rs:663; tests/test_cli_smoke.py:401; tests/test_cli_smoke.py:646",
       "coverage": "Partial",
       "audit_status": "Audited",
-      "test_status": "Not started",
-      "issue_status": "Coverage gap",
-      "fix_status": "Not started",
-      "retest_status": "Not started",
-      "notes": "Happy-path smoke coverage exists; most rejection cases are unit-only or untested."
+      "test_status": "Passed",
+      "issue_status": "Resolved",
+      "fix_status": "Complete",
+      "retest_status": "Passed",
+      "notes": "Happy-path smoke coverage already exercised chunk/model/remote overrides, and new unit+smoke tests now prove that `--model-dir`, `--model-package`, and `--model-url` reject a following flag token as a missing value."
     },
     {
       "feature_id": "FT-DIST-01",

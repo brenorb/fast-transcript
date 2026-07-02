@@ -274,6 +274,20 @@ fn reject_ambiguous_optional_flag_value(
     );
 }
 
+fn required_non_flag_value<'a>(
+    raw_args: &'a [String],
+    index: usize,
+    flag_name: &str,
+) -> Result<&'a str> {
+    let value = raw_args
+        .get(index + 1)
+        .with_context(|| format!("missing value for {flag_name}\n{}", usage()))?;
+    if value.starts_with('-') {
+        bail!("missing value for {flag_name}\n{}", usage());
+    }
+    Ok(value)
+}
+
 pub(crate) fn parse_args(raw_args: &[String]) -> Result<CliArgs> {
     parse_args_with_diarization_status(raw_args, fluidaudio_binary_status())
 }
@@ -325,9 +339,7 @@ fn parse_args_with_diarization_status(
     while index < raw_args.len() {
         match raw_args[index].as_str() {
             "--output" | "-o" => {
-                let value = raw_args
-                    .get(index + 1)
-                    .with_context(|| format!("missing value for --output\n{}", usage()))?;
+                let value = required_non_flag_value(raw_args, index, "--output")?;
                 if output_to_stdout {
                     bail!("cannot use both --output and --stdout; remove one");
                 }
@@ -349,23 +361,17 @@ fn parse_args_with_diarization_status(
                 index += 1;
             }
             "--model-dir" => {
-                let value = raw_args
-                    .get(index + 1)
-                    .with_context(|| format!("missing value for --model-dir\n{}", usage()))?;
+                let value = required_non_flag_value(raw_args, index, "--model-dir")?;
                 model_dir = PathBuf::from(value);
                 index += 2;
             }
             "--model-package" => {
-                let value = raw_args
-                    .get(index + 1)
-                    .with_context(|| format!("missing value for --model-package\n{}", usage()))?;
+                let value = required_non_flag_value(raw_args, index, "--model-package")?;
                 model_package = PathBuf::from(value);
                 index += 2;
             }
             "--model-url" => {
-                let value = raw_args
-                    .get(index + 1)
-                    .with_context(|| format!("missing value for --model-url\n{}", usage()))?;
+                let value = required_non_flag_value(raw_args, index, "--model-url")?;
                 model_url = value.to_string();
                 index += 2;
             }
@@ -957,6 +963,52 @@ mod tests {
         assert!(err
             .to_string()
             .contains("cannot use both positional output path and --output"));
+    }
+
+    #[test]
+    fn parse_args_rejects_flag_token_as_output_value() {
+        let args = vec![
+            "audio.wav".to_string(),
+            "--output".to_string(),
+            "--json".to_string(),
+        ];
+        let err = parse_args(&args).unwrap_err();
+        assert!(err.to_string().contains("missing value for --output"));
+    }
+
+    #[test]
+    fn parse_args_rejects_flag_token_as_model_dir_value() {
+        let args = vec![
+            "audio.wav".to_string(),
+            "--model-dir".to_string(),
+            "--text".to_string(),
+        ];
+        let err = parse_args(&args).unwrap_err();
+        assert!(err.to_string().contains("missing value for --model-dir"));
+    }
+
+    #[test]
+    fn parse_args_rejects_flag_token_as_model_package_value() {
+        let args = vec![
+            "audio.wav".to_string(),
+            "--model-package".to_string(),
+            "--json".to_string(),
+        ];
+        let err = parse_args(&args).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("missing value for --model-package"));
+    }
+
+    #[test]
+    fn parse_args_rejects_flag_token_as_model_url_value() {
+        let args = vec![
+            "audio.wav".to_string(),
+            "--model-url".to_string(),
+            "--json".to_string(),
+        ];
+        let err = parse_args(&args).unwrap_err();
+        assert!(err.to_string().contains("missing value for --model-url"));
     }
 
     #[test]

@@ -430,6 +430,47 @@ JSON
                         self.assertIn(case["message"], result.stderr)
                         self.assertFalse((root / "banana").exists())
 
+    def test_required_value_flags_do_not_consume_following_flags_as_values(self) -> None:
+        release_binary = [entry for entry in self.modern_binaries if entry[0] == "release"]
+        cases = [
+            {
+                "name": "output",
+                "args": ["--output", "--json"],
+                "message": "missing value for --output",
+                "artifact": "--json",
+            },
+            {
+                "name": "model-dir",
+                "args": ["--model-dir", "--text"],
+                "message": "missing value for --model-dir",
+                "artifact": "--text",
+            },
+            {
+                "name": "model-package",
+                "args": ["--model-package", "--json"],
+                "message": "missing value for --model-package",
+                "artifact": "--json",
+            },
+            {
+                "name": "model-url",
+                "args": ["--model-url", "--json"],
+                "message": "missing value for --model-url",
+                "artifact": "--json",
+            },
+        ]
+
+        for label, binary in release_binary:
+            with tempfile.TemporaryDirectory(prefix=f"fscript-required-value-{label}-") as tmpdir:
+                root = Path(tmpdir)
+                audio_path = self.audio_copy(root)
+
+                for case in cases:
+                    with self.subTest(binary=label, case=case["name"]):
+                        result = self.run_cli(binary, str(audio_path), *case["args"], cwd=root)
+                        self.assertNotEqual(result.returncode, 0)
+                        self.assertIn(case["message"], result.stderr)
+                        self.assertFalse((root / case["artifact"]).exists())
+
     def test_chunk_and_model_override_flags(self) -> None:
         if not DEFAULT_MODEL_DIR.exists():
             self.skipTest(f"missing default model dir at {DEFAULT_MODEL_DIR}")
