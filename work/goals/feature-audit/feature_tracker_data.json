@@ -102,10 +102,10 @@
       "coverage": "Yes",
       "audit_status": "Audited",
       "test_status": "Passed",
-      "issue_status": "Edge behavior only",
-      "fix_status": "Not started",
+      "issue_status": "Resolved",
+      "fix_status": "Complete",
       "retest_status": "Passed",
-      "notes": "If `segments` is absent, speaker output renders as an empty string."
+      "notes": "Missing speaker labels intentionally omit any `UNKNOWN:` prefix, and speaker-aware output now errors clearly instead of silently rendering empty output when only plain transcript text is available without segment metadata."
     },
     {
       "feature_id": "FT-CLI-08",
@@ -117,10 +117,10 @@
       "coverage": "Yes",
       "audit_status": "Audited",
       "test_status": "Passed",
-      "issue_status": "Missing-segment gap",
-      "fix_status": "Not started",
+      "issue_status": "Resolved",
+      "fix_status": "Complete",
       "retest_status": "Passed",
-      "notes": "Timestamped text with no segments renders empty output."
+      "notes": "Plain and compact text still fall back to `result.text`; timestamped text now fails clearly instead of silently rendering empty output when only plain transcript text is available without segment metadata."
     },
     {
       "feature_id": "FT-CLI-09",
@@ -566,11 +566,11 @@
       "evidence": "scripts/render_diarized_transcript_script.py:30; scripts/render_diarized_transcript_script.py:73; tests/test_render_diarized_transcript_script.py:14",
       "coverage": "Yes",
       "audit_status": "Audited",
-      "test_status": "Not started",
-      "issue_status": "Semantic mismatch only",
-      "fix_status": "Not started",
-      "retest_status": "Not started",
-      "notes": "Unlike the main Rust output path, missing speakers become the configured unknown label instead of silently omitting a prefix."
+      "test_status": "Passed",
+      "issue_status": "Resolved",
+      "fix_status": "Complete",
+      "retest_status": "Passed",
+      "notes": "The helper now matches the main Rust output path by omitting a synthetic speaker prefix when labels are missing by default, while still allowing an explicit `--unknown-speaker-label` override."
     }
   ]
 }
