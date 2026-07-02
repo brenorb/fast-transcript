@@ -1,0 +1,5 @@
+node_modules
+*.png
+*.inspect.ndjson
+status.json
+status.md
