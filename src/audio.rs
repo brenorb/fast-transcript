@@ -4,8 +4,8 @@ use std::process::Command;
 
 use crate::types::{FfprobeOutput, FfprobeStream, PreparedAudio};
 
-fn probe_audio(path: &Path) -> Result<FfprobeStream> {
-    let output = Command::new("ffprobe")
+fn probe_audio_with(ffprobe_program: &str, path: &Path) -> Result<FfprobeStream> {
+    let output = Command::new(ffprobe_program)
         .args([
             "-v",
             "error",
@@ -32,6 +32,10 @@ fn probe_audio(path: &Path) -> Result<FfprobeStream> {
         .with_context(|| format!("no audio stream found in {}", path.display()))
 }
 
+fn probe_audio(path: &Path) -> Result<FfprobeStream> {
+    probe_audio_with("ffprobe", path)
+}
+
 pub(crate) fn is_supported_audio(stream: &FfprobeStream) -> bool {
     let sample_rate_ok = stream.sample_rate.as_deref() == Some("16000");
     let channels_ok = stream.channels == Some(1);
@@ -40,8 +44,12 @@ pub(crate) fn is_supported_audio(stream: &FfprobeStream) -> bool {
     sample_rate_ok && channels_ok && codec_ok && bits_ok
 }
 
-pub(crate) fn normalize_audio(input_path: &Path) -> Result<PreparedAudio> {
-    let stream = probe_audio(input_path)?;
+fn normalize_audio_with(
+    ffprobe_program: &str,
+    ffmpeg_program: &str,
+    input_path: &Path,
+) -> Result<PreparedAudio> {
+    let stream = probe_audio_with(ffprobe_program, input_path)?;
     if is_supported_audio(&stream) {
         return Ok(PreparedAudio {
             wav_path: input_path.to_path_buf(),
@@ -59,7 +67,7 @@ pub(crate) fn normalize_audio(input_path: &Path) -> Result<PreparedAudio> {
     let normalized_path = tempdir.path().join(format!("{stem}.16k_mono.wav"));
 
     eprintln!("normalizing audio...");
-    let status = Command::new("ffmpeg")
+    let status = Command::new(ffmpeg_program)
         .args([
             "-hide_banner",
             "-loglevel",
@@ -92,10 +100,27 @@ pub(crate) fn normalize_audio(input_path: &Path) -> Result<PreparedAudio> {
     })
 }
 
+pub(crate) fn normalize_audio(input_path: &Path) -> Result<PreparedAudio> {
+    normalize_audio_with("ffprobe", "ffmpeg", input_path)
+}
+
 #[cfg(test)]
 mod tests {
-    use super::is_supported_audio;
+    use super::{is_supported_audio, normalize_audio_with};
     use crate::types::FfprobeStream;
+    use std::fs;
+    use tempfile::tempdir;
+
+    fn write_shell_script(path: &std::path::Path, body: &str) {
+        fs::write(path, body).unwrap();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let mut perms = fs::metadata(path).unwrap().permissions();
+            perms.set_mode(0o755);
+            fs::set_permissions(path, perms).unwrap();
+        }
+    }
 
     #[test]
     fn supported_audio_requires_16k_mono_pcm_s16le() {
@@ -117,5 +142,73 @@ mod tests {
         };
         assert!(is_supported_audio(&ok));
         assert!(!is_supported_audio(&bad));
+    }
+
+    #[test]
+    fn normalize_audio_reuses_supported_audio_without_running_ffmpeg() {
+        let dir = tempdir().unwrap();
+        let input = dir.path().join("input.wav");
+        let ffprobe = dir.path().join("ffprobe");
+        let ffmpeg = dir.path().join("ffmpeg");
+        let marker = dir.path().join("ffmpeg-ran");
+
+        fs::write(&input, "audio").unwrap();
+        write_shell_script(
+            &ffprobe,
+            "#!/bin/sh\ncat <<'JSON'\n{\"streams\":[{\"codec_type\":\"audio\",\"codec_name\":\"pcm_s16le\",\"sample_rate\":\"16000\",\"channels\":1,\"bits_per_sample\":16,\"sample_fmt\":\"s16\"}]}\nJSON\n",
+        );
+        write_shell_script(
+            &ffmpeg,
+            &format!(
+                "#!/bin/sh\nprintf '%s' ran > \"{}\"\nexit 1\n",
+                marker.display()
+            ),
+        );
+
+        let prepared = normalize_audio_with(
+            ffprobe.to_string_lossy().as_ref(),
+            ffmpeg.to_string_lossy().as_ref(),
+            &input,
+        )
+        .unwrap();
+
+        assert_eq!(prepared.wav_path, input);
+        assert!(!prepared.normalized);
+        assert!(prepared._tempdir.is_none());
+        assert!(!marker.exists());
+    }
+
+    #[test]
+    fn normalize_audio_converts_unsupported_audio_with_ffmpeg() {
+        let dir = tempdir().unwrap();
+        let input = dir.path().join("input.mp3");
+        let ffprobe = dir.path().join("ffprobe");
+        let ffmpeg = dir.path().join("ffmpeg");
+
+        fs::write(&input, "audio").unwrap();
+        write_shell_script(
+            &ffprobe,
+            "#!/bin/sh\ncat <<'JSON'\n{\"streams\":[{\"codec_type\":\"audio\",\"codec_name\":\"mp3\",\"sample_rate\":\"44100\",\"channels\":2,\"bits_per_sample\":0,\"sample_fmt\":\"fltp\"}]}\nJSON\n",
+        );
+        write_shell_script(
+            &ffmpeg,
+            "#!/bin/sh\nout=\"${@: -1}\"\nmkdir -p \"$(dirname \"$out\")\"\nprintf '%s' normalized > \"$out\"\n",
+        );
+
+        let prepared = normalize_audio_with(
+            ffprobe.to_string_lossy().as_ref(),
+            ffmpeg.to_string_lossy().as_ref(),
+            &input,
+        )
+        .unwrap();
+
+        assert!(prepared.normalized);
+        assert!(prepared.wav_path.ends_with("input.16k_mono.wav"));
+        assert!(prepared.wav_path.exists());
+        assert_eq!(
+            fs::read_to_string(&prepared.wav_path).unwrap(),
+            "normalized"
+        );
+        assert!(prepared._tempdir.is_some());
     }
 }

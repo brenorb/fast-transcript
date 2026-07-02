@@ -19,6 +19,18 @@ pub(crate) fn render_chunk_progress_done(total: usize) -> String {
     format!("✓ {bar} transcribing chunk {total}/{total}")
 }
 
+fn render_noninteractive_start(total: usize) -> String {
+    format!("transcribing {total} chunks...")
+}
+
+fn render_noninteractive_chunk(current: usize, total: usize) -> String {
+    format!("transcribing chunk {current}/{total}")
+}
+
+fn render_noninteractive_done(total: usize) -> String {
+    format!("done transcribing {total} chunks")
+}
+
 pub(crate) struct ChunkProgressReporter {
     total_chunks: usize,
     current_chunk: Arc<AtomicUsize>,
@@ -28,10 +40,14 @@ pub(crate) struct ChunkProgressReporter {
 
 impl ChunkProgressReporter {
     pub(crate) fn start(total_chunks: usize) -> Self {
+        Self::start_with_terminal(total_chunks, io::stderr().is_terminal())
+    }
+
+    fn start_with_terminal(total_chunks: usize, stderr_is_terminal: bool) -> Self {
         let current_chunk = Arc::new(AtomicUsize::new(1));
         let stop = Arc::new(AtomicBool::new(false));
 
-        if io::stderr().is_terminal() {
+        if stderr_is_terminal {
             let current_chunk_for_thread = Arc::clone(&current_chunk);
             let stop_for_thread = Arc::clone(&stop);
             let handle = thread::spawn(move || {
@@ -64,7 +80,7 @@ impl ChunkProgressReporter {
                 handle: Some(handle),
             }
         } else {
-            eprintln!("transcribing {total_chunks} chunks...");
+            eprintln!("{}", render_noninteractive_start(total_chunks));
             Self {
                 total_chunks,
                 current_chunk,
@@ -78,7 +94,10 @@ impl ChunkProgressReporter {
         let current = current.clamp(1, self.total_chunks.max(1));
         self.current_chunk.store(current, Ordering::Relaxed);
         if self.handle.is_none() {
-            eprintln!("transcribing chunk {current}/{}", self.total_chunks);
+            eprintln!(
+                "{}",
+                render_noninteractive_chunk(current, self.total_chunks)
+            );
         }
     }
 
@@ -91,14 +110,17 @@ impl ChunkProgressReporter {
             let _ = handle.join();
             eprintln!("\r{}", render_chunk_progress_done(self.total_chunks));
         } else {
-            eprintln!("done transcribing {} chunks", self.total_chunks);
+            eprintln!("{}", render_noninteractive_done(self.total_chunks));
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{render_chunk_progress, render_chunk_progress_done};
+    use super::{
+        render_chunk_progress, render_chunk_progress_done, render_noninteractive_chunk,
+        render_noninteractive_done, render_noninteractive_start, ChunkProgressReporter,
+    };
 
     #[test]
     fn render_chunk_progress_formats_spinner_and_bar() {
@@ -110,5 +132,28 @@ mod tests {
     fn render_chunk_progress_done_shows_complete_bar() {
         let rendered = render_chunk_progress_done(23);
         assert_eq!(rendered, "✓ ████████████████████ transcribing chunk 23/23");
+    }
+
+    #[test]
+    fn noninteractive_progress_messages_are_coarse_and_final() {
+        assert_eq!(render_noninteractive_start(3), "transcribing 3 chunks...");
+        assert_eq!(render_noninteractive_chunk(2, 3), "transcribing chunk 2/3");
+        assert_eq!(render_noninteractive_done(3), "done transcribing 3 chunks");
+    }
+
+    #[test]
+    fn chunk_progress_reporter_noninteractive_lifecycle_uses_no_thread() {
+        let reporter = ChunkProgressReporter::start_with_terminal(3, false);
+        assert!(reporter.handle.is_none());
+        reporter.set_current_chunk(2);
+        reporter.finish();
+    }
+
+    #[test]
+    fn chunk_progress_reporter_interactive_lifecycle_joins_thread() {
+        let reporter = ChunkProgressReporter::start_with_terminal(2, true);
+        assert!(reporter.handle.is_some());
+        reporter.set_current_chunk(2);
+        reporter.finish();
     }
 }
