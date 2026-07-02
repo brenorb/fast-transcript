@@ -370,9 +370,10 @@ fn derived_benchmark_speeds(audio_seconds: f64, total_inside_seconds: f64) -> (f
 mod tests {
     use super::{
         build_chunk_ranges, derived_benchmark_speeds, merge_chunk_texts, merge_transcript_segments,
-        transcript_segments_from_text,
+        transcript_segments_from_text, transcript_segments_from_transcription,
     };
     use crate::types::TranscriptSegment;
+    use transcribe_rs::{TranscriptionResult, TranscriptionSegment};
 
     #[test]
     fn build_chunk_ranges_splits_audio() {
@@ -427,6 +428,28 @@ mod tests {
                 start_s: 0.0,
                 end_s: 1.8,
                 text: "chefe de cozinha".to_string(),
+                speaker: None,
+            }]
+        );
+    }
+
+    #[test]
+    fn transcript_segments_from_transcription_falls_back_to_full_text_when_segments_missing() {
+        let transcription = TranscriptionResult {
+            text: "Trecho completo".to_string(),
+            segments: Some(vec![TranscriptionSegment {
+                start: 0.5,
+                end: 0.5,
+                text: "   ".to_string(),
+            }]),
+        };
+
+        assert_eq!(
+            transcript_segments_from_transcription(&transcription, 1.0, 3.5),
+            vec![TranscriptSegment {
+                start_s: 1.0,
+                end_s: 3.5,
+                text: "Trecho completo".to_string(),
                 speaker: None,
             }]
         );

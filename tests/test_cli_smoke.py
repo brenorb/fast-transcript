@@ -207,8 +207,9 @@ JSON
         *,
         source_audio: Path,
         subtitle_behavior: str,
+        helper_name: str = "yt-dlp",
     ) -> Path:
-        helper_path = directory / "yt-dlp"
+        helper_path = directory / helper_name
         helper_path.write_text(
             f"""#!/bin/sh
 set -eu
@@ -294,6 +295,25 @@ VTT
     exit 0
     ;;
 esac
+""",
+            encoding="utf-8",
+        )
+        helper_path.chmod(0o755)
+        return helper_path
+
+    def write_fake_uvx(self, directory: Path, *, helper_name: str) -> Path:
+        helper_path = directory / "uvx"
+        helper_path.write_text(
+            f"""#!/bin/sh
+set -eu
+
+if [ "${{1-}}" != "yt-dlp" ]; then
+  echo "unexpected uvx command: $*" >&2
+  exit 1
+fi
+
+shift
+exec "{directory / helper_name}" "$@"
 """,
             encoding="utf-8",
         )
@@ -980,6 +1000,38 @@ esac
                 self.assertEqual(payload["text"], "Primeira frase. Segunda frase.")
                 self.assertEqual(len(payload["segments"]), 2)
                 self.assertNotIn("falling back to remote audio download", result.stderr)
+
+    def test_remote_manual_subtitle_shortcut_supports_uvx_fallback(self) -> None:
+        release_binary = [entry for entry in self.modern_binaries if entry[0] == "release"]
+        for label, binary in release_binary:
+            with tempfile.TemporaryDirectory(prefix=f"fscript-remote-uvx-{label}-") as tmpdir:
+                root = Path(tmpdir)
+                audio_path = self.audio_copy(root)
+                helper_name = "yt-dlp-impl"
+                self.write_fake_yt_dlp(
+                    root,
+                    source_audio=audio_path,
+                    subtitle_behavior="success-json3",
+                    helper_name=helper_name,
+                )
+                self.write_fake_uvx(root, helper_name=helper_name)
+                env = {"PATH": f"{root}:/usr/bin:/bin:/usr/sbin:/sbin"}
+                remote_url = "https://example.test/manual-subtitles"
+
+                result = self.run_cli(
+                    binary,
+                    remote_url,
+                    "-D",
+                    "--json",
+                    "--stdout",
+                    env=env,
+                )
+
+                self.assertEqual(result.returncode, 0, result.stderr)
+                payload = json.loads(result.stdout)
+                self.assertEqual(payload["input_source"], remote_url)
+                self.assertEqual(payload["transcript_source"], "remote-manual-subtitle")
+                self.assertFalse(payload["used_local_model"])
 
 
 if __name__ == "__main__":

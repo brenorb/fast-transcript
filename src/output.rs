@@ -1049,6 +1049,79 @@ mod tests {
     }
 
     #[test]
+    fn render_output_json_preserves_core_schema_and_omits_optional_fields() {
+        let result = BenchmarkResult {
+            input_source: "input.wav".to_string(),
+            model_dir: "model".to_string(),
+            audio_path: "input.wav".to_string(),
+            prepared_audio_path: "prepared.wav".to_string(),
+            used_ffmpeg_normalization: false,
+            used_local_model: true,
+            transcript_source: "local".to_string(),
+            audio_seconds: 1.0,
+            load_seconds: 0.1,
+            transcribe_seconds: 0.2,
+            total_inside_seconds: 0.3,
+            seconds_per_audio_second: 0.3,
+            realtime_speedup: 3.33,
+            text: "Primeira frase.".to_string(),
+            chunk_seconds: None,
+            chunk_overlap_seconds: 0.0,
+            chunk_count: 1,
+            chunks: vec![],
+            segments: None,
+            speaker_diarization: None,
+        };
+
+        let rendered = render_output(&result, OutputFormat::Json, false).unwrap();
+        let payload: serde_json::Value = serde_json::from_str(&rendered).unwrap();
+
+        assert_eq!(payload["input_source"], "input.wav");
+        assert_eq!(payload["prepared_audio_path"], "prepared.wav");
+        assert_eq!(payload["used_ffmpeg_normalization"], false);
+        assert_eq!(payload["used_local_model"], true);
+        assert_eq!(payload["transcript_source"], "local");
+        assert_eq!(payload["audio_seconds"], 1.0);
+        assert_eq!(payload["chunk_overlap_seconds"], 0.0);
+        assert_eq!(payload["chunk_count"], 1);
+        assert!(payload.get("segments").is_none());
+        assert!(payload.get("speaker_diarization").is_none());
+    }
+
+    #[test]
+    fn render_output_subtitles_skip_invalid_segments() {
+        let result = sample_result(vec![
+            TranscriptSegment {
+                start_s: 5.0,
+                end_s: 5.0,
+                text: "Sem duracao.".to_string(),
+                speaker: Some("S1".to_string()),
+            },
+            TranscriptSegment {
+                start_s: 6.0,
+                end_s: 7.0,
+                text: "   ".to_string(),
+                speaker: Some("S1".to_string()),
+            },
+            TranscriptSegment {
+                start_s: 8.0,
+                end_s: 9.5,
+                text: "Valida.".to_string(),
+                speaker: Some("S2".to_string()),
+            },
+        ]);
+
+        assert_eq!(
+            render_output(&result, OutputFormat::Subtitle(SubtitleFormat::Srt), false).unwrap(),
+            "1\n00:00:08,000 --> 00:00:09,500\nSPEAKER_02: Valida."
+        );
+        assert_eq!(
+            render_output(&result, OutputFormat::Subtitle(SubtitleFormat::Vtt), false).unwrap(),
+            "WEBVTT\n\n00:00:08.000 --> 00:00:09.500\nSPEAKER_02: Valida."
+        );
+    }
+
+    #[test]
     fn render_output_can_clean_textual_repetition() {
         let result = sample_result(vec![TranscriptSegment {
             start_s: 1.25,
