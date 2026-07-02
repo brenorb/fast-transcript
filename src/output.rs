@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -471,7 +471,7 @@ pub(crate) fn render_output(
     match output_format {
         OutputFormat::Json => serde_json::to_string_pretty(effective_result).map_err(Into::into),
         OutputFormat::Speakers(speakers_format) => Ok(render_speaker_lines(
-            effective_result.segments.as_deref().unwrap_or(&[]),
+            require_segments_for_output(effective_result, "speaker-aware text")?,
             speakers_format,
             true,
         )
@@ -479,15 +479,30 @@ pub(crate) fn render_output(
         OutputFormat::Text(TextFormat::Plain) => Ok(render_plain_text(effective_result)),
         OutputFormat::Text(TextFormat::Compact) => Ok(render_compact_text(effective_result)),
         OutputFormat::Text(TextFormat::Timestamped) => Ok(render_timestamped_text_lines(
-            effective_result.segments.as_deref().unwrap_or(&[]),
+            require_segments_for_output(effective_result, "timestamped text")?,
         )
         .join("\n")),
-        OutputFormat::Subtitle(SubtitleFormat::Srt) => Ok(render_srt(
-            effective_result.segments.as_deref().unwrap_or(&[]),
-        )),
-        OutputFormat::Subtitle(SubtitleFormat::Vtt) => Ok(render_vtt(
-            effective_result.segments.as_deref().unwrap_or(&[]),
-        )),
+        OutputFormat::Subtitle(SubtitleFormat::Srt) => Ok(render_srt(require_segments_for_output(
+            effective_result,
+            "SRT subtitles",
+        )?)),
+        OutputFormat::Subtitle(SubtitleFormat::Vtt) => Ok(render_vtt(require_segments_for_output(
+            effective_result,
+            "VTT subtitles",
+        )?)),
+    }
+}
+
+fn require_segments_for_output<'a>(
+    result: &'a BenchmarkResult,
+    output_name: &str,
+) -> Result<&'a [TranscriptSegment]> {
+    match result.segments.as_deref() {
+        Some(segments) => Ok(segments),
+        None if result.text.trim().is_empty() => Ok(&[]),
+        None => bail!(
+            "{output_name} output requires segment metadata, but only plain transcript text is available"
+        ),
     }
 }
 
@@ -909,6 +924,44 @@ mod tests {
             render_output(&result, OutputFormat::Text(TextFormat::Plain), false).unwrap(),
             "Primeira frase.\nSegunda frase."
         );
+    }
+
+    #[test]
+    fn render_output_requires_segments_for_segment_driven_formats() {
+        let result = BenchmarkResult {
+            input_source: "input.wav".to_string(),
+            model_dir: "model".to_string(),
+            audio_path: "input.wav".to_string(),
+            prepared_audio_path: "input.wav".to_string(),
+            used_ffmpeg_normalization: false,
+            used_local_model: true,
+            transcript_source: "local".to_string(),
+            audio_seconds: 1.0,
+            load_seconds: 0.1,
+            transcribe_seconds: 0.2,
+            total_inside_seconds: 0.3,
+            seconds_per_audio_second: 0.3,
+            realtime_speedup: 3.33,
+            text: "Primeira frase.\nSegunda frase.".to_string(),
+            chunk_seconds: None,
+            chunk_overlap_seconds: 0.0,
+            chunk_count: 1,
+            chunks: vec![],
+            segments: None,
+            speaker_diarization: None,
+        };
+
+        for output_format in [
+            OutputFormat::Speakers(SpeakersFormat::Timestamped),
+            OutputFormat::Text(TextFormat::Timestamped),
+            OutputFormat::Subtitle(SubtitleFormat::Srt),
+            OutputFormat::Subtitle(SubtitleFormat::Vtt),
+        ] {
+            let error = render_output(&result, output_format, false).unwrap_err();
+            assert!(error.to_string().contains(
+                "requires segment metadata, but only plain transcript text is available"
+            ));
+        }
     }
 
     #[test]
