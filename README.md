@@ -46,7 +46,7 @@ The existing options I tested had clear problems for this use case:
 - keeps the downloaded tarball in the user cache directory
 - accepts local audio/video files in formats supported by `ffmpeg`
 - accepts remote `http(s)` video/audio URLs supported by `yt-dlp`
-- prefers platform-provided manual subtitles for remote URLs when available
+- prefers platform-provided manual subtitles for remote URLs when available and diarization is not active
 - falls back to downloading remote audio and transcribing locally when only auto-captions exist or no captions exist
 - auto-converts unsupported audio to **16 kHz mono PCM16 WAV**
 - uses **120s chunks** with **2s overlap** by default
@@ -57,7 +57,7 @@ The existing options I tested had clear problems for this use case:
 - can alternatively write experimental subtitle files via `--srt` or `--vtt`
 - can alternatively write speaker-aware text via `--speakers`, defaulting to `HH:MM:SS - SPEAKER_01: ...`
 - cleans pathological repeated-word runs such as `we we we we` into `we... we` by default, with `--raw` as the opt-out
-- stays quiet by default: concise progress in the terminal, transcript JSON on disk
+- stays quiet by default: concise progress in the terminal, speaker-aware text on disk by default
 - shows a spinner and chunk progress bar on interactive terminals
 
 ## Install
@@ -100,14 +100,15 @@ On Linux x86_64, the formula still installs from the published release binary.
 
 ### PyPI / uv
 
-The PyPI package name for this project is **`fscript`** so the target UX is:
+The PyPI package name for this project is **`fscript`**.
+It requires Python 3.9+ and the target UX is:
 
 ```bash
 uvx fscript lecture.mp3
 uv tool install fscript
 ```
 
-The repo already includes platform wheel builds for:
+The release workflow builds wheels for:
 
 - macOS arm64
 - Linux x86_64
@@ -118,11 +119,27 @@ PyPI publishing is currently enabled for:
 
 See [`docs/pypi-publishing.md`](./docs/pypi-publishing.md) for the release workflow details.
 
+### crates.io / cargo
+
+The crates.io package name is **`fast-transcript`** and it installs the `fscript` binary:
+
+```bash
+cargo install fast-transcript
+```
+
+See [`docs/crates-io-publishing.md`](./docs/crates-io-publishing.md) for the release workflow and one-time trusted-publisher setup.
+
 ### Install a prebuilt binary directly
 
-Download the archive for your platform from the [GitHub Releases page](https://github.com/brenorb/fast-transcript/releases), then put `fscript` on your `PATH`.
+GitHub Releases publish tarballs for:
 
-### Build from source
+- macOS arm64
+- Linux x86_64
+
+Each release also includes matching `.sha256` files.
+Download the archive for your platform from the [GitHub Releases page](https://github.com/brenorb/fast-transcript/releases), verify the checksum if you want, then put `fscript` on your `PATH`.
+
+### Build from source or install unreleased code
 
 ```bash
 cargo install --git https://github.com/brenorb/fast-transcript
@@ -162,13 +179,14 @@ This will:
 5. write `lecture.speakers.txt`
 6. print the final absolute transcript path to `stdout`
 
-For remote URLs, the default speaker-aware flow is:
+For remote URLs, when diarization is active, the default speaker-aware flow is:
 
 1. inspect the URL with `yt-dlp`
 2. download the remote audio
 3. run the normal local transcription + diarization pipeline
 
-If you switch to `-D` or `--no-diarization`, `fscript` can still use platform-provided manual subtitles directly when they are available unless you also force `--local`.
+When diarization is not active, `fscript` first tries platform-provided manual subtitles directly unless you force `--local`.
+That includes `-D` / `--no-diarization`, every `--text` mode, and the default speaker-aware mode when `fluidaudiocli` is unavailable and `fscript` falls back to plain transcription.
 
 ## Usage
 
@@ -204,6 +222,7 @@ open "$out"
 ```
 
 If the explicit `output-path` already exists as a directory, `fscript` writes the default filename for the chosen mode inside that directory.
+If the path does not exist yet but ends with a trailing slash, `fscript` still treats it as a directory destination and writes the default filename inside it.
 
 Optional overrides:
 
@@ -234,13 +253,19 @@ fscript https://www.youtube.com/watch?v=QSdh8Gj0mEg
 fscript https://www.youtube.com/watch?v=QSdh8Gj0mEg --local
 ```
 
+Chunking:
+
+- `--chunk 0`: disables chunking entirely
+- when chunking is disabled, `--overlap` must stay at `0`
+- otherwise `--overlap` must be smaller than `--chunk`
+
 Raw text output modes:
 
 - `--text`: transcript text with segment timestamps, one line per segment with `HH:MM:SS - ...`
 - `--text=plain`: transcript text without timestamps or speaker labels, keeping one line per segment
 - `--text=compact`: transcript text without timestamps or speaker labels, flattened to a single line
 - text modes never run diarization; if you pass `-d`, `--diarize`, `--backend`, `--num-speakers`, or `--threshold`, `fscript` warns and continues without diarization
-- when `--text` is active and you do not pass an explicit output path, the default file becomes `<input>.transcript.txt`
+- when `--text` is active and you do not pass an explicit output path, the default file becomes `<input>.transcript.txt` for local inputs
 
 Cleaning mode:
 
@@ -255,8 +280,8 @@ Subtitle output modes:
 - `--vtt`: experimental WebVTT subtitle file
 - subtitle output is still experimental and may change
 - if diarization is active, subtitle cues include normalized speaker labels such as `SPEAKER_01: ...`
-- when `--srt` is active and you do not pass an explicit output path, the default file becomes `<input>.srt`
-- when `--vtt` is active and you do not pass an explicit output path, the default file becomes `<input>.vtt`
+- when `--srt` is active and you do not pass an explicit output path, the default file becomes `<input>.srt` for local inputs
+- when `--vtt` is active and you do not pass an explicit output path, the default file becomes `<input>.vtt` for local inputs
 
 Speaker-aware output modes:
 
@@ -265,7 +290,13 @@ Speaker-aware output modes:
 - `--speakers=plain`: speaker-aware output without timestamps, for example `SPEAKER_01: ...`
 - if diarization is disabled or a segment has no speaker label, the line falls back to plain segment text without an `UNKNOWN:` prefix
 - when no output mode is passed, `--speakers` is the default
-- when `--speakers` is active and you do not pass an explicit output path, the default file becomes `<input>.speakers.txt`
+- when `--speakers` is active and you do not pass an explicit output path, the default file becomes `<input>.speakers.txt` for local inputs
+
+Remote default filenames:
+
+- for remote URLs, default files are written in the current working directory
+- if `yt-dlp` exposes a title or ID, `fscript` uses a sanitized version of that value as the file stem
+- otherwise it falls back to a sanitized version of the URL itself
 
 Environment overrides:
 
@@ -321,12 +352,13 @@ If you explicitly request `-d`, `--diarize`, or a concrete diarization model and
 - chunk overlap seconds: `2`
 - default diarization mode: `coreml` when `fluidaudiocli` is available
 - cleaning: on
-- default output path: `<input>.speakers.txt`
-- output path with `--json`: `<input>.transcript.json`
-- output path with `--text`: `<input>.transcript.txt`
-- output path with `--srt`: `<input>.srt`
-- output path with `--vtt`: `<input>.vtt`
-- output path with `--speakers`: `<input>.speakers.txt`
+- default local output path: `<input>.speakers.txt`
+- local output path with `--json`: `<input>.transcript.json`
+- local output path with `--text`: `<input>.transcript.txt`
+- local output path with `--srt`: `<input>.srt`
+- local output path with `--vtt`: `<input>.vtt`
+- local output path with `--speakers`: `<input>.speakers.txt`
+- remote default filenames: sanitized video title or URL stem in the current working directory
 
 ## Benchmarks
 
@@ -393,6 +425,12 @@ Alternative output modes:
 - `--json`: structured JSON benchmark/transcript payload
 - `--srt`: experimental subtitle file
 - `--vtt`: experimental subtitle file
+
+## Diarized script renderer
+
+If you want screenplay-style speaker blocks from `fscript --json`, use [`scripts/render_diarized_transcript_script.py`](./scripts/render_diarized_transcript_script.py).
+It merges consecutive turns from the same speaker by default, normalizes labels like `S1` to `SPEAKER_01`, and leaves unlabeled segments as plain text unless you pass `--unknown-speaker-label`.
+See [`docs/render-diarized-script.md`](./docs/render-diarized-script.md) for the exact defaults and examples.
 
 ## Motivation
 

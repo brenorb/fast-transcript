@@ -83,8 +83,16 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("input_json", type=Path)
     parser.add_argument("output_txt", nargs="?", type=Path)
-    parser.add_argument("--no-merge-consecutive", action="store_true")
-    parser.add_argument("--unknown-speaker-label", default="")
+    parser.add_argument(
+        "--no-merge-consecutive",
+        action="store_true",
+        help="Keep each transcript segment as its own line instead of merging consecutive turns.",
+    )
+    parser.add_argument(
+        "--unknown-speaker-label",
+        default="",
+        help="Prefix unlabeled segments with this speaker label. Default: no prefix.",
+    )
     return parser.parse_args()
 
 
