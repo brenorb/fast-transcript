@@ -1,0 +1,26 @@
+{
+  "model_dir": "/Users/breno/Library/Application Support/fast-transcript/models/parakeet-tdt-0.6b-v3-int8",
+  "audio_path": "/Users/breno/Documents/code/PROJECTS/vtsd-fluxo-transcript/audio_15s.wav",
+  "prepared_audio_path": "/var/folders/vy/s9lbsy291glb0pzd3ynyjtrw0000gn/T/.tmpEWLT9D/audio_15s.16k_mono.wav",
+  "used_ffmpeg_normalization": true,
+  "audio_seconds": 15.0,
+  "load_seconds": 1.037393208,
+  "transcribe_seconds": 0.661062666,
+  "total_inside_seconds": 1.698455874,
+  "seconds_per_audio_second": 0.1132303916,
+  "realtime_speedup": 8.831551192833638,
+  "text": "Olá, nessa aula eu vou te ensinar como fazer o próprio colágeno natural em casa e destacar os 5 maiores mitos das receitas que são divulgadas na internet ou nas redes sociais. Para isso eu vou utilizar",
+  "chunk_seconds": 120.0,
+  "chunk_overlap_seconds": 2.0,
+  "chunk_count": 1,
+  "chunks": [
+    {
+      "index": 0,
+      "start_s": 0.0,
+      "end_s": 15.0,
+      "audio_seconds": 15.0,
+      "transcribe_seconds": 0.661062666,
+      "text": "Olá, nessa aula eu vou te ensinar como fazer o próprio colágeno natural em casa e destacar os 5 maiores mitos das receitas que são divulgadas na internet ou nas redes sociais. Para isso eu vou utilizar"
+    }
+  ]
+}

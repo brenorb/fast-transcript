@@ -1,0 +1,40 @@
+{
+  "metrics": {
+    "engine": "parakeet-redux",
+    "device": "mps",
+    "audio_id": "15s",
+    "audio_seconds": 15.0,
+    "wall_clock_s": 5.4,
+    "realtime_speedup": 2.7777777777777777,
+    "max_rss_mb": 656.15625,
+    "load_seconds": 3.563313416962046,
+    "transcribe_seconds": 0.800775166018866,
+    "wer_vs_reference": 0.13513513513513514,
+    "cer_vs_reference": 0.07960199004975124,
+    "reference_note": "human ground truth"
+  },
+  "result": {
+    "text": "Olá, nesta aula eu vou te ensinar como fazer o próprio colégio natural em casa e destacar os cinco maiores mitos das receitas que são adulgados na internet ou nas redes sociais. Para isso vou utilizar",
+    "language": null,
+    "task": "transcribe",
+    "duration_seconds": 15.0,
+    "source_duration_seconds": 15.0,
+    "clip_start_seconds": 0.0,
+    "clip_end_seconds": 15.0,
+    "segments": [
+      {
+        "text": "Olá, nesta aula eu vou te ensinar como fazer o próprio colégio natural em casa e destacar os cinco maiores mitos das receitas que são adulgados na internet ou nas redes sociais.",
+        "start": 4.08,
+        "end": 13.92
+      },
+      {
+        "text": "Para isso vou utilizar",
+        "start": 13.92,
+        "end": 14.8
+      }
+    ],
+    "load_seconds": 3.563313416962046,
+    "transcribe_seconds": 0.800775166018866,
+    "total_inside_seconds": 4.364088582980912
+  }
+}

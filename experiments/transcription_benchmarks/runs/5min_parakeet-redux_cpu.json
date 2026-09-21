@@ -1,0 +1,315 @@
+{
+  "metrics": {
+    "engine": "parakeet-redux",
+    "device": "cpu",
+    "audio_id": "5min",
+    "audio_seconds": 300.032,
+    "wall_clock_s": 19.86,
+    "realtime_speedup": 15.107351460221551,
+    "max_rss_mb": 2224.8125,
+    "load_seconds": 3.9866128329886124,
+    "transcribe_seconds": 14.230944250011817,
+    "wer_vs_reference": 0.1600407747196738,
+    "cer_vs_reference": 0.04728388377549179,
+    "reference_note": "current ONNX output"
+  },
+  "result": {
+    "text": "Olá, nessa aula eu vou te ensinar como fazer o próprio colégio natural em casa e destacar os cinco maiores mitos das receitas que são divulgadas na internet ou nas redes sociais. Para isso eu vou utilizar a parte de método colosso, que é a maneira mais simples e sem frescura de fazer essa receita em casa, com qualidade terapêutica focada nos objetivos. Assim você finalmente será capaz de parar de comprar aquele colégio da farmácia e fazer o seu próprio aproveitando da sobra dos alimentos que você tem em casa e acaba jogando fora. Essa aula vai ser extremamente útil para quem tem dores nas juntas e vive com os joelhos crocantes ou doloridos, para quem está buscando combater aquelas roguinhas que insistem a parecer, para quem tem queda de cabelo, unhas fracas, quebradíssimas, para quem está grávido precisa de maior elasticidade na pele, para quem tem processo de emagrecimento e quer evitar flacidez ou estrias, para quem já está no peso ideal e quer amenizar seu lit. Para quem tem intestino permeável e não absorve bem os nutrientes e quer evitar ou reverter até alguma anemia. Para quem vai fazer uma cirurgia e precisa melhorar a cicatrização da pele. Para todas as pessoas que já passaram dos 30 e precisam começar reporcolágio como forma de prevenção. Mulheres nos primeiros anos da menopausa ajuda a prevenir os primeiros sintomas. Funciona também para bebês em idade de introdução alimentar, tem muito benefício nesse sentido também. Para você que quer parar de comer gelatina no supermercado, cheia de corante aditivo e fazer sua própria gelatina artesanal, para você que simplesmente quer adicionar maior consumo de proteína na sua alimentação e ter benefícios como maior sociedade. Para quem pratica jejum intermitente de longa duração ou precisa de uma ajudinha para iniciar a prática, praticantes de dieta pálido, low carb, cetogênico ou carnívora, para você que já toma o suplemento de colagem da farmácia e quer substituir por uma receita mais natural, inclusive para você que já testou, tomar o colagem da farmácia e não viu o resultado nenhum ainda. Para você quer aprender a aproveitar melhor a sobra dos alimentos, evitar desperdício, te garante que tem uma coisa muito nutritiva aí na tua cozinha que está indo para a lata do lixo. Não importa se você não sabe cozinhar, não precisa ser um chefe de cozinha para entender o que eu vou te dizer, porque eu crio um método para que seja de uma forma muito simples. para você que já sabe fazer o colágio, mas quer aprender a potencializar os benefícios e aumentar a chance deles acontecerem. Para quem já sabe fazer e não sabe como saborizar, enjoa rápido, sempre do mesmo gosto, não tem ideia para criar as próprias receitas, essa aula também funciona. Agora, para quem não é, essa aula não é para veganos e vegetarianos, ela não é para pessoas frescas que têm nojino de tudo e também não é para as pessoas que acreditam em milagres ou para as pessoas que acreditam aquelas promessas de cura pela internet. Eu já vi muita gente ter resultado, mas todas elas encararam o processo porque queriam se sentir poderosas ao produzir seu próprio remédio com a panela que tem casa. Não é para você que vai tomar uma colher de sopa por semana se entropir de dor se reclamar que não funciona. Então assim, tem que levar a comida de verdade a sério. Porque a maior parte das pessoas que conseguiram criar um hábito colossal consegue ter resultados que nem estavam esperando. Muitas vezes começaram a tomar provador no joelho e depois, com tempo, enxergar resultados no intestino, no cabelo, nas unhas, assim como a patricia. Olha só o que a Patrícia disse. Estou tomando cal de oça quatro meses, nunca mais meu cabelo caiu, minhas unhas tão fortes como nunca e minha pele é outra. Não fico nunca mais sem esse porte de ouro de colágio. Ou a nalva. Uso todo dia desde que te conheci. Não sinto dores quando estou sentada ou de pé, mas não consigo me abaixar. porque eles estão muito gastos, sem cartilagem nenhuma. Já faz um ano que uso colágio, agora o meu cabelo agradece. Para te ver, nem sempre a pessoa resolve tudo o que ela quer. Mas se tu acha que ela realmente está triste por não sentir dores de ficar sentado ou ficar em pé, é claro que não, o corpo vai trabalhando ao longo do tempo e vai se recuperando. Cada pessoa tem um estado clínico diferente, um corpo e um tempo de recuperação diferente. Mas olha que curioso, elas começaram pelas dores e sempre relatam de outras coisas que vieram de brinde. Outras pessoas já tomaram da farmácia e não viram o resultado, por exemplo. Mas olha só que interessante, a iluda. Aí diz. Sim, eu estava tomando os colágenos da vida por conta das dores na coluna. Troquei os colágenos, sinto muito melhor no geral mesmo. Mais disposição, melhorou muito meu sono. Só maravilha. Ah, reserve, parece que tinha aí no joelho. Mesmo tomando colágio, não resolveu. Estava tomando duas vezes por dia e agora nem lembro mais o que é ter dor. Aí, Evaní, eu tô no calo de osso já faz um ano, tenho 71 anos e não sinto mais dor nenhuma. Faço trilhas, caminho, desço sub escadas, tô ótima. tomo mais remédio. Hoje fiz uma de 10 quilômetros entre subida e decida. Eu fico imaginando quem de vocês faz a trilha de 10 quilômetros, quanto mais com 71 anos. A sueli, gente, quando com MC seguia Bibi, eu tinha muitas dores nervo ciático, duas ernes, judisco, joelho, costas, pescoço, não sinto mais nada. Seis meses que eu uso só o caldo, não tomo mais remédio. Olha, dieto com requinte. Bibi, eu tenho artrose no quadril, já fui condenada a prótese pronto. Tomo caldo de óseo.",
+    "language": null,
+    "task": "transcribe",
+    "duration_seconds": 300.032,
+    "source_duration_seconds": 300.032,
+    "clip_start_seconds": 0.0,
+    "clip_end_seconds": 300.032,
+    "segments": [
+      {
+        "text": "Olá, nessa aula eu vou te ensinar como fazer o próprio colégio natural em casa e destacar os cinco maiores mitos das receitas que são divulgadas na internet ou nas redes sociais.",
+        "start": 4.2,
+        "end": 13.96
+      },
+      {
+        "text": "Para isso eu vou utilizar a parte de método colosso, que é a maneira mais simples e sem frescura de fazer essa receita em casa, com qualidade terapêutica focada nos objetivos.",
+        "start": 13.96,
+        "end": 22.12
+      },
+      {
+        "text": "Assim você finalmente será capaz de parar de comprar aquele colégio da farmácia e fazer o seu próprio aproveitando da sobra dos alimentos que você tem em casa e acaba jogando fora.",
+        "start": 22.12,
+        "end": 30.68
+      },
+      {
+        "text": "Essa aula vai ser extremamente útil para quem tem dores nas juntas e vive",
+        "start": 30.68,
+        "end": 33.88
+      },
+      {
+        "text": "com os joelhos crocantes ou doloridos, para quem está buscando combater aquelas roguinhas que insistem a parecer, para quem tem queda de cabelo, unhas fracas, quebradíssimas, para quem está grávido precisa de maior elasticidade na pele, para quem tem processo de emagrecimento e quer evitar flacidez ou estrias, para quem já está no peso ideal e quer amenizar seu lit.",
+        "start": 34.36,
+        "end": 53.72
+      },
+      {
+        "text": "Para quem tem intestino permeável e não absorve bem os nutrientes e quer evitar ou reverter até alguma anemia.",
+        "start": 53.800000000000004,
+        "end": 59.800000000000004
+      },
+      {
+        "text": "Para quem vai fazer uma cirurgia e precisa melhorar a cicatrização da pele.",
+        "start": 59.88,
+        "end": 63.32000000000001
+      },
+      {
+        "text": "Para todas as pessoas",
+        "start": 63.32000000000001,
+        "end": 63.96000000000001
+      },
+      {
+        "text": "que já passaram dos 30 e precisam começar reporcolágio como forma de prevenção.",
+        "start": 64.36,
+        "end": 69.16
+      },
+      {
+        "text": "Mulheres nos primeiros anos da menopausa ajuda a prevenir os primeiros sintomas.",
+        "start": 69.16,
+        "end": 73.56
+      },
+      {
+        "text": "Funciona também para bebês em idade de introdução alimentar, tem muito benefício nesse sentido também.",
+        "start": 73.56,
+        "end": 78.52000000000001
+      },
+      {
+        "text": "Para você que quer parar de comer gelatina no supermercado, cheia de corante aditivo e fazer sua própria gelatina artesanal, para você que simplesmente quer adicionar maior consumo de proteína na sua alimentação e ter benefícios como maior sociedade.",
+        "start": 78.52000000000001,
+        "end": 91.24000000000001
+      },
+      {
+        "text": "Para quem pratica jejum intermitente de longa duração ou",
+        "start": 91.24000000000001,
+        "end": 93.96000000000001
+      },
+      {
+        "text": "precisa de uma ajudinha para iniciar a prática, praticantes de dieta pálido, low carb, cetogênico ou carnívora, para você que já toma o suplemento de colagem da farmácia e quer substituir por uma receita mais natural, inclusive para você que já testou, tomar o colagem da farmácia e não viu o resultado nenhum ainda.",
+        "start": 94.36,
+        "end": 109.64
+      },
+      {
+        "text": "Para você quer aprender a aproveitar melhor a sobra dos alimentos, evitar desperdício, te garante que tem uma coisa muito nutritiva aí na tua cozinha que está indo para a lata do lixo.",
+        "start": 109.64,
+        "end": 117.48
+      },
+      {
+        "text": "Não importa se você não sabe cozinhar, não precisa ser um chefe de cozinha para entender o que eu vou te dizer, porque eu crio um método para que seja de uma forma muito simples.",
+        "start": 117.48,
+        "end": 123.96000000000001
+      },
+      {
+        "text": "para você que já sabe fazer o colágio, mas quer aprender a potencializar os benefícios e aumentar a chance deles acontecerem.",
+        "start": 124.36,
+        "end": 130.28
+      },
+      {
+        "text": "Para quem já sabe fazer e não sabe como saborizar, enjoa rápido, sempre do mesmo gosto, não tem ideia para criar as próprias receitas, essa aula também funciona.",
+        "start": 130.28,
+        "end": 138.68
+      },
+      {
+        "text": "Agora, para quem não é, essa aula não é para veganos e vegetarianos, ela não é para pessoas frescas que têm nojino de tudo e também não é para as pessoas que acreditam em milagres ou para as pessoas que acreditam aquelas promessas de cura pela internet.",
+        "start": 138.68,
+        "end": 152.44
+      },
+      {
+        "text": "Eu já vi muita gente ter resultado, mas",
+        "start": 152.44,
+        "end": 153.96
+      },
+      {
+        "text": "todas elas encararam o processo porque queriam se sentir poderosas ao produzir seu próprio remédio com a panela que tem casa.",
+        "start": 154.44,
+        "end": 160.76
+      },
+      {
+        "text": "Não é para você que vai tomar uma colher de sopa por semana se entropir de dor se reclamar que não funciona.",
+        "start": 160.76,
+        "end": 166.35999999999999
+      },
+      {
+        "text": "Então assim, tem que levar a comida de verdade a sério.",
+        "start": 166.35999999999999,
+        "end": 168.67999999999998
+      },
+      {
+        "text": "Porque a maior parte das pessoas que conseguiram criar um hábito colossal consegue ter resultados que nem estavam esperando.",
+        "start": 168.67999999999998,
+        "end": 175.0
+      },
+      {
+        "text": "Muitas vezes começaram a tomar provador no joelho e depois, com tempo, enxergar resultados no intestino, no cabelo, nas unhas, assim como a patricia.",
+        "start": 175.0,
+        "end": 184.12
+      },
+      {
+        "text": "Olha só o que a Patrícia disse.",
+        "start": 184.51999999999998,
+        "end": 185.95999999999998
+      },
+      {
+        "text": "Estou tomando cal de oça quatro meses, nunca mais meu cabelo caiu, minhas unhas tão fortes como nunca e minha pele é outra.",
+        "start": 185.95999999999998,
+        "end": 193.0
+      },
+      {
+        "text": "Não fico nunca mais sem esse porte de ouro de colágio.",
+        "start": 193.0,
+        "end": 196.76
+      },
+      {
+        "text": "Ou a nalva.",
+        "start": 196.76,
+        "end": 197.72
+      },
+      {
+        "text": "Uso todo dia desde que te conheci.",
+        "start": 197.72,
+        "end": 199.88
+      },
+      {
+        "text": "Não sinto dores quando estou sentada ou de pé, mas não consigo me abaixar.",
+        "start": 199.88,
+        "end": 204.51999999999998
+      },
+      {
+        "text": "porque eles estão muito gastos, sem cartilagem nenhuma.",
+        "start": 204.92000000000002,
+        "end": 207.48000000000002
+      },
+      {
+        "text": "Já faz um ano que uso colágio, agora o meu cabelo agradece.",
+        "start": 207.48000000000002,
+        "end": 210.6
+      },
+      {
+        "text": "Para te ver, nem sempre a pessoa resolve tudo o que ela quer.",
+        "start": 210.6,
+        "end": 213.8
+      },
+      {
+        "text": "Mas se tu acha que ela realmente está triste por não sentir dores de ficar sentado ou ficar em pé, é claro que não, o corpo vai trabalhando ao longo do tempo e vai se recuperando.",
+        "start": 213.8,
+        "end": 222.60000000000002
+      },
+      {
+        "text": "Cada pessoa tem um estado clínico diferente, um corpo e um tempo de recuperação diferente.",
+        "start": 222.60000000000002,
+        "end": 227.56
+      },
+      {
+        "text": "Mas olha que curioso, elas começaram pelas dores e sempre relatam de outras coisas que vieram de brinde.",
+        "start": 227.56,
+        "end": 233.32
+      },
+      {
+        "text": "Outras pessoas já tomaram da farmácia e não viram o resultado, por exemplo.",
+        "start": 233.64,
+        "end": 237.56
+      },
+      {
+        "text": "Mas olha só que interessante, a iluda.",
+        "start": 237.56,
+        "end": 239.79999999999998
+      },
+      {
+        "text": "Aí diz.",
+        "start": 239.96,
+        "end": 241.24
+      },
+      {
+        "text": "Sim, eu estava tomando os colágenos da vida por conta das dores na coluna.",
+        "start": 241.24,
+        "end": 245.88
+      },
+      {
+        "text": "Troquei os colágenos, sinto muito melhor no geral mesmo.",
+        "start": 245.88,
+        "end": 249.56
+      },
+      {
+        "text": "Mais disposição, melhorou muito meu sono.",
+        "start": 249.56,
+        "end": 251.64000000000001
+      },
+      {
+        "text": "Só maravilha.",
+        "start": 251.8,
+        "end": 252.44
+      },
+      {
+        "text": "Ah, reserve, parece que tinha aí no joelho.",
+        "start": 252.52,
+        "end": 254.68
+      },
+      {
+        "text": "Mesmo tomando colágio, não resolveu.",
+        "start": 254.68,
+        "end": 256.68
+      },
+      {
+        "text": "Estava tomando duas vezes por dia e agora nem lembro mais o que é ter dor.",
+        "start": 256.68,
+        "end": 260.52
+      },
+      {
+        "text": "Aí, Evaní, eu tô no calo de osso já faz um ano, tenho 71 anos e não sinto mais dor nenhuma.",
+        "start": 260.52,
+        "end": 265.88
+      },
+      {
+        "text": "Faço trilhas, caminho, desço sub escadas, tô ótima.",
+        "start": 265.88,
+        "end": 269.56
+      },
+      {
+        "text": "tomo mais remédio.",
+        "start": 270.12,
+        "end": 271.15999999999997
+      },
+      {
+        "text": "Hoje fiz uma de 10 quilômetros entre subida e decida.",
+        "start": 271.15999999999997,
+        "end": 275.23999999999995
+      },
+      {
+        "text": "Eu fico imaginando quem de vocês faz a trilha de 10 quilômetros, quanto mais com 71 anos.",
+        "start": 275.23999999999995,
+        "end": 280.2
+      },
+      {
+        "text": "A sueli, gente, quando com MC seguia Bibi, eu tinha muitas dores nervo ciático, duas ernes, judisco, joelho, costas, pescoço, não sinto mais nada.",
+        "start": 280.2,
+        "end": 290.28
+      },
+      {
+        "text": "Seis meses que eu uso só o caldo, não tomo mais remédio.",
+        "start": 290.28,
+        "end": 293.32
+      },
+      {
+        "text": "Olha, dieto com requinte.",
+        "start": 293.4,
+        "end": 294.91999999999996
+      },
+      {
+        "text": "Bibi, eu tenho artrose no quadril, já fui condenada a prótese pronto.",
+        "start": 294.91999999999996,
+        "end": 298.91999999999996
+      },
+      {
+        "text": "Tomo caldo de óseo.",
+        "start": 298.91999999999996,
+        "end": 299.88
+      }
+    ],
+    "load_seconds": 3.9866128329886124,
+    "transcribe_seconds": 14.230944250011817,
+    "total_inside_seconds": 18.21755708300043
+  }
+}
