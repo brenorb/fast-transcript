@@ -1,0 +1,39 @@
+{
+  "dataset": "openslr/librispeech_asr",
+  "config": "clean",
+  "split": "validation",
+  "utterances": 50,
+  "audio_seconds": 232.005,
+  "normalization": "lowercase alphanumeric words",
+  "results": [
+    {
+      "engine": "current ONNX",
+      "device": "cpu",
+      "warm_inference_seconds": 11.258857295,
+      "warm_realtime_speedup": 20.606442903,
+      "wall_seconds": 47.68,
+      "wall_realtime_speedup": 4.866887584,
+      "wer": 0.0152091255
+    },
+    {
+      "engine": "parakeet-redux",
+      "device": "cpu",
+      "model_load_seconds": 8.39019125,
+      "warm_inference_seconds": 9.096664169,
+      "warm_realtime_speedup": 25.504404218,
+      "wall_seconds": 18.103270708,
+      "wall_realtime_speedup": 12.815639988,
+      "wer": 0.0114068441
+    },
+    {
+      "engine": "parakeet-redux",
+      "device": "mps",
+      "model_load_seconds": 1.981102125,
+      "warm_inference_seconds": 23.309578411,
+      "warm_realtime_speedup": 9.953204205,
+      "wall_seconds": 25.981927125,
+      "wall_realtime_speedup": 8.929476204,
+      "wer": 0.0114068441
+    }
+  ]
+}

@@ -36,3 +36,22 @@ the short ground-truth clip and is materially farther from the current ONNX
 transcript on the long clip. Keep the existing ONNX model as the
 `fast-transcript` standard. An ONNX conversion of Redux is not justified by
 these results.
+
+## Short LibriSpeech validation
+
+The first 50 `validation.clean` utterances from LibriSpeech were run as
+separate short files (232.005 seconds total). WER uses the dataset text after
+lowercasing and removing punctuation. The warm column excludes model load;
+the CLI wall column includes the current `fscript` process startup for every
+utterance.
+
+| engine | device | warm inference | CLI/process wall | WER |
+| --- | --- | ---: | ---: | ---: |
+| current ONNX | CPU | 20.61x | 4.87x | 0.0152 |
+| Parakeet Redux | CPU | 25.50x | 12.82x | 0.0114 |
+| Parakeet Redux | MPS | 9.95x | 8.93x | 0.0114 |
+
+Redux wins this short-set warm-inference test by 24%, with a small WER edge.
+That is not enough to replace the current standard: the ONNX model remains
+more accurate on the checked-in ground-truth clip, and the MPS Redux path is
+slower on this M1 for short calls.
