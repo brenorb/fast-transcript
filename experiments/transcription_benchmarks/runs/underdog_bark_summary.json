@@ -1,0 +1,37 @@
+{
+  "husky_note": "Husky Flash is a text-generation engine for Woof and is not an ASR runtime.",
+  "model": "ConwayResearch/Underdog-Bark-0.8B-1.0",
+  "runtime": "MLX",
+  "results": [
+    {
+      "input": "librispeech_validation_clean_50",
+      "audio_seconds": 232.005,
+      "load_seconds": 1.325131791,
+      "inference_seconds": 19.7596735,
+      "wall_seconds": 21.086999625,
+      "warm_realtime_speedup": 11.74133773,
+      "wall_realtime_speedup": 11.002273915,
+      "wer": 0.0177439797
+    },
+    {
+      "input": "portuguese_15s",
+      "audio_seconds": 15.0,
+      "load_seconds": 1.639635667,
+      "inference_seconds": 0.972892375,
+      "wall_seconds": 2.612528042,
+      "warm_realtime_speedup": 15.41794384,
+      "wall_realtime_speedup": 5.741565166,
+      "wer": 0.15
+    },
+    {
+      "input": "portuguese_5min",
+      "audio_seconds": 300.032,
+      "load_seconds": 1.237609125,
+      "inference_seconds": 37.14481925,
+      "wall_seconds": 38.382428375,
+      "warm_realtime_speedup": 8.077357921,
+      "wall_realtime_speedup": 7.816910308,
+      "wer": 0.1848030019
+    }
+  ]
+}

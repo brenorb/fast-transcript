@@ -55,3 +55,20 @@ Redux wins this short-set warm-inference test by 24%, with a small WER edge.
 That is not enough to replace the current standard: the ONNX model remains
 more accurate on the checked-in ground-truth clip, and the MPS Redux path is
 slower on this M1 for short calls.
+
+## Underdog ASR check
+
+Underdog's **Husky** package is an inference engine for the text-only Woof
+model, so it cannot be compared as a transcription engine. The closest valid
+test is Underdog's separate 4-bit MLX ASR model,
+`ConwayResearch/Underdog-Bark-0.8B-1.0`.
+
+| input | engine | wall realtime | WER |
+| --- | --- | ---: | ---: |
+| LibriSpeech, 50 short utterances | Bark MLX | 11.00x warm | 0.0177 |
+| Portuguese, 15s | Bark MLX | 5.74x | 0.150 |
+| Portuguese, 5min | Bark MLX | 7.82x | 0.185 |
+
+Bark is slower and less accurate than the current ONNX path on both
+Portuguese clips, and slower than Redux on the short English set. It does not
+replace the current standard.
