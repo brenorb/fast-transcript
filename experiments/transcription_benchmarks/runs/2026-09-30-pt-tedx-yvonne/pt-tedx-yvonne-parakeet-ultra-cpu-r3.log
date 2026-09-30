@@ -1,0 +1,20 @@
+MOONDREAM_API_KEY is not set. Finetune inference is disabled. Set MOONDREAM_API_KEY to enable finetune inference.
+Fetching 3 files:   0%|          | 0/3 [00:00<?, ?it/s]Fetching 3 files: 100%|██████████| 3/3 [00:00<00:00, 4391.94it/s]
+       38.89 real        75.86 user         3.08 sys
+          5266538496  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+              369672  page reclaims
+                   2  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                 163  messages sent
+                 163  messages received
+                   0  signals received
+                   7  voluntary context switches
+              144252  involuntary context switches
+       1095639397890  instructions retired
+        277502572720  cycles elapsed
+          3949007504  peak memory footprint

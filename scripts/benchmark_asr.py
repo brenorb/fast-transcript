@@ -9,6 +9,7 @@ import hashlib
 import json
 import os
 import platform
+import shutil
 import signal
 import statistics
 import subprocess
@@ -23,6 +24,63 @@ from benchmark_transcription_engines import ROOT, edit_distance, normalize, time
 
 REPO = ROOT.parents[1]
 PROTOCOL = "asr-v2"
+
+
+def storage_bytes(paths):
+    """Count resident bytes once per inode, following model-cache symlinks."""
+    seen = set()
+    total = 0
+    for root in paths:
+        if not root.exists():
+            continue
+        items = [root]
+        if root.is_dir():
+            items.extend(p for p in root.rglob("*") if not p.is_dir())
+        for path in items:
+            try:
+                stat = path.stat()
+            except OSError:
+                continue
+            identity = (stat.st_dev, stat.st_ino)
+            if identity not in seen:
+                seen.add(identity)
+                total += stat.st_size
+    return total
+
+
+def resource_snapshot(data_root):
+    home = Path.home()
+    models = {
+        "onnx-parakeet-tdt-0.6b-v3-int8": [
+            home
+            / "Library/Application Support/fast-transcript/models/parakeet-tdt-0.6b-v3-int8"
+        ],
+        "parakeet-redux": [
+            home / ".cache/huggingface/hub/models--moondream--parakeet-redux"
+        ],
+        "parakeet-ultra": [
+            home / ".cache/huggingface/hub/models--moondream--parakeet-ultra"
+        ],
+        "phonon-2": [
+            home / ".cache/fermion/speech/FermionResearch__Phonon-2",
+            home / ".cache/huggingface/hub/models--FermionResearch--Phonon-2",
+        ],
+    }
+    memory_bytes = int(
+        subprocess.check_output(["sysctl", "-n", "hw.memsize"], text=True)
+    )
+    disk = shutil.disk_usage(REPO)
+    return {
+        "captured_at": datetime.now(timezone.utc).isoformat(),
+        "physical_memory_bytes": memory_bytes,
+        "disk_volume_total_bytes": disk.total,
+        "disk_volume_free_bytes": disk.free,
+        "model_storage_bytes": {
+            name: storage_bytes(paths) for name, paths in models.items()
+        },
+        "benchmark_dataset_bytes": storage_bytes([data_root]),
+        "method": "Persistent model-cache files only; symlinks followed and duplicate inodes counted once per model family. Peak worker RSS is collected separately by /usr/bin/time -l for each fresh process across both passes.",
+    }
 
 
 def digest(path):
@@ -186,6 +244,13 @@ def summarize(records, out_dir):
             "repetitions": len(rows),
             "audio_seconds": rows[0]["audio_seconds"],
             "reference_words": rows[0]["reference_words"],
+            "peak_rss_mb": statistics.median(
+                r["process_resources"]["max_rss_mb"] for r in rows
+            ),
+            "peak_rss_mb_range": [
+                min(r["process_resources"]["max_rss_mb"] for r in rows),
+                max(r["process_resources"]["max_rss_mb"] for r in rows),
+            ],
         }
         for name, values in fields.items():
             entry[name] = statistics.median(values)
@@ -215,7 +280,9 @@ def summarize(records, out_dir):
     save(out_dir / "summary.json", {"protocol": PROTOCOL, "results": summaries})
     if summaries:
         with (out_dir / "results.csv").open("w") as file:
-            writer = csv.DictWriter(file, fieldnames=list(summaries[0]))
+            writer = csv.DictWriter(
+                file, fieldnames=list(summaries[0]), lineterminator="\n"
+            )
             writer.writeheader()
             writer.writerows(summaries)
 
@@ -223,7 +290,7 @@ def summarize(records, out_dir):
 def benchmark(args):
     suite = json.loads(args.suite.read_text())
     assert suite["protocol"] == PROTOCOL
-    manifests = [args.suite.parent / name for name in suite["manifests"]]
+    manifests = [(args.suite.parent / name).resolve() for name in suite["manifests"]]
     if args.cases:
         manifests = [m for m in manifests if m.stem in args.cases]
         assert {m.stem for m in manifests} == set(args.cases)
@@ -237,6 +304,7 @@ def benchmark(args):
             Path(__file__).resolve(),
             REPO / "examples/benchmark_asr_onnx.rs",
             REPO / "scripts/prepare_asr_benchmarks.py",
+            REPO / "scripts/prepare_tedx_pt_benchmark.py",
             REPO / "scripts/benchmark_transcription_engines.py",
             args.onnx_worker,
             *manifests,
@@ -269,6 +337,7 @@ def benchmark(args):
                 "warm_definition": "Same worker, same resident model, immediate second complete corpus pass. Full corpus call timer includes WAV reads, all parts, text concatenation and GPU synchronization; excludes load and serialization. First pass is warmup.",
                 "score_definition": "Unicode punctuation removal + lowercase; preserve accents/numerals. Sum utterance edit distances / sum reference words. Same references and parts for every engine.",
                 "ordering": "Sequential cases, then configurations, then three fresh-worker repetitions; no concurrent model workers.",
+                "system_resources": resource_snapshot(args.suite.parent),
             },
         )
     configurations = [("onnx", "cpu")] + [

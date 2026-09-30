@@ -4,9 +4,12 @@
 from __future__ import annotations
 
 import argparse
+import gzip
 import hashlib
+import html
 import json
 import math
+import re
 import statistics
 import wave
 from collections import Counter
@@ -53,6 +56,7 @@ def main():
         "pt-15s": ROOT / "audio/audio_15s_16k_mono.wav",
         "pt-5min": ROOT / "audio/audio_5min_16k_mono.wav",
         "en-ted-ken-robinson": args.suite.parent / "audio/ted-full.wav",
+        "pt-tedx-yvonne": args.suite.parent / "audio/pt-tedx-yvonne.wav",
     }
     parts_checked = 0
     for name in suite["manifests"]:
@@ -89,11 +93,31 @@ def main():
             assert b"".join(combined) == pcm(original), (
                 "Audio partition drops or duplicates samples"
             )
-    captions = json.loads((args.suite.parent / "ted-captions.json").read_text())
-    assert (
-        " ".join(c["text"] for c in captions["cues"] if c["text"])
-        == manifests["en-ted-ken-robinson"][1]["utterances"][0]["text"]
-    )
+    if "en-ted-ken-robinson" in manifests:
+        captions = json.loads((args.suite.parent / "ted-captions.json").read_text())
+        assert (
+            " ".join(c["text"] for c in captions["cues"] if c["text"])
+            == manifests["en-ted-ken-robinson"][1]["utterances"][0]["text"]
+        )
+    if "pt-tedx-yvonne" in manifests:
+        source = json.loads((args.suite.parent / "tedx-source.json").read_text())
+        caption_path = args.suite.parent / source["caption_file"]
+        assert digest(caption_path) == source["caption_file_sha256"]
+        caption_bytes = gzip.decompress(caption_path.read_bytes())
+        assert hashlib.sha256(caption_bytes).hexdigest() == source["subtitle_sha256"]
+        payload = json.loads(caption_bytes)
+        caption_parts = []
+        for event in payload["events"]:
+            if "segs" not in event:
+                continue
+            text = html.unescape(
+                "".join(segment.get("utf8", "") for segment in event["segs"])
+            )
+            text = " ".join(re.sub(r"\[[^\]]+\]", " ", text).split())
+            if text:
+                caption_parts.append(text)
+        caption_text = " ".join(caption_parts)
+        assert caption_text == manifests["pt-tedx-yvonne"][1]["utterances"][0]["text"]
     env = json.loads((args.runs_dir / "environment.json").read_text())
     for path, sha in env["input_sha256"].items():
         assert digest(REPO / path) == sha
@@ -111,6 +135,7 @@ def main():
         assert key not in seen
         seen.add(key)
         path, m = manifests[x["case"]]
+        assert x["process_resources"]["max_rss_mb"] > 0
         refs = {r["id"]: r for r in m["utterances"]}
         assert x["manifest_sha256"] == digest(path)
         for phase in ("cold", "warm"):
@@ -222,6 +247,7 @@ def main():
             "warm_transcribe_seconds": [r["warm"]["corpus_seconds"] for r in rows],
             "cold_wer": [r["cold"]["wer"] for r in rows],
             "warm_wer": [r["warm"]["wer"] for r in rows],
+            "peak_rss_mb": [r["process_resources"]["max_rss_mb"] for r in rows],
         }
         for field, values in fields.items():
             assert (
@@ -276,6 +302,7 @@ def main():
             "per-part duration and truncation",
             "cold/warm timing ordering",
             "timing sums, medians and ranges",
+            "per-process peak RSS and its median/range",
             "reported transcript stability",
         ],
         "validator_sha256": digest(Path(__file__)),

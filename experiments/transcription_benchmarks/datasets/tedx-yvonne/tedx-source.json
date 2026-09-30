@@ -1,0 +1,19 @@
+{
+  "youtube_url": "https://www.youtube.com/watch?v=K__5PBtLrgM",
+  "video_id": "K__5PBtLrgM",
+  "title": "Aprendendo a Aprender | Yvonne Bezerra de Mello | TEDxRioED",
+  "channel": "TEDx Talks",
+  "channel_id": "UCsT0YIqwnpJCM-mx7-gSA4Q",
+  "video_duration_seconds": 930,
+  "subtitle_track": "pt-orig",
+  "subtitle_source": "YouTube automatic Portuguese captions; no publisher subtitle tracks were available",
+  "caption_file": "caption_track.json3.gz",
+  "caption_file_sha256": "d377abd35416f4a3f1f68cc0cfbc7483883dcb07570752d27e306b0b66df72ee",
+  "subtitle_sha256": "3fd4be4b1e5ec29c9f428132fa742c49406c06994faa127dd739093f00d44289",
+  "downloaded_audio_sha256": "c15cae7f1927a76bd3f6106f82b13b4a07d89da2387472c2cc4bf5c6e163aaba",
+  "crop_start_seconds": 6.19,
+  "crop_end_seconds": 930.005625,
+  "reference_type": "YouTube automatic captions, not human-edited ground truth",
+  "caption_cleanup": "Remove bracketed non-speech labels such as [Aplausos] and [Música]; concatenate remaining non-empty timed cues, preserving words and disfluencies as emitted.",
+  "fetched_at": "2026-09-30T14:13:26.055792+00:00"
+}

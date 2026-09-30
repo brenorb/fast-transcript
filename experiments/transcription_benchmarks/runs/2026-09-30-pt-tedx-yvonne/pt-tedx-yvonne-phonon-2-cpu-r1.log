@@ -1,0 +1,20 @@
+[fermion] using the cached five-value profile at /Users/brenorb/.cache/fermion/speech/FermionResearch__Phonon-2/model_phonon2_c4c_int6
+[fermion] decode backend: cpu · local model
+       57.97 real       291.09 user         2.30 sys
+          2300297216  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+              186547  page reclaims
+                  10  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+                  26  voluntary context switches
+              340597  involuntary context switches
+       4691720013199  instructions retired
+        852161775048  cycles elapsed
+          2235648352  peak memory footprint

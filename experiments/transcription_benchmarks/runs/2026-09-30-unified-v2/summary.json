@@ -40,7 +40,12 @@
         387,
         387
       ],
-      "transcripts_stable": true
+      "transcripts_stable": true,
+      "peak_rss_mb": 3055.875,
+      "peak_rss_mb_range": [
+        3046.84375,
+        3067.65625
+      ]
     },
     {
       "case": "en-ted-ken-robinson",
@@ -81,7 +86,12 @@
         370,
         370
       ],
-      "transcripts_stable": true
+      "transcripts_stable": true,
+      "peak_rss_mb": 2048.421875,
+      "peak_rss_mb_range": [
+        2048.09375,
+        2049.640625
+      ]
     },
     {
       "case": "en-ted-ken-robinson",
@@ -122,7 +132,12 @@
         376,
         376
       ],
-      "transcripts_stable": true
+      "transcripts_stable": true,
+      "peak_rss_mb": 953.25,
+      "peak_rss_mb_range": [
+        940.96875,
+        954.203125
+      ]
     },
     {
       "case": "en-ted-ken-robinson",
@@ -163,7 +178,12 @@
         303,
         303
       ],
-      "transcripts_stable": true
+      "transcripts_stable": true,
+      "peak_rss_mb": 5187.53125,
+      "peak_rss_mb_range": [
+        5186.421875,
+        5192.59375
+      ]
     },
     {
       "case": "en-ted-ken-robinson",
@@ -204,7 +224,12 @@
         302,
         302
       ],
-      "transcripts_stable": true
+      "transcripts_stable": true,
+      "peak_rss_mb": 962.421875,
+      "peak_rss_mb_range": [
+        960.921875,
+        963.609375
+      ]
     },
     {
       "case": "en-ted-ken-robinson",
@@ -245,7 +270,12 @@
         400,
         400
       ],
-      "transcripts_stable": true
+      "transcripts_stable": true,
+      "peak_rss_mb": 2283.296875,
+      "peak_rss_mb_range": [
+        2279.3125,
+        2292.734375
+      ]
     },
     {
       "case": "en-ted-ken-robinson",
@@ -286,7 +316,12 @@
         390,
         390
       ],
-      "transcripts_stable": true
+      "transcripts_stable": true,
+      "peak_rss_mb": 2934.1875,
+      "peak_rss_mb_range": [
+        2933.96875,
+        2949.6875
+      ]
     },
     {
       "case": "en-librispeech-50",
@@ -327,7 +362,12 @@
         11,
         11
       ],
-      "transcripts_stable": true
+      "transcripts_stable": true,
+      "peak_rss_mb": 2080.21875,
+      "peak_rss_mb_range": [
+        2079.078125,
+        2084.765625
+      ]
     },
     {
       "case": "en-librispeech-50",
@@ -368,7 +408,12 @@
         8,
         8
       ],
-      "transcripts_stable": true
+      "transcripts_stable": true,
+      "peak_rss_mb": 1240.859375,
+      "peak_rss_mb_range": [
+        1239.03125,
+        1242.390625
+      ]
     },
     {
       "case": "en-librispeech-50",
@@ -409,7 +454,12 @@
         8,
         8
       ],
-      "transcripts_stable": true
+      "transcripts_stable": true,
+      "peak_rss_mb": 1039.734375,
+      "peak_rss_mb_range": [
+        1037.5625,
+        1042.546875
+      ]
     },
     {
       "case": "en-librispeech-50",
@@ -450,7 +500,12 @@
         6,
         6
       ],
-      "transcripts_stable": true
+      "transcripts_stable": true,
+      "peak_rss_mb": 4288.6875,
+      "peak_rss_mb_range": [
+        4286.578125,
+        4293.703125
+      ]
     },
     {
       "case": "en-librispeech-50",
@@ -491,7 +546,12 @@
         6,
         6
       ],
-      "transcripts_stable": true
+      "transcripts_stable": true,
+      "peak_rss_mb": 1044.5,
+      "peak_rss_mb_range": [
+        1044.296875,
+        1046.8125
+      ]
     },
     {
       "case": "en-librispeech-50",
@@ -532,7 +592,12 @@
         7,
         7
       ],
-      "transcripts_stable": true
+      "transcripts_stable": true,
+      "peak_rss_mb": 1675.0,
+      "peak_rss_mb_range": [
+        1672.453125,
+        1675.8125
+      ]
     },
     {
       "case": "en-librispeech-50",
@@ -573,7 +638,12 @@
         7,
         7
       ],
-      "transcripts_stable": true
+      "transcripts_stable": true,
+      "peak_rss_mb": 2941.484375,
+      "peak_rss_mb_range": [
+        2936.875,
+        2954.390625
+      ]
     },
     {
       "case": "pt-15s",
@@ -614,7 +684,12 @@
         0,
         0
       ],
-      "transcripts_stable": true
+      "transcripts_stable": true,
+      "peak_rss_mb": 1927.8125,
+      "peak_rss_mb_range": [
+        1927.75,
+        1939.53125
+      ]
     },
     {
       "case": "pt-15s",
@@ -655,7 +730,12 @@
         5,
         5
       ],
-      "transcripts_stable": true
+      "transcripts_stable": true,
+      "peak_rss_mb": 1069.15625,
+      "peak_rss_mb_range": [
+        1068.671875,
+        1070.40625
+      ]
     },
     {
       "case": "pt-15s",
@@ -696,7 +776,12 @@
         5,
         5
       ],
-      "transcripts_stable": true
+      "transcripts_stable": true,
+      "peak_rss_mb": 752.9375,
+      "peak_rss_mb_range": [
+        751.359375,
+        753.328125
+      ]
     },
     {
       "case": "pt-15s",
@@ -737,7 +822,12 @@
         1,
         1
       ],
-      "transcripts_stable": true
+      "transcripts_stable": true,
+      "peak_rss_mb": 4137.671875,
+      "peak_rss_mb_range": [
+        4137.578125,
+        4144.328125
+      ]
     },
     {
       "case": "pt-15s",
@@ -778,7 +868,12 @@
         1,
         1
       ],
-      "transcripts_stable": true
+      "transcripts_stable": true,
+      "peak_rss_mb": 731.40625,
+      "peak_rss_mb_range": [
+        730.53125,
+        731.53125
+      ]
     },
     {
       "case": "pt-15s",
@@ -819,7 +914,12 @@
         5,
         5
       ],
-      "transcripts_stable": true
+      "transcripts_stable": true,
+      "peak_rss_mb": 1594.703125,
+      "peak_rss_mb_range": [
+        1593.71875,
+        1604.0625
+      ]
     },
     {
       "case": "pt-15s",
@@ -860,7 +960,12 @@
         5,
         5
       ],
-      "transcripts_stable": true
+      "transcripts_stable": true,
+      "peak_rss_mb": 2934.796875,
+      "peak_rss_mb_range": [
+        2934.46875,
+        2938.203125
+      ]
     },
     {
       "case": "pt-5min",
@@ -901,7 +1006,12 @@
         90,
         90
       ],
-      "transcripts_stable": true
+      "transcripts_stable": true,
+      "peak_rss_mb": 2183.625,
+      "peak_rss_mb_range": [
+        2179.453125,
+        2184.453125
+      ]
     },
     {
       "case": "pt-5min",
@@ -942,7 +1052,12 @@
         78,
         78
       ],
-      "transcripts_stable": true
+      "transcripts_stable": true,
+      "peak_rss_mb": 1191.96875,
+      "peak_rss_mb_range": [
+        1190.75,
+        1193.015625
+      ]
     },
     {
       "case": "pt-5min",
@@ -983,7 +1098,12 @@
         79,
         79
       ],
-      "transcripts_stable": true
+      "transcripts_stable": true,
+      "peak_rss_mb": 752.984375,
+      "peak_rss_mb_range": [
+        752.828125,
+        753.65625
+      ]
     },
     {
       "case": "pt-5min",
@@ -1024,7 +1144,12 @@
         40,
         40
       ],
-      "transcripts_stable": true
+      "transcripts_stable": true,
+      "peak_rss_mb": 4315.953125,
+      "peak_rss_mb_range": [
+        4312.5625,
+        4317.296875
+      ]
     },
     {
       "case": "pt-5min",
@@ -1065,7 +1190,12 @@
         40,
         40
       ],
-      "transcripts_stable": true
+      "transcripts_stable": true,
+      "peak_rss_mb": 761.46875,
+      "peak_rss_mb_range": [
+        760.234375,
+        764.5
+      ]
     },
     {
       "case": "pt-5min",
@@ -1106,7 +1236,12 @@
         160,
         160
       ],
-      "transcripts_stable": true
+      "transcripts_stable": true,
+      "peak_rss_mb": 1730.1875,
+      "peak_rss_mb_range": [
+        1721.0,
+        1730.90625
+      ]
     },
     {
       "case": "pt-5min",
@@ -1147,7 +1282,12 @@
         157,
         157
       ],
-      "transcripts_stable": true
+      "transcripts_stable": true,
+      "peak_rss_mb": 2947.078125,
+      "peak_rss_mb_range": [
+        2943.671875,
+        2948.546875
+      ]
     }
   ]
 }

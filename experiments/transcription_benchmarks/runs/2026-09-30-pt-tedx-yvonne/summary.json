@@ -1,0 +1,327 @@
+{
+  "protocol": "asr-v2",
+  "results": [
+    {
+      "case": "pt-tedx-yvonne",
+      "engine": "onnx",
+      "device": "cpu",
+      "repetitions": 3,
+      "audio_seconds": 923.815625,
+      "reference_words": 1986,
+      "peak_rss_mb": 2921.109375,
+      "peak_rss_mb_range": [
+        2908.53125,
+        2923.8125
+      ],
+      "cold_result_seconds": 19.89580854200176,
+      "cold_result_seconds_range": [
+        19.12987850001082,
+        20.28964179099421
+      ],
+      "warm_transcribe_seconds": 19.663029417,
+      "warm_transcribe_seconds_range": [
+        19.311570542,
+        19.711545875
+      ],
+      "cold_wer": 0.20493454179254783,
+      "cold_wer_range": [
+        0.20493454179254783,
+        0.20493454179254783
+      ],
+      "warm_wer": 0.20493454179254783,
+      "warm_wer_range": [
+        0.20493454179254783,
+        0.20493454179254783
+      ],
+      "cold_realtime_speedup": 46.432675658782394,
+      "warm_realtime_speedup": 46.98236499617397,
+      "cold_word_edits": [
+        407,
+        407,
+        407
+      ],
+      "warm_word_edits": [
+        407,
+        407,
+        407
+      ],
+      "transcripts_stable": true
+    },
+    {
+      "case": "pt-tedx-yvonne",
+      "engine": "parakeet-redux",
+      "device": "cpu",
+      "repetitions": 3,
+      "audio_seconds": 923.815625,
+      "reference_words": 1986,
+      "peak_rss_mb": 1882.640625,
+      "peak_rss_mb_range": [
+        1878.875,
+        1882.640625
+      ],
+      "cold_result_seconds": 17.802552041976014,
+      "cold_result_seconds_range": [
+        17.646099832985783,
+        19.213370749988826
+      ],
+      "warm_transcribe_seconds": 17.691044874984073,
+      "warm_transcribe_seconds_range": [
+        16.149908208986744,
+        18.05009412500658
+      ],
+      "cold_wer": 0.20745216515609266,
+      "cold_wer_range": [
+        0.20745216515609266,
+        0.20745216515609266
+      ],
+      "warm_wer": 0.20745216515609266,
+      "warm_wer_range": [
+        0.20745216515609266,
+        0.20745216515609266
+      ],
+      "cold_realtime_speedup": 51.89231424920244,
+      "warm_realtime_speedup": 52.21939300523264,
+      "cold_word_edits": [
+        412,
+        412,
+        412
+      ],
+      "warm_word_edits": [
+        412,
+        412,
+        412
+      ],
+      "transcripts_stable": true
+    },
+    {
+      "case": "pt-tedx-yvonne",
+      "engine": "parakeet-redux",
+      "device": "mps",
+      "repetitions": 3,
+      "audio_seconds": 923.815625,
+      "reference_words": 1986,
+      "peak_rss_mb": 911.71875,
+      "peak_rss_mb_range": [
+        902.328125,
+        914.421875
+      ],
+      "cold_result_seconds": 8.020372750004753,
+      "cold_result_seconds_range": [
+        7.914391208003508,
+        11.87226437497884
+      ],
+      "warm_transcribe_seconds": 5.74737012499827,
+      "warm_transcribe_seconds_range": [
+        5.651346375001594,
+        6.203688707988476
+      ],
+      "cold_wer": 0.2079556898288016,
+      "cold_wer_range": [
+        0.2079556898288016,
+        0.2079556898288016
+      ],
+      "warm_wer": 0.2079556898288016,
+      "warm_wer_range": [
+        0.2079556898288016,
+        0.2079556898288016
+      ],
+      "cold_realtime_speedup": 115.1836272197514,
+      "warm_realtime_speedup": 160.73710321558212,
+      "cold_word_edits": [
+        413,
+        413,
+        413
+      ],
+      "warm_word_edits": [
+        413,
+        413,
+        413
+      ],
+      "transcripts_stable": true
+    },
+    {
+      "case": "pt-tedx-yvonne",
+      "engine": "parakeet-ultra",
+      "device": "cpu",
+      "repetitions": 3,
+      "audio_seconds": 923.815625,
+      "reference_words": 1986,
+      "peak_rss_mb": 5013.328125,
+      "peak_rss_mb_range": [
+        5013.109375,
+        5022.5625
+      ],
+      "cold_result_seconds": 20.931299999996554,
+      "cold_result_seconds_range": [
+        19.792461417004233,
+        21.265974958019797
+      ],
+      "warm_transcribe_seconds": 18.818579500017222,
+      "warm_transcribe_seconds_range": [
+        18.210076291987207,
+        18.87486029099091
+      ],
+      "cold_wer": 0.21651560926485397,
+      "cold_wer_range": [
+        0.21651560926485397,
+        0.21651560926485397
+      ],
+      "warm_wer": 0.21651560926485397,
+      "warm_wer_range": [
+        0.21651560926485397,
+        0.21651560926485397
+      ],
+      "cold_realtime_speedup": 44.135606722953284,
+      "warm_realtime_speedup": 49.09061414540638,
+      "cold_word_edits": [
+        430,
+        430,
+        430
+      ],
+      "warm_word_edits": [
+        430,
+        430,
+        430
+      ],
+      "transcripts_stable": true
+    },
+    {
+      "case": "pt-tedx-yvonne",
+      "engine": "parakeet-ultra",
+      "device": "mps",
+      "repetitions": 3,
+      "audio_seconds": 923.815625,
+      "reference_words": 1986,
+      "peak_rss_mb": 921.8125,
+      "peak_rss_mb_range": [
+        921.078125,
+        923.4375
+      ],
+      "cold_result_seconds": 6.12064958398696,
+      "cold_result_seconds_range": [
+        6.022249791014474,
+        6.140787915996043
+      ],
+      "warm_transcribe_seconds": 4.2464181250252295,
+      "warm_transcribe_seconds_range": [
+        3.979195209016325,
+        4.628630499995779
+      ],
+      "cold_wer": 0.21701913393756295,
+      "cold_wer_range": [
+        0.21701913393756295,
+        0.21701913393756295
+      ],
+      "warm_wer": 0.21701913393756295,
+      "warm_wer_range": [
+        0.21701913393756295,
+        0.21701913393756295
+      ],
+      "cold_realtime_speedup": 150.93424518484377,
+      "warm_realtime_speedup": 217.55173367307327,
+      "cold_word_edits": [
+        431,
+        431,
+        431
+      ],
+      "warm_word_edits": [
+        431,
+        431,
+        431
+      ],
+      "transcripts_stable": true
+    },
+    {
+      "case": "pt-tedx-yvonne",
+      "engine": "phonon-2",
+      "device": "cpu",
+      "repetitions": 3,
+      "audio_seconds": 923.815625,
+      "reference_words": 1986,
+      "peak_rss_mb": 2188.046875,
+      "peak_rss_mb_range": [
+        2178.609375,
+        2193.734375
+      ],
+      "cold_result_seconds": 33.11793400000897,
+      "cold_result_seconds_range": [
+        33.053426790982485,
+        33.48242233399651
+      ],
+      "warm_transcribe_seconds": 24.113659041002393,
+      "warm_transcribe_seconds_range": [
+        23.442534416011767,
+        24.154041542002233
+      ],
+      "cold_wer": 0.24370594159113795,
+      "cold_wer_range": [
+        0.24370594159113795,
+        0.24370594159113795
+      ],
+      "warm_wer": 0.24370594159113795,
+      "warm_wer_range": [
+        0.24370594159113795,
+        0.24370594159113795
+      ],
+      "cold_realtime_speedup": 27.89472389792641,
+      "warm_realtime_speedup": 38.310885271669555,
+      "cold_word_edits": [
+        484,
+        484,
+        484
+      ],
+      "warm_word_edits": [
+        484,
+        484,
+        484
+      ],
+      "transcripts_stable": true
+    },
+    {
+      "case": "pt-tedx-yvonne",
+      "engine": "phonon-2",
+      "device": "mlx",
+      "repetitions": 3,
+      "audio_seconds": 923.815625,
+      "reference_words": 1986,
+      "peak_rss_mb": 2946.15625,
+      "peak_rss_mb_range": [
+        2936.046875,
+        2951.90625
+      ],
+      "cold_result_seconds": 8.511020167003153,
+      "cold_result_seconds_range": [
+        8.506154875009088,
+        8.593006584007526
+      ],
+      "warm_transcribe_seconds": 2.8084633749967907,
+      "warm_transcribe_seconds_range": [
+        2.6172669159714133,
+        2.8115800419764128
+      ],
+      "cold_wer": 0.24823766364551864,
+      "cold_wer_range": [
+        0.24823766364551864,
+        0.24823766364551864
+      ],
+      "warm_wer": 0.24823766364551864,
+      "warm_wer_range": [
+        0.24823766364551864,
+        0.24823766364551864
+      ],
+      "cold_realtime_speedup": 108.54346563313199,
+      "warm_realtime_speedup": 328.9398869234161,
+      "cold_word_edits": [
+        493,
+        493,
+        493
+      ],
+      "warm_word_edits": [
+        493,
+        493,
+        493
+      ],
+      "transcripts_stable": true
+    }
+  ]
+}

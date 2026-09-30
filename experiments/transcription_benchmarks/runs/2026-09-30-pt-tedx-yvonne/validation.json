@@ -1,0 +1,25 @@
+{
+  "validator": "jiwer 4.0.0",
+  "protocol": "asr-v2",
+  "process_repetitions_checked": 21,
+  "corpus_passes_checked": 42,
+  "utterances_checked": 42,
+  "audio_partitions_checked": 33,
+  "reference_counts": {
+    "pt-tedx-yvonne": 1986
+  },
+  "checks": [
+    "input/script/binary fingerprints",
+    "original audio hashes",
+    "sample-exact partition reconstruction",
+    "caption/reference equality",
+    "all case/device/repetition combinations present",
+    "per-utterance and corpus WER",
+    "per-part duration and truncation",
+    "cold/warm timing ordering",
+    "timing sums, medians and ranges",
+    "per-process peak RSS and its median/range",
+    "reported transcript stability"
+  ],
+  "validator_sha256": "e5f16c31fa22cdda1f04b4b4879e0639b3bba951f259e63508f948fd8ec12f1f"
+}

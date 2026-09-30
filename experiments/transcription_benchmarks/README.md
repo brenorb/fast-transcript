@@ -14,6 +14,7 @@ fresh-process, resident-only and internal decoder times must not be mixed.
 | Portuguese lecture | 300.032 s | 988 words reviewed by the user from an Ultra draft |
 | English LibriSpeech | 232.005 s, 50 files | 789 words from the dataset; one speaker |
 | English TED | 1,139.110 s (18m59s) | 3,106 words from publisher English captions |
+| Brazilian Portuguese TEDx | 923.816 s (15m24s) | 1,986 words from YouTube automatic Portuguese captions |
 
 TED source: [Do schools kill creativity? — Sir Ken Robinson, TED](https://www.youtube.com/watch?v=iG9CE55wbtY).
 The public video is 20m03s. The benchmark uses the complete captioned talk
@@ -23,6 +24,17 @@ from YouTube's publisher `subtitles.en` track, not `automatic_captions`.
 Only `(Laughter)`, `(Applause)` and the `(Audience)` speaker label were
 removed; the audience's spoken words were retained. The original wording,
 spelling and numbers were preserved.
+
+Portuguese TEDx source: [Aprendendo a Aprender — Yvonne Bezerra de Mello,
+TEDxRioED](https://www.youtube.com/watch?v=K__5PBtLrgM), published by TEDx Talks.
+YouTube had no publisher-authored subtitle track; the selected `pt-orig`
+caption track is automatic. It is retained as a reproducible machine reference,
+not presented as human ground truth. Bracketed `[Aplausos]` and `[Música]`
+non-speech labels were removed. The benchmark uses the available captioned
+talk from 6.190 to 930.006 seconds. Raw media remains ignored by Git; the
+gzip-compressed JSON3 caption track, source metadata and reference are checked
+in. Local audio files remain ignored, while partition boundaries and SHA-256
+hashes are preserved in the manifest.
 
 Publisher captions are an independent reference, but can edit repetitions,
 fillers and spelling. WER here is agreement with those captions, not a claim
@@ -48,6 +60,13 @@ same case again with the model still resident.
 - Tables use medians of three measurements. WER is independently reported
   for both passes in JSON; variability and exact repetitions are retained.
   Internal Phonon decode timers are diagnostic fields only.
+- Each process also records `max_rss_mb` from `/usr/bin/time -l`; reports show
+  the median and min–max across repetitions. This is worker RSS across model
+  loading and both inference passes, not total machine-wide memory pressure.
+- The run environment snapshots installed model-cache bytes, prepared dataset
+  bytes, physical RAM and free/total volume space. Model storage is persistent
+  cache size, not temporary download traffic; the report keeps these scopes
+  separate from peak process RAM.
 
 All engines receive identical 16-kHz mono PCM parts. Long recordings are
 split at the lowest-energy 200-ms window between 25 and 30 seconds after
@@ -73,10 +92,13 @@ GPU labels identify the runtime: **Metal/MPS** for Moondream via PyTorch,
 ## Results
 
 The completed [canonical report](runs/2026-09-30-unified-v2/REPORT.md) contains
-all four input cases and seven configurations, with the two timing columns
-side by side. All 84 process repetitions (168 corpus passes, 2,226 original
-utterance transcripts) passed independent jiwer validation. Audio parts were
-reassembled and checked byte-for-byte against the original PCM samples.
+the four original input cases and seven configurations. The new
+[Portuguese TEDx report](runs/2026-09-30-pt-tedx-yvonne/REPORT.md) adds the
+fifth case with the same seven configurations and three fresh-worker
+repetitions. All tables now include peak process RSS and a resource inventory
+for model caches, prepared data, physical RAM and free disk space. The original
+84 repetitions and the new 21 repetitions have independent jiwer validation;
+all audio partitions were reassembled and checked byte-for-byte.
 
 The historical Portuguese WERs also change under the shared chunking policy:
 for example, Ultra's reviewed lecture WER is 4.05% in v2, compared with 2.43%
@@ -111,3 +133,30 @@ uv run --no-project --with jiwer==4.0.0 python scripts/validate_asr_benchmark.py
 `--resume` continues a partial run only when input/script/binary hashes match.
 The raw audio cache is ignored by Git; the reference manifests, source
 metadata, partition boundaries and SHA-256 checksums are retained.
+
+For the Portuguese TEDx case, get the `pt-orig` automatic captions and audio
+from [TEDxRioED](https://www.youtube.com/watch?v=K__5PBtLrgM), then create the
+manifest, run all seven configurations and validate them with the same suite:
+
+```bash
+mkdir -p experiments/transcription_benchmarks/datasets/tedx-yvonne
+uvx yt-dlp==2026.08.19 --skip-download --dump-single-json --no-playlist \
+  'https://www.youtube.com/watch?v=K__5PBtLrgM' > /tmp/tedx-yvonne-info.json
+uvx yt-dlp==2026.08.19 --load-info-json /tmp/tedx-yvonne-info.json -f 251 \
+  --write-auto-subs --no-write-subs --sub-langs pt-orig --sub-format json3 \
+  -o 'experiments/transcription_benchmarks/datasets/tedx-yvonne/source.%(ext)s'
+gzip -n -c experiments/transcription_benchmarks/datasets/tedx-yvonne/source.pt-orig.json3 \
+  > experiments/transcription_benchmarks/datasets/tedx-yvonne/caption_track.json3.gz
+.venv/bin/python scripts/prepare_tedx_pt_benchmark.py \
+  --youtube-info /tmp/tedx-yvonne-info.json \
+  --audio experiments/transcription_benchmarks/datasets/tedx-yvonne/source.webm \
+  --captions experiments/transcription_benchmarks/datasets/tedx-yvonne/source.pt-orig.json3
+.venv/bin/python scripts/benchmark_asr.py \
+  --suite experiments/transcription_benchmarks/datasets/tedx-yvonne/suite.json \
+  --cases pt-tedx-yvonne \
+  --out-dir /tmp/asr-pt-tedx-run
+uv run --no-project --with jiwer==4.0.0 python scripts/validate_asr_benchmark.py \
+  --suite experiments/transcription_benchmarks/datasets/tedx-yvonne/suite.json \
+  --runs-dir /tmp/asr-pt-tedx-run
+.venv/bin/python scripts/report_asr_benchmark.py --runs-dir /tmp/asr-pt-tedx-run
+```

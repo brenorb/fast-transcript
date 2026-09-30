@@ -1,37 +1,39 @@
 {
   "protocol": "asr-v2",
-  "started_at": "2026-09-30T13:09:43.103664+00:00",
+  "started_at": "2026-09-30T13:52:50.614741+00:00",
   "hardware": "Apple M5 Max",
   "platform": "macOS-27.0-arm64-arm-64bit",
   "input_sha256": {
-    "scripts/benchmark_asr.py": "3bca7b55e709f106a4ef99216422a0f2d9553a8c51773d54a4370152aa73c304",
+    "scripts/benchmark_asr.py": "458d6d9e14ee7efb4407811963258257b203bceb0eedbce9be659ba65aaaf0cf",
     "examples/benchmark_asr_onnx.rs": "fede8aa1f2166105041f9eb59cc18742890a76892162dc7316b34cb413801d79",
     "scripts/prepare_asr_benchmarks.py": "cbd902b064f62d72034fa1802c4837fdeb64c4290723e04c584bc4403a594c14",
+    "scripts/prepare_tedx_pt_benchmark.py": "ec8b4debf0eaf85ca2ec11c342678a74821b634f02262e5d8807231b2e80242d",
     "scripts/benchmark_transcription_engines.py": "4e6bfa34a81d97656f9c310204064b37e372f14c2e44eeae225b04f78db844c4",
     "target/release/examples/benchmark_asr_onnx": "742bc3ee999b916efb4627c8f3827d4cc7d1d61875d6c9f38b246a3fd2d50d15",
-    "experiments/transcription_benchmarks/datasets/unified-v2/en-ted-ken-robinson.json": "e3763b4c487d666256420d3a9760246b358bcd4800ba0bf49add42a459e44f72",
-    "experiments/transcription_benchmarks/datasets/unified-v2/en-librispeech-50.json": "b31eaaa965db01a9190d800f6a6fdcccb1d9d377e91c14bc021803e31b36c6ba",
-    "experiments/transcription_benchmarks/datasets/unified-v2/pt-15s.json": "3b2b64d39a1d7daff3b60c602b2cdf2506078bf597c5719d8880cbf0f4c16a75",
-    "experiments/transcription_benchmarks/datasets/unified-v2/pt-5min.json": "4bfeb3b3e98faac38c19177efe9ef53d9328ebcc72b3991101bd7d3e592e52f9"
+    "experiments/transcription_benchmarks/datasets/tedx-yvonne/pt-tedx-yvonne.json": "3a236ec0f3f926de68a92e3724168e63346b138a49b03576f2b83fbd2d738a4e"
   },
-  "source_commit": "3b892cdff5ded62a85b3f78bd031fe8b0295fc14",
+  "source_commit": "2cacebbc5e3c88e5944775c32f450f4813b08835",
   "repetitions": 3,
   "cold_definition": "Parent perf_counter from spawning worker until receiving complete first corpus result. Includes imports/model initialization/read/decode/result serialization; excludes downloads, preprocessing and process teardown. Filesystem/model caches populated.",
   "warm_definition": "Same worker, same resident model, immediate second complete corpus pass. Full corpus call timer includes WAV reads, all parts, text concatenation and GPU synchronization; excludes load and serialization. First pass is warmup.",
   "score_definition": "Unicode punctuation removal + lowercase; preserve accents/numerals. Sum utterance edit distances / sum reference words. Same references and parts for every engine.",
   "ordering": "Sequential cases, then configurations, then three fresh-worker repetitions; no concurrent model workers.",
   "system_resources": {
-    "captured_at": "2026-09-30T13:53:23.659303+00:00",
+    "captured_at": "2026-09-30T13:52:50.640167+00:00",
     "physical_memory_bytes": 137438953472,
     "disk_volume_total_bytes": 1995165736960,
-    "disk_volume_free_bytes": 1612344205312,
+    "disk_volume_free_bytes": 1612333883392,
     "model_storage_bytes": {
       "onnx-parakeet-tdt-0.6b-v3-int8": 670620027,
       "parakeet-redux": 179007626,
       "parakeet-ultra": 1256515528,
       "phonon-2": 341240433
     },
-    "benchmark_dataset_bytes": 90531686,
+    "benchmark_dataset_bytes": 71329041,
     "method": "Persistent model-cache files only; symlinks followed and duplicate inodes counted once per model family. Peak worker RSS is collected separately by /usr/bin/time -l for each fresh process across both passes."
+  },
+  "post_measurement_reference_review": {
+    "recorded_at": "2026-09-30T14:08:42.684689+00:00",
+    "note": "After inference, rescored the unchanged audio partitions against the retained YouTube JSON3 caption track after removing bracketed non-speech labels. Capped crop metadata at actual source-audio duration. The WAV and all 33 audio-part SHA-256 hashes are byte-identical to the inputs used for every inference run; only the text reference and its WER/alignment were revised."
   }
 }

@@ -16,51 +16,68 @@ Cold and warm WER are identical for all configurations.
 
 Source: [Sir Ken Robinson — Do schools kill creativity? (TED)](https://www.youtube.com/watch?v=iG9CE55wbtY). The video is 20m03s; the full captioned talk spans 26.603–1165.713 s including 0.5-s margins. Publisher English captions, not automatic captions, are the reference. Only non-speech annotations/speaker labels were removed.
 
-| Model / runtime | New process → result (s) | Loaded model (s) | Loaded realtime | WER |
-| --- | ---: | ---: | ---: | ---: |
-| ONNX CPU | 25.139 | 25.108 | 45.4× | 12.46% |
-| Redux CPU | 23.791 | 23.223 | 49.1× | 11.91% |
-| Redux GPU · Metal/MPS | 10.150 | 7.981 | 142.7× | 12.11% |
-| Ultra CPU | 23.748 | 22.191 | 51.3× | 9.76% |
-| Ultra GPU · Metal/MPS | 7.242 | 5.244 | 217.2× | 9.72% |
-| Phonon-2 CPU | 36.833 | 28.819 | 39.5× | 12.88% |
-| Phonon-2 GPU · Metal/MLX | 9.045 | 3.436 | 331.5× | 12.56% |
-
-## Portuguese lecture — 5m00s, 988 reference words
-
-| Model / runtime | New process → result (s) | Loaded model (s) | Loaded realtime | WER |
-| --- | ---: | ---: | ---: | ---: |
-| ONNX CPU | 7.127 | 6.869 | 43.7× | 9.11% |
-| Redux CPU | 6.851 | 5.143 | 58.3× | 7.89% |
-| Redux GPU · Metal/MPS | 4.065 | 1.509 | 198.8× | 8.00% |
-| Ultra CPU | 7.081 | 5.148 | 58.3× | 4.05% |
-| Ultra GPU · Metal/MPS | 3.367 | 1.117 | 268.6× | 4.05% |
-| Phonon-2 CPU | 15.254 | 6.717 | 44.7× | 16.19% |
-| Phonon-2 GPU · Metal/MLX | 7.247 | 0.669 | 448.8× | 15.89% |
+| Model / runtime | New process → result (s) | Loaded model (s) | Loaded realtime | Peak RAM RSS (MiB) | WER |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| ONNX CPU | 25.139 | 25.108 | 45.4× | 3056 [3047–3068] | 12.46% |
+| Redux CPU | 23.791 | 23.223 | 49.1× | 2048 [2048–2050] | 11.91% |
+| Redux GPU · Metal/MPS | 10.150 | 7.981 | 142.7× | 953 [941–954] | 12.11% |
+| Ultra CPU | 23.748 | 22.191 | 51.3× | 5188 [5186–5193] | 9.76% |
+| Ultra GPU · Metal/MPS | 7.242 | 5.244 | 217.2× | 962 [961–964] | 9.72% |
+| Phonon-2 CPU | 36.833 | 28.819 | 39.5× | 2283 [2279–2293] | 12.88% |
+| Phonon-2 GPU · Metal/MLX | 9.045 | 3.436 | 331.5× | 2934 [2934–2950] | 12.56% |
 
 ## English LibriSpeech — 50 clips / 3m52s, 789 reference words
 
-| Model / runtime | New process → result (s) | Loaded model (s) | Loaded realtime | WER |
-| --- | ---: | ---: | ---: | ---: |
-| ONNX CPU | 7.532 | 6.955 | 33.4× | 1.39% |
-| Redux CPU | 5.948 | 4.321 | 53.7× | 1.01% |
-| Redux GPU · Metal/MPS | 4.882 | 1.937 | 119.8× | 1.01% |
-| Ultra CPU | 7.509 | 5.703 | 40.7× | 0.76% |
-| Ultra GPU · Metal/MPS | 4.078 | 1.240 | 187.1× | 0.76% |
-| Phonon-2 CPU | 13.383 | 4.972 | 46.7× | 0.89% |
-| Phonon-2 GPU · Metal/MLX | 8.278 | 0.988 | 234.9× | 0.89% |
+| Model / runtime | New process → result (s) | Loaded model (s) | Loaded realtime | Peak RAM RSS (MiB) | WER |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| ONNX CPU | 7.532 | 6.955 | 33.4× | 2080 [2079–2085] | 1.39% |
+| Redux CPU | 5.948 | 4.321 | 53.7× | 1241 [1239–1242] | 1.01% |
+| Redux GPU · Metal/MPS | 4.882 | 1.937 | 119.8× | 1040 [1038–1043] | 1.01% |
+| Ultra CPU | 7.509 | 5.703 | 40.7× | 4289 [4287–4294] | 0.76% |
+| Ultra GPU · Metal/MPS | 4.078 | 1.240 | 187.1× | 1044 [1044–1047] | 0.76% |
+| Phonon-2 CPU | 13.383 | 4.972 | 46.7× | 1675 [1672–1676] | 0.89% |
+| Phonon-2 GPU · Metal/MLX | 8.278 | 0.988 | 234.9× | 2941 [2937–2954] | 0.89% |
 
 ## Portuguese short clip — 15s, 37 reference words
 
-| Model / runtime | New process → result (s) | Loaded model (s) | Loaded realtime | WER |
-| --- | ---: | ---: | ---: | ---: |
-| ONNX CPU | 0.831 | 0.346 | 43.3× | 0.00% |
-| Redux CPU | 2.413 | 0.203 | 73.8× | 13.51% |
-| Redux GPU · Metal/MPS | 2.457 | 0.069 | 216.1× | 13.51% |
-| Ultra CPU | 1.965 | 0.253 | 59.3× | 2.70% |
-| Ultra GPU · Metal/MPS | 2.090 | 0.051 | 293.7× | 2.70% |
-| Phonon-2 CPU | 9.680 | 0.246 | 60.9× | 13.51% |
-| Phonon-2 GPU · Metal/MLX | 6.579 | 0.034 | 443.8× | 13.51% |
+| Model / runtime | New process → result (s) | Loaded model (s) | Loaded realtime | Peak RAM RSS (MiB) | WER |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| ONNX CPU | 0.831 | 0.346 | 43.3× | 1928 [1928–1940] | 0.00% |
+| Redux CPU | 2.413 | 0.203 | 73.8× | 1069 [1069–1070] | 13.51% |
+| Redux GPU · Metal/MPS | 2.457 | 0.069 | 216.1× | 753 [751–753] | 13.51% |
+| Ultra CPU | 1.965 | 0.253 | 59.3× | 4138 [4138–4144] | 2.70% |
+| Ultra GPU · Metal/MPS | 2.090 | 0.051 | 293.7× | 731 [731–732] | 2.70% |
+| Phonon-2 CPU | 9.680 | 0.246 | 60.9× | 1595 [1594–1604] | 13.51% |
+| Phonon-2 GPU · Metal/MLX | 6.579 | 0.034 | 443.8× | 2935 [2934–2938] | 13.51% |
+
+## Portuguese lecture — 5m00s, 988 reference words
+
+| Model / runtime | New process → result (s) | Loaded model (s) | Loaded realtime | Peak RAM RSS (MiB) | WER |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| ONNX CPU | 7.127 | 6.869 | 43.7× | 2184 [2179–2184] | 9.11% |
+| Redux CPU | 6.851 | 5.143 | 58.3× | 1192 [1191–1193] | 7.89% |
+| Redux GPU · Metal/MPS | 4.065 | 1.509 | 198.8× | 753 [753–754] | 8.00% |
+| Ultra CPU | 7.081 | 5.148 | 58.3× | 4316 [4313–4317] | 4.05% |
+| Ultra GPU · Metal/MPS | 3.367 | 1.117 | 268.6× | 761 [760–764] | 4.05% |
+| Phonon-2 CPU | 15.254 | 6.717 | 44.7× | 1730 [1721–1731] | 16.19% |
+| Phonon-2 GPU · Metal/MLX | 7.247 | 0.669 | 448.8× | 2947 [2944–2949] | 15.89% |
+
+## Memory and disk footprint
+
+Peak RAM is the median maximum resident set size across the three fresh worker processes, with the observed min–max range beside it. `/usr/bin/time -l` measures RSS for the complete two-pass worker, including model loading; this is process RAM and may not equal total system-wide unified-memory pressure.
+
+Resource snapshot captured 2026-09-30T13:53:23.659303+00:00: the machine had 128 GiB physical RAM and 1501.6 GiB free of 1.8 TiB on the benchmark volume. These are machine-level snapshots, not per-model allocations.
+
+Persistent model files already present in the local cache (counting symlink targets and deduplicating file inodes within each family):
+
+| Model family | On-disk model cache |
+| --- | ---: |
+| onnx-parakeet-tdt-0.6b-v3-int8 | 639.6 MiB |
+| parakeet-redux | 170.7 MiB |
+| parakeet-ultra | 1198.3 MiB |
+| phonon-2 | 325.4 MiB |
+
+The benchmark's prepared dataset folder occupied 86.3 MiB at that snapshot. The run-results folder currently occupies 3.5 MiB, including per-repetition JSON and `/usr/bin/time` logs.
 
 ## Scope and validation
 

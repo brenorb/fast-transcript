@@ -1,0 +1,218 @@
+{
+  "protocol": "asr-v2",
+  "case": "pt-tedx-yvonne",
+  "language": "pt",
+  "reference_type": "YouTube automatic captions, not human-edited ground truth",
+  "normalization": "lowercase; remove Unicode punctuation; preserve accents and numerals; collapse whitespace",
+  "partition": "Contiguous PCM; choose lowest 200 ms energy boundary between 25–30 s; final remainder <=31 s; no overlap, no dropped samples; identical parts for all engines.",
+  "reference_words": 1986,
+  "audio_seconds": 923.815625,
+  "utterances": [
+    {
+      "id": "pt-tedx-yvonne",
+      "text": "muito prazer de estar aqui com vocês eu tô aqui pra conjugar com vocês a magia de ensinar me tocou muito o que aquele professor americano falou porque ensinar é realmente uma magia principalmente num país onde a educação não funciona eu não estou vendo aqui o país ocupa uma das últimas posições na educação do mundo em 70 países nós somos o 68 e como você vai explicar isso num país que gasta 5 por cento do pib educação que está acontecendo que faz décadas que nós nos saímos desse desse vergonhoso vergonhoso é dados então você tem 30% dos alunos não alcança um nível adequado de português você tem 14% dos alunos que não há ao consuni nível adequado de matemática e os alunos que não aprendem 55% são esses alunos que são meu foco e 55% eles são 20 milhões de crianças brasileiras zerada se na escola que são as crianças que eu recebo no projeto erê onde você tem que construir todos os circuitos neuronais onde uma coisa é uma coisa outra coisa é outra coisa eu sempre me perguntando criança de 10 anos nove anos cinco anos na escola que não não consegue falar não consegue se comunicar não conseguem aprender e eu dediquei a minha vida a essas crianças e dediquei e dedico esse é um menino que foi abusado aos seis anos de idade então como você vai uma criança dessas sua morgen ti amor daí o sentido de que ali naquele lugar tem alguém que entende ele vai amar ele que vai fazer com que ele perca o medo e é isso que nós fazemos todos os dias no projeto heleno josé isaias mais uma banda de rock então conversão várias vezes sentava agora ele fica bem graças a deus jean essa é uma classe que eu tinha de crianças todas elas com problemas cognitivos elas eram adorava isso mas isso demandou muito estudo da minha parte para entender acho que fazer com que elas se desenvolvesse um espaço não tão grande de tempo porque uma reabilitação cognitiva leve de seis meses a um ano e até hoje estudo quer reduzir esse tempo eu acho que a gente pode fazer isso se deve fazer isso e essa aqui foi há uns 20 dias atrás uma menina que chegou a uma família completamente desestruturada e que eu vou ter que começar a fazer todo esse processo enquanto os dedinhos tem aqui quanto os detidos técnico cho quantos do título aqui muito bem para ver a que a tia não tem pressa até aqui foi muito bem parabéns agora eu quero que você tem um monte de bater muito bem de novo bom então esse é um trabalho que eu faço com as crianças eu mesmo estão em sala de aula mas isso é um trabalho de aceleração né até que esses circuitos neuronais as sinapses sejam construídas para que ela possa participar realmente de uma sala de aula e começar o seu aprendizado e nós temos no brasil infelizmente em 2016 um milhão de crianças saem da escola ano passado no rio de janeiro foram 18 mil onde estão essas crianças que estão fazendo nós vemos muitas delas nas ruas já entrando na marginalidade então como eu disse tem alguma coisa errada na escola brasileira e por que não se aprende tempo motivo primordial para mim que a violência do estado de uma violência ímpar na porta da minha escola no complexo da maré na zona norte do rio ano passado foram 159 detidos nós estamos em dezembro esse ano foi um pouco menos foi 124 mas vocês podem imaginar você ensinar crianças contínuos como se fosse uma guerra da síria mas é isso que acontece e todas as comunidades pobres brasileiras debaixo de desonerar de risco é uma guerra é uma guerra eu não vejo não vejo sinceramente nenhum governante tomar consciência disso fazer alguma coisa pra que isso cesse o que impulsionou para continuar um pouco da minha história em cinco minutos e enfim é 71 anos de vida não 50 anos de dessa história bom tem trechos é duas fases na vida três fases na vida que mudaram completamente o meu destino o primeiro foi quando eu fui voluntária e fui para crianças cegas quando tinha 13 anos e isso todas as famílias deveriam fazer mandar seus filhos fazer um trabalho voluntário para conhecer uma outra realidade com esses aí do seu conforto do seu caso no e ver como é que a vida das outras pessoas a segunda foi contundente na universidade muito cedo com 17 anos eu fiz o projeto rondon que pra quem não sabe é um projeto é do governo federal que mandava estudantes pra mim com joão gekko do brasil eu fui pro ceará e no ceará eu vi a pobreza mas a pobreza braba que eu não conhecia no rio de janeiro olhando aquelas crianças barriga grande com fome eu disse que nem mesmo é isso que eu vou fazer não importa qual seja a minha profissão que eu não sabia ainda eu vou dar uma atenção essas crianças e conseguir uma bolsa para estudar na frança foi catar estudar filologia e linguística onde o fez graduação e doutorado e eu continuei a trabalhar com os filhos de imigrantes na periferia do pares e pares e conseguido uma ong estrangeira um estipêndio e eu fui pesquisar as crianças em países em guerra na áfrica etiópia sudão é ele estréia tanzânia e depois angola e aí eu comecei a formatar tudo um conhecimento que iria aparecer bastante depois quando eu fundei o projeto o eln e quando voltei ao brasil em 1980 e foi trabalhar nas ruas eu vou dizer uma coisa vocês eu amei trabalhar nas ruas eu amava cada uma dessas crianças como se elas fossem minhas eu ia todos os dias eu fundei uma escola sem portas nem janelas eu tinha um prazer estar com elas de amá las se na elas de mostrar um outro mundo dessas crianças completamente renegados nesse país completamente né eu não conseguia que aquelas crianças fossem vistas em 1993 um dos meu grupo c no grupo que ficava lá candelária e esse grupo da candelária e 18 foram assassinados por policiais militares eu todo dia dava um toque maps botarem no telefone ligado estava tudo bem no doping norma de 72 crianças e o dia os policiais militares foram assassinados eles me ligaram tinha tanta gente peguei meu carro e fui foi a primeira a chegar nessa posição dessa foto fiquei de meia noite e meia até seis da manhã em santo e que eu pensava com eles abraçados comigo que os outros corpos no chão eu dizer que a corda e acolhe o que você vai fazer e agora eu disse agora eu tenho que fazer de repente eu tenho que fazer muitas coisas e naquele momento eu decidi por causa de um desses meninos que disse que tinha um parente debaixo de um viaduto em uma favela eu decidi a brincar abrir a primeira sala de aula doer e debaixo do viaduto de repente tinha 200 crianças comigo na e nós construímos um espaço com tapume enfim uma coisa muito precária e ali debaixo desse viaduto fiquei quatro anos até 1998 quando eu fundei o projeto erê aí o meu sonho porque quando estava com aquelas crianças na rua pensava meu deus eu tenho que ter uma escola possa continuar dessa maneira e aí o sonho aconteceu por um empresário americano que me ligou vi uma reportagem não sei o que você precisa é se uma casa e aquela favelinha foi transferida para o complexo da maré e eu segui aquelas crianças do complexo da maré onde estou até hoje há 20 anos né sendo assim eu comecei a formatar uma pedagogia de ensino que a pedagogia o e melo que é focada na memória aqui já foi falado mais ou menos o que é memória memória e imaginação a associação imaginação sentidos que mantém a memória viva porque crianças estressadas crianças traumatizadas elas não têm a memória curta trabalhada por isso que elas não armazendo e é por isso que dizem ah não aprende é burra crianças traumatizadas tem inteligência intacta o que a gente tem que fazer saber trabalhar essa inteligência ou todas as inteligências e sala de aula e eu comecei a estudar na neurociência na educação porque depois a partir dos 190 já tinha e o meu objetivo qual é equilibrado os dois hemisférios hemisfério lúdico aprendi a cantar dançar tudo bem o hemisfério esquerdo titã os compartimentos do conhecimento e se é fechado então um dia a dia o dia a dia da equipe é abrir essas caixinhas todos os dias para que elas consigam ter uma mola que feche que abre quando necessário que é a nossa memória o que trabalhar em sala de aula estímulo visual retórica oralidade exercício açor acho que você só aprende com a realidade você não aprende escrevendo descrição e análise velocidade cerebral inteligência espacial inteligência interpessoal emocional linguagem linguagem porque porque eu como filólogo e sei que uma criança de seis anos precisa ter quatro mil palavras da memória longa para poder aprender a ler e escrever olha as crianças chichico pra mim tem 300 400 daí porque o brasil não alfabetizada crianças e três anos quando a maioria do mundo em um ano nós somos fantásticos raciocínio lógico memória curta e longa agilidade mental plasticidade cerebral coordenação foco pré conhecimento e à curiosidade que se contrapõe à monotonia porque as crianças não gosta da escola é chato prender eu não gosto de estudar porque tem a monotonia né e ensinar a emoção ensinar é amor amor de que ensina e amor de quem está aprendendo então essa troca ninguém vence não tem e não tem como nessa troca vai funcionar e os objetivos foi é otimizar o tempo que a amazon maior armazenamento melhorar a qualidade do aprendizado aumentar a velocidade cerebral etc aí o sonho continua porque em 1901 2018 e nós estamos agora são 15 mil professores capacitados na pedagogia érico de melo de 1 199 escolas no brasil que utiliza uma pedagogia e em 2015 aconteceu o sonho maior a unicef reconheceu o projeto irei à pedagogia ou uma das seis melhores estratégias para crianças onde há lixo aí abre um mundo é porque eu tenho capacitar professores na europa e em escolas que lidam com refugiados então esse é o sonho de toda a educadora esse é o sonho de ver a sua metodologia o que você estudou o que você fez tornar-se política pública como foi no rio de janeiro como foi esse vídeo e do marajó várias cidades do brasil que utilizam essa pedagogia com sucesso cerca de 95 por cento de sucesso desbloqueio de crianças traumatizadas e o que eu queria deixar aqui bem claro é que tudo é possível não há nada que não seja possível em educação eu tenho de verde de propósito porque eu vim aqui dizer pra vocês que a esperança é que vai melhorar no brasil nós temos ter esperanças temos que ter fé nós temos que ter confiança nós temos que fazer a nossa parte ou como voluntário nos seus estudos não importa nós temos que ter conosco aquela vontade de melhorar nosso país eo nosso e também o dos outros porque o mundo todo está uma grande confusão não é e isso só é possível amigos como amor amor pela humanidade e amor por uma criança amor porém foi por tudo que acontece nesse mundo né eu queria terminar pedindo a vocês e vocês disserem comigo assim bem alto minhoto para que fosse ouvido nos quatro cantos do mundo a educação só a educação muda o mundo vamos lá só a educação muda o mundo mais alto só a educação muda o mundo",
+      "audio_seconds": 923.815625,
+      "source_wav_sha256": "2b56fa950944b39a977746837d8c2becfc35aa6defb1d2c622d823a1a1c1caa3",
+      "parts": [
+        {
+          "path": "audio/pt-tedx-yvonne/000.wav",
+          "start_sample": 0,
+          "end_sample": 467840,
+          "sha256": "0325414705a89e7aa28750edcbd8837ffe6f87eca2173d0980166d1126d37a6c"
+        },
+        {
+          "path": "audio/pt-tedx-yvonne/001.wav",
+          "start_sample": 467840,
+          "end_sample": 927200,
+          "sha256": "dda98266d010b5bff61b36bfb488f0f6cad094a916f73563a40829ff3b54fa0f"
+        },
+        {
+          "path": "audio/pt-tedx-yvonne/002.wav",
+          "start_sample": 927200,
+          "end_sample": 1388640,
+          "sha256": "91d9961a599d4dd2bf1fdf93919dcc3312f2c91d9312f734154f5af9f475b963"
+        },
+        {
+          "path": "audio/pt-tedx-yvonne/003.wav",
+          "start_sample": 1388640,
+          "end_sample": 1792320,
+          "sha256": "495578c60f1cd3113cc7382e6460c197041b0aa4ae29ca88554eb72aa3cc6f05"
+        },
+        {
+          "path": "audio/pt-tedx-yvonne/004.wav",
+          "start_sample": 1792320,
+          "end_sample": 2257280,
+          "sha256": "6819389fdb1f0f3d2c17995d27fbfd9f55e23f78eea7064a8559be094982acfe"
+        },
+        {
+          "path": "audio/pt-tedx-yvonne/005.wav",
+          "start_sample": 2257280,
+          "end_sample": 2727840,
+          "sha256": "fc6337e9f3fcb352309a62087cc942971e5494e5f8d3234bb194f111ddce1df3"
+        },
+        {
+          "path": "audio/pt-tedx-yvonne/006.wav",
+          "start_sample": 2727840,
+          "end_sample": 3174720,
+          "sha256": "2ad42bfddcb4bc6ef8b21fd87cc07fbff4110a9afe874a745db8a5dc9489b408"
+        },
+        {
+          "path": "audio/pt-tedx-yvonne/007.wav",
+          "start_sample": 3174720,
+          "end_sample": 3617120,
+          "sha256": "d5dd741952af2f29ae7205c0518804f57f544f1835b1035dee39b99d157b5738"
+        },
+        {
+          "path": "audio/pt-tedx-yvonne/008.wav",
+          "start_sample": 3617120,
+          "end_sample": 4074080,
+          "sha256": "8596b89977b54cef6ca62982ec968bff94ef0e97df6a148759bad339e9bbd526"
+        },
+        {
+          "path": "audio/pt-tedx-yvonne/009.wav",
+          "start_sample": 4074080,
+          "end_sample": 4537920,
+          "sha256": "6c9b0b59b085b9a74a22a77073e6a3196fd154b3d1797f15e0796fc80dc4fed7"
+        },
+        {
+          "path": "audio/pt-tedx-yvonne/010.wav",
+          "start_sample": 4537920,
+          "end_sample": 5012320,
+          "sha256": "48e1c4690a18b9b3423ea33a7bd9614d1c3fc2c6ebb8830b9613df54ea74fb9f"
+        },
+        {
+          "path": "audio/pt-tedx-yvonne/011.wav",
+          "start_sample": 5012320,
+          "end_sample": 5476480,
+          "sha256": "22b9d7c0b3dca672a1fc4a3134ef41b86410d93f305520d28bca6c1bfc7e4c15"
+        },
+        {
+          "path": "audio/pt-tedx-yvonne/012.wav",
+          "start_sample": 5476480,
+          "end_sample": 5877280,
+          "sha256": "ebc9df65999d91937748702259f2f0228c5c91c59fc2d259a14c58ae39d37a4e"
+        },
+        {
+          "path": "audio/pt-tedx-yvonne/013.wav",
+          "start_sample": 5877280,
+          "end_sample": 6330080,
+          "sha256": "d38f8a499161b6ba8fb54c38bb6865699d1b317139b10fcd1af00aa14572958e"
+        },
+        {
+          "path": "audio/pt-tedx-yvonne/014.wav",
+          "start_sample": 6330080,
+          "end_sample": 6808160,
+          "sha256": "49fec0fa793a5a7b43e1e3de02a08a8bbe1dc0d025dc5c17d39e2c6c94b8d796"
+        },
+        {
+          "path": "audio/pt-tedx-yvonne/015.wav",
+          "start_sample": 6808160,
+          "end_sample": 7236960,
+          "sha256": "bc8e267d8baee656e400bda6a30fe8c3e0ea557d4092f71db9bedffb3a376246"
+        },
+        {
+          "path": "audio/pt-tedx-yvonne/016.wav",
+          "start_sample": 7236960,
+          "end_sample": 7693120,
+          "sha256": "c718fc6c4de655bd4cc4583a13463b4dc0c1baee8860b2e3a51544658436ed99"
+        },
+        {
+          "path": "audio/pt-tedx-yvonne/017.wav",
+          "start_sample": 7693120,
+          "end_sample": 8166080,
+          "sha256": "d1a4f7c3e23d520531cb4ca738241c8586412653f32f444ebf4e6ce7b392674b"
+        },
+        {
+          "path": "audio/pt-tedx-yvonne/018.wav",
+          "start_sample": 8166080,
+          "end_sample": 8614400,
+          "sha256": "31c2d71058f9bc2b77f4c2cf3204775debc9ef803503bbed723192af26bc8ffe"
+        },
+        {
+          "path": "audio/pt-tedx-yvonne/019.wav",
+          "start_sample": 8614400,
+          "end_sample": 9062720,
+          "sha256": "137e0f5d7ce93621284dbd8b1c8333060c18e2bc993a4d9e4a7c2f2d4e8538b2"
+        },
+        {
+          "path": "audio/pt-tedx-yvonne/020.wav",
+          "start_sample": 9062720,
+          "end_sample": 9495200,
+          "sha256": "cca7ebe5654d3ac38cb3b5ccd0836df62a09b596d41d11dcfd497ad8fc350457"
+        },
+        {
+          "path": "audio/pt-tedx-yvonne/021.wav",
+          "start_sample": 9495200,
+          "end_sample": 9955520,
+          "sha256": "3487cfbd04ccef2366c629d31f1eae1a1c5d9f5903492ec9c9efd274092cea02"
+        },
+        {
+          "path": "audio/pt-tedx-yvonne/022.wav",
+          "start_sample": 9955520,
+          "end_sample": 10424800,
+          "sha256": "9d0bc592bb28650bf064f4a08a0b2e502a3926ab68f8ea142e54d1186846e86e"
+        },
+        {
+          "path": "audio/pt-tedx-yvonne/023.wav",
+          "start_sample": 10424800,
+          "end_sample": 10902400,
+          "sha256": "09ab4d40fd3d7a2a3c7ca8761500e2a08525a4e4ba964dec05cdd00302828235"
+        },
+        {
+          "path": "audio/pt-tedx-yvonne/024.wav",
+          "start_sample": 10902400,
+          "end_sample": 11345280,
+          "sha256": "8adc0caa66a45bb99c16d09552ffa452beebc125d6996532350872b78574e377"
+        },
+        {
+          "path": "audio/pt-tedx-yvonne/025.wav",
+          "start_sample": 11345280,
+          "end_sample": 11820160,
+          "sha256": "cfc19a0d754cac7cabecf0056e76218afe753ac8c9ecd55e010783aa8861c050"
+        },
+        {
+          "path": "audio/pt-tedx-yvonne/026.wav",
+          "start_sample": 11820160,
+          "end_sample": 12288000,
+          "sha256": "3986001cbb51308ffb317a47cd84e236cd3572f5806351f4c1d9aeac76605d75"
+        },
+        {
+          "path": "audio/pt-tedx-yvonne/027.wav",
+          "start_sample": 12288000,
+          "end_sample": 12729440,
+          "sha256": "c3234338e52098f9757f60f998cb287d95cd4484c7d254c3a931b97be67112f0"
+        },
+        {
+          "path": "audio/pt-tedx-yvonne/028.wav",
+          "start_sample": 12729440,
+          "end_sample": 13144960,
+          "sha256": "9c8ce2b52fdcb01a4c85dd1207dd3c811bf507911a165bf0ef14dbba75c13c3f"
+        },
+        {
+          "path": "audio/pt-tedx-yvonne/029.wav",
+          "start_sample": 13144960,
+          "end_sample": 13571360,
+          "sha256": "80ea83ae025a0cee2851b39462a53e18b8cb64132d7a6707315755c603a91acf"
+        },
+        {
+          "path": "audio/pt-tedx-yvonne/030.wav",
+          "start_sample": 13571360,
+          "end_sample": 14031200,
+          "sha256": "70c1fecb448b6268d0a4902eeb8890e16992c794de33aecd6bad7637d7c49fe1"
+        },
+        {
+          "path": "audio/pt-tedx-yvonne/031.wav",
+          "start_sample": 14031200,
+          "end_sample": 14431200,
+          "sha256": "9bca97f83e86ce7b3044e954f6ba40901730a5e32c84f127a5cff78f9fc27108"
+        },
+        {
+          "path": "audio/pt-tedx-yvonne/032.wav",
+          "start_sample": 14431200,
+          "end_sample": 14781050,
+          "sha256": "0e197bdb8e34ba58a1974c2a29dd5e5358f53ee60238bdc49f2f500e5285dfb2"
+        }
+      ]
+    }
+  ]
+}
