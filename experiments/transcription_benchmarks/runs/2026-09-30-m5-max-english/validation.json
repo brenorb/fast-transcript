@@ -1,0 +1,21 @@
+{
+  "validator": "jiwer 4.0.0",
+  "transcripts_checked": 1050,
+  "corpus_passes_checked": 21,
+  "audio_hashes_checked": 50,
+  "reference_words": 789,
+  "checks": [
+    "per-utterance edit counts",
+    "corpus-level WER",
+    "unique and complete utterance coverage",
+    "timing sums and medians",
+    "wave durations and checksums",
+    "manifest checksum",
+    "transcript stability",
+    "Phonon duration and no truncation"
+  ],
+  "onnx_cli_parity_sample_ids": [
+    "2277-149896-0000",
+    "2277-149896-0010"
+  ]
+}

@@ -1,0 +1,471 @@
+{
+  "cold": {
+    "corpus_seconds": 25.004070708,
+    "phase": "cold",
+    "runtime": "transcribe-rs 0.3.8 int8",
+    "utterances": [
+      {
+        "id": "ted-ken-robinson",
+        "parts": [
+          {
+            "audio_seconds": 26.27,
+            "call_seconds": 0.578397916,
+            "text": "Good morning. How are you? It's been great, hasn't it? It's been I've been blown away by the whole thing. In fact, I'm leaving. There have been three themes, haven't there, running through the conference, which are rather relevant to what I want to talk about. One is the extraordinary evidence of human creativity."
+          },
+          {
+            "audio_seconds": 26.97,
+            "call_seconds": 0.601088041,
+            "text": "in all of the presentations that we've had and and in all the people here. Just the vr you know the the the the the the the the the the variety of it and the range of it uh the second is that it's put us in a place where we have no idea what's going to happen uh in terms of the future no idea how this may play out uh I have an interest in education uh actually what I find is everybody has an interest in education. Don't you I find this very interesting if you did a di at a dinner party"
+          },
+          {
+            "audio_seconds": 27.79,
+            "call_seconds": 0.606502458,
+            "text": "And you say you work in education. Actually you're not often at dinner parties, frankly. If you work in education, you're not asked. And you're never asked back, curiously. But if you are, and you say to somebody, uh what do you do, and you say you work in education, you can see the blood run from their face. They think, Oh my God, you know, why me?"
+          },
+          {
+            "audio_seconds": 28.48,
+            "call_seconds": 0.628440375,
+            "text": "My one night out all week. But if you ask people about their education, they pin you to the wall. It's one of those things that goes deep with people. Am I right? Like religion and money and other things. So um I have a big interest in education, and I think we all do. We have a huge vested interest in it. Partly because it's education that's meant to take us into this future that we can't grasp."
+          },
+          {
+            "audio_seconds": 26.71,
+            "call_seconds": 0.589150167,
+            "text": "If you think of it, children starting school this year will be retiring in 2065. Nobody has a clue, despite all the expertise that's been on parade for the past four days, what the world will look like in five years' time. And yet we're meant to be educating them for it. So the unpredictability, I think, is extraordinary. And the third part of this is that we've all agreed nonetheless on the really"
+          },
+          {
+            "audio_seconds": 26.16,
+            "call_seconds": 0.586349416,
+            "text": "Um extraordinary capacities that children have. The capacities for innovation. I mean Serena last night was a marvel, wasn't she? Just seeing what she could do. And she's exceptional, but I think she's not um, so to speak, exceptional in the whole of of of childhood. What you have there is a person of extraordinary dedication who found a talent. And my contention is all kids have tremendous talents and we squander them."
+          },
+          {
+            "audio_seconds": 30.0,
+            "call_seconds": 0.670874625,
+            "text": "Pretty ruthlessly. So I want to talk about education and I want to talk about creativity. My contention is that creativity now is as important in education as literacy. And we should treat it with the same status. Thank you. That was it, by the way. So fifteen minutes left."
+          },
+          {
+            "audio_seconds": 28.48,
+            "call_seconds": 0.62788525,
+            "text": "Well I was born No the um I had a great story recently uh I love telling it of a little girl who was uh in a drawing lesson, she was six and she was at the back drawing and the the teacher said this little girl hardly ever paid attention and in this drawing lesson she did. And uh the teacher was fascinated, she went over to her and she said, What are you drawing? And the girl said, I'm drawing a picture of God. And the teacher said, but nobody knows what God looks like."
+          },
+          {
+            "audio_seconds": 26.05,
+            "call_seconds": 0.559972333,
+            "text": "And the girls said they will in a minute. When my son was four in England actually he was four everywhere to be honest. Wherever he went, he was four that yeah, but he was in the Nativity play. Do you remember the story?"
+          },
+          {
+            "audio_seconds": 28.7,
+            "call_seconds": 0.643222958,
+            "text": "No, it's big. It's big story. Mel Gibson did the sequel. You may have seen it. I don't know. Nativity two. But um James got the part of Joseph, which we were thrilled about. We consider this to be one of the lead parts. We had the place crammed full of agents and T shirts, you know. James Robinson is Joseph. He didn't have to speak, but do you know the bit where the three kings come in? Now they come in bearing gifts and they they they they they they they they they they they bring gold, frankincense, and mare. This really happened. We were sitting there and they"
+          },
+          {
+            "audio_seconds": 27.76,
+            "call_seconds": 0.607928833,
+            "text": "I think just went out of sequence. Because we talked to a little boy afterwards and said, you know, you okay with that? And they said, yeah, why was that wrong? They just switched, I think it was it. Anyway, the three boys came in, little four year olds with tea towels on their heads, and they put these boxes down. The first boy said, I bring you gold. And the second boy said, I bring you mare. And the third boy said, Frank sent this."
+          },
+          {
+            "audio_seconds": 25.1,
+            "call_seconds": 0.53992375,
+            "text": "What these things have in common is that kids will take a chance. If they don't know, they'll have a go. Am I right? They're not frightened of being wrong. Now I don't mean to say that being wrong is the same thing as being creative. What we do know is if you're not prepared to be wrong, you'll never come up with anything original."
+          },
+          {
+            "audio_seconds": 27.79,
+            "call_seconds": 0.599680541,
+            "text": "If you're not prepared to be wrong. And by the time they get to be adults, most kids have lost that capacity. They have become frightened of being wrong. And we run our companies this, by the way. We stigmatise mistakes. And we're now running national education systems where mistakes are the worst thing you can make. And the result is that we are educating people out of their creative capacities. Picasso once said this, he said that all children are born artists."
+          },
+          {
+            "audio_seconds": 29.84,
+            "call_seconds": 0.671135208,
+            "text": "The problem is to remain an artist as we grow up. I believe this passionately that we don't grow into creativity, we grow out of it. Or rather, we get educated out of it. So why is this? I lived in Stratford on Avon uh until about five years ago. In fact, we moved from Stratford to Los Angeles. So you can imagine what a seamless transition you know this was from. Actually, we lived in a place called Snitterfield, uh just outside Stratford, which is where Shakespeare's father was born."
+          },
+          {
+            "audio_seconds": 29.61,
+            "call_seconds": 0.628491292,
+            "text": "Are you struck by a new thought? I was. You don't think of Shakespeare having a father, do you? Do you? Because you don't think of Shakespeare being a child? Do you Shakespeare being seven? I never thought of it. I mean he was seven at some point, he was in somebody's English class, wasn't he? How annoying would that be?"
+          },
+          {
+            "audio_seconds": 29.05,
+            "call_seconds": 0.613158875,
+            "text": "Must try harder. Being sent to bed by his dad to Shakespeare, go to bed now, you know, to William Shakespeare, you know. And put the pencil down. And stop speaking like that."
+          },
+          {
+            "audio_seconds": 29.68,
+            "call_seconds": 0.662503833,
+            "text": "We moved from Stratford to Los Angeles. And I just want to say a word about the transition. Actually, my son uh didn't want to come. I've got two kids. Uh he's twenty-one now and my daughter's sixteen. He didn't want to come uh to Los Angeles. He loved it, but he had a girlfriend in England. Uh this this was the love of his life. Sarah. He'd known her for a month. Mind you, they've had their fourth anniversary. Because it's a long time when you're sixteen. Anyway, he was really upset on the plane. He said, I'll never find another girl like Sarah."
+          },
+          {
+            "audio_seconds": 27.0,
+            "call_seconds": 0.565327416,
+            "text": "And we were rather pleased about that, frankly. She was the main reason we were leaving the country. But something strikes you when you move to America and when you travel around the world, every education system on Earth has the same hierarchy of subjects."
+          },
+          {
+            "audio_seconds": 27.97,
+            "call_seconds": 0.628429709,
+            "text": "Everyone, doesn't matter where you go, you think it would be otherwise, but it isn't. At the top are mathematics and languages, then the humanity is in the bottom of the arts, everywhere on earth. And in pretty much every system, too, there's a hierarchy within the arts. Art and music are normally given a higher status in schools than drama and dance. There isn't an education system on the planet that teaches dance every day to children the way we teach them mathematics. Why? Why not? I think this is rather important."
+          },
+          {
+            "audio_seconds": 25.48,
+            "call_seconds": 0.579835333,
+            "text": "I think math is very important, but so is dance. Children dance all the time, if they're allowed to. We all do. We all have bodies, don't we? Did I miss a meeting? I mean I think I I think Truthfully what happens is as children grow up, we start to educate them progressively from the waist up. And then we focus on their heads and slightly to one side. If you were to visit education as an alien and say, what's it for? public education,"
+          },
+          {
+            "audio_seconds": 26.68,
+            "call_seconds": 0.57786375,
+            "text": "I think you'd have to conclude if you look at the output, you know, who s really succeeds by this? Who does everything they should? Who gets all the brownie points? You know, who are the winners? I think you'd have to conclude the whole purpose of public education throughout the world is to produce university professors. Isn't it? They're the people who come out the top. And I I used to be one. So there. You know. And I like university professors, but you know."
+          },
+          {
+            "audio_seconds": 26.57,
+            "call_seconds": 0.587903125,
+            "text": "We shouldn't hold them up as the uh the the the the the the the the the the the h h h h h h h h h h h high watermark of all human achievement. They're just a form of life. You know another form of life. But they're rather curious, and I say this out of affection for them. There's something curious about professors, in my experience, not all of them, but typically, they live in their heads. They live up there and slightly to one side. They're disembodied, you know, in a kind of literal way. You know, they they they they they they they they they they they look upon their body as a form of transport for their heads."
+          },
+          {
+            "audio_seconds": 28.4,
+            "call_seconds": 0.625404375,
+            "text": "It's a way of getting their head to meetings. If you want real evidence of out of body experiences, by the way, get yourself along to a residential conference for senior academics. And pop into the disc attack on the final night. And there you will see it."
+          },
+          {
+            "audio_seconds": 26.24,
+            "call_seconds": 0.571811417,
+            "text": "Drone men and women writhing uncontrollably off the beat. Waiting to end so they can go home and write a paper about it. Our education system is predicated on the idea of academic ability. And there's a reason. The whole system was invented round the world. There were no public systems for education really before the 19th century. They all came into being to meet the needs of industrialism."
+          },
+          {
+            "audio_seconds": 25.37,
+            "call_seconds": 0.55820675,
+            "text": "So the hierarchy is rooted on two ideas. Number one, that the the the most useful subjects for work are at the top. So you were probably stared benignly away from things at school when you're a kid, things you liked, on the grounds you would never get a job doing that. Is that right? Don't do music, you're not going to be a musician, don't do art, you won't be an artist. Uh benign advice. Now profoundly mistaken. The whole world is engulfed in a revolution."
+          },
+          {
+            "audio_seconds": 25.27,
+            "call_seconds": 0.55752075,
+            "text": "And the second is academic ability, which has really come to dominate our view of intelligence because the universities designed the system in their image. If you think of it, the whole system of public education around the world is a protracted process of university entrance. And the consequence is that many highly talented, brilliant, creative people think they're not. Because the thing they were good at at at school wasn't valued or was actually stigmatized. And I think we can't afford to go on that way."
+          },
+          {
+            "audio_seconds": 27.02,
+            "call_seconds": 0.58775375,
+            "text": "In the next thirty years, according to UNESCO, more people worldwide will be graduating through education than since the beginning of history. More people. And it's the combination of all the things we've talked about, technology and its transformation effect on work, and demography and the huge explosion in population. Suddenly, degrees aren't worth anything. Isn't that true? When I was a student, if you had a degree, you had a job. If you didn't have a job, it's because you didn't want one."
+          },
+          {
+            "audio_seconds": 25.13,
+            "call_seconds": 0.54458325,
+            "text": "And I didn't want one, frankly. So But now kids with out with degrees are often heading home uh to carry on playing video games because you need an MA where the previous job required a BA and now you need a PhD for the other. It's a process of academic inflation and it indicates the whole structure of education is shifting beneath our feet. We need to radically rethink our view of intelligence. We know three things about intelligence. One, it's diverse."
+          },
+          {
+            "audio_seconds": 27.75,
+            "call_seconds": 0.616282334,
+            "text": "We think about the world in all the ways that we experience it. We think visually, we think in sound, we think kinesthetically, uh, we think in abstract terms, we think in movement. Secondly, intelligence is dynamic. If you look at the interactions of a human brain, as we heard yesterday from a number of presentations, intelligence is wonderfully interactive. The brain isn't divided into compartments. In fact, creativity, which I define as the process of having original ideas that have value,"
+          },
+          {
+            "audio_seconds": 27.45,
+            "call_seconds": 0.617279083,
+            "text": "More often than not comes about through the interaction of different disciplinary ways of seeing things. The brain that's intentionally by the way, there's a shaft of nerves that joins the two houses of the brain called the corpus callosum. It's thicker in women. Following on from Helen Yesterday, I think this is po probably why women are better at multitasking. Because you are, aren't you? That's a raft of research. But I know it for my personal life. If my wife is cooking a meal at home, which is not often"
+          },
+          {
+            "audio_seconds": 28.59,
+            "call_seconds": 0.624592667,
+            "text": "Thankfully, but you know if she's No, she's good at some things. But if she's cooking, you know, she's dealing with people on the phone, she's talking to the kids, she's painting the ceiling, you know, she's doing open heart surgery over here. If I'm cooking, the door is shut, the kids are out, the phone's on the hook, if she comes in, I get annoyed. I say, Terry, please, I'm trying to fry an egg in here."
+          },
+          {
+            "audio_seconds": 27.93,
+            "call_seconds": 0.603194708,
+            "text": "Give me a break. Actually, there was a old phil ph ph ph ph philosophical thing, if a tree falls in a in a forest and nobody hears it, did it happen? Remember that old chestnut? I saw a great t-shirt really recently which said, um if a man speaks his mind in a forest and no woman hears him, is he still wrong?"
+          },
+          {
+            "audio_seconds": 28.75,
+            "call_seconds": 0.6435785,
+            "text": "And the third thing about intelligence is it's distinct. I I'm doing a new book at the moment called Epiphany, which is uh based on a series of interviews with people about how they discovered their talent. I'm fascinated by how people got to be there. Uh it's really prompted by a conversation I had with a wonderful woman who make most people have never heard of. She's called called Jillian Lynn. Have you heard of her? Some have. She's a choreographer and everybody knows her work. She did Cats and Phantom of the Opera. She's wonderful. I used to be on the board of the Royal Ballet in England."
+          },
+          {
+            "audio_seconds": 26.57,
+            "call_seconds": 0.588566875,
+            "text": "As you can see. And uh A Anyway, Jillian and I had lunch one day. I said, How'd you gotta be a dancer? And she said it was interesting. When she was at school, she was really hopeless. And the school in the thirties wrote to her parents said, We think Jillian has a learning disorder. She couldn't concentrate, she was fidgeting. I think now they'd say she had ADHD. Wouldn't you? But this was the nineteen thirties and ADHD hadn't been invented, you know, at this point. So it wasn't an available condition."
+          },
+          {
+            "audio_seconds": 29.62,
+            "call_seconds": 0.647357417,
+            "text": "People weren't aware they could have that. Anyway, she sent went to see this um this specialist. So this oak paneled room and and she was there with uh with her mother and she was led and sat on this uh chair at the end and she sat on her hands for twenty minutes while this man talked to her mother about all the problems Gillian was having at school. And at the end of it, um because she was disturbing people at homework was always late and so on, little kid of eight. In the end, uh the"
+          },
+          {
+            "audio_seconds": 25.1,
+            "call_seconds": 0.562884458,
+            "text": "The doctor went and sat next to Jillian and said, Jillian, I've listened to all these things that your mother's told me. I need to speak to her privately. So she said he said, Wait here, we'll be back, we won't be very long. And uh and they went and left her. But as they went out of the room, he turned on the radio that was sitting on his desk. And when they got out of the room, he said to her mother, just stand and watch her. And um the minute they left the room, she said she was on her feet moving to the music."
+          },
+          {
+            "audio_seconds": 26.17,
+            "call_seconds": 0.5703935,
+            "text": "And they watched for a few minutes and he turned to her mother and he said, You know, Mrs. Lynn, Gillian isn't sick. She's a dancer. Take her to a dance school. I said, What happened? Said she did. I can't tell you how wonderful it was. We walked in this room and it was full of people like me. People who couldn't sit still. People who had to move to think. Who had to move to think. They did ballet, they did tap."
+          },
+          {
+            "audio_seconds": 25.36,
+            "call_seconds": 0.562902125,
+            "text": "They did jazz, they did modern, they did contemporary. She was eventually auditioned for the Royal Ballet School. She became a soloist, she had a wonderful career at the Royal Ballet. She eventually graduated from the Royal Ballet School, found found her own company, the Jillian Dance Company, met Andrew Lloyd Webber. She's been responsible for some of the most successful musical theatre productions in history. She's given pleasure to millions, and she's a multi-millionaire. Somebody else might have put on medication and told her to calm down."
+          },
+          {
+            "audio_seconds": 26.84,
+            "call_seconds": 0.580521459,
+            "text": "What I think it comes to is this. Al Gore spoke uh the other night about ecology and the revolution that was triggered um by Rachel Carson. I believe our only hope for the future is to adopt a new conception of human ecology, one in which we start to reconstitute our conception of the richness of human capacity."
+          },
+          {
+            "audio_seconds": 25.69,
+            "call_seconds": 0.557224209,
+            "text": "Our education system has mined our minds in the way that we've strip mine the earth for a particular commodity. And for the future, it won't serve us. We have to rethink the fundamental principles on which we're educating our children. There was a wonderful quote by Jonas Sulk who said, If you were to uh if all the insects were to disappear from the earth, uh within fifty years all life on earth would end."
+          },
+          {
+            "audio_seconds": 29.19,
+            "call_seconds": 0.630885667,
+            "text": "If all human beings disappeared from the earth, within fifty years all forms of life would flourish. And he's right. What Ted celebrates is the gift of the human imagination. We have to be careful now that we use this gift wisely and that we avert some of the scenarios that we've talked about. And the only way we'll do it is by seeing our creative capacities for the richness they are, and seeing our children for the hope that they are."
+          },
+          {
+            "audio_seconds": 18.53,
+            "call_seconds": 0.398944375,
+            "text": "And our task is to educate their whole being so they can face this future. By the way, we may not see this future, but they will. And our job is to help them make something of it. Thank you very much."
+          }
+        ],
+        "text": "Good morning. How are you? It's been great, hasn't it? It's been I've been blown away by the whole thing. In fact, I'm leaving. There have been three themes, haven't there, running through the conference, which are rather relevant to what I want to talk about. One is the extraordinary evidence of human creativity. in all of the presentations that we've had and and in all the people here. Just the vr you know the the the the the the the the the the variety of it and the range of it uh the second is that it's put us in a place where we have no idea what's going to happen uh in terms of the future no idea how this may play out uh I have an interest in education uh actually what I find is everybody has an interest in education. Don't you I find this very interesting if you did a di at a dinner party And you say you work in education. Actually you're not often at dinner parties, frankly. If you work in education, you're not asked. And you're never asked back, curiously. But if you are, and you say to somebody, uh what do you do, and you say you work in education, you can see the blood run from their face. They think, Oh my God, you know, why me? My one night out all week. But if you ask people about their education, they pin you to the wall. It's one of those things that goes deep with people. Am I right? Like religion and money and other things. So um I have a big interest in education, and I think we all do. We have a huge vested interest in it. Partly because it's education that's meant to take us into this future that we can't grasp. If you think of it, children starting school this year will be retiring in 2065. Nobody has a clue, despite all the expertise that's been on parade for the past four days, what the world will look like in five years' time. And yet we're meant to be educating them for it. So the unpredictability, I think, is extraordinary. And the third part of this is that we've all agreed nonetheless on the really Um extraordinary capacities that children have. The capacities for innovation. I mean Serena last night was a marvel, wasn't she? Just seeing what she could do. And she's exceptional, but I think she's not um, so to speak, exceptional in the whole of of of childhood. What you have there is a person of extraordinary dedication who found a talent. And my contention is all kids have tremendous talents and we squander them. Pretty ruthlessly. So I want to talk about education and I want to talk about creativity. My contention is that creativity now is as important in education as literacy. And we should treat it with the same status. Thank you. That was it, by the way. So fifteen minutes left. Well I was born No the um I had a great story recently uh I love telling it of a little girl who was uh in a drawing lesson, she was six and she was at the back drawing and the the teacher said this little girl hardly ever paid attention and in this drawing lesson she did. And uh the teacher was fascinated, she went over to her and she said, What are you drawing? And the girl said, I'm drawing a picture of God. And the teacher said, but nobody knows what God looks like. And the girls said they will in a minute. When my son was four in England actually he was four everywhere to be honest. Wherever he went, he was four that yeah, but he was in the Nativity play. Do you remember the story? No, it's big. It's big story. Mel Gibson did the sequel. You may have seen it. I don't know. Nativity two. But um James got the part of Joseph, which we were thrilled about. We consider this to be one of the lead parts. We had the place crammed full of agents and T shirts, you know. James Robinson is Joseph. He didn't have to speak, but do you know the bit where the three kings come in? Now they come in bearing gifts and they they they they they they they they they they they bring gold, frankincense, and mare. This really happened. We were sitting there and they I think just went out of sequence. Because we talked to a little boy afterwards and said, you know, you okay with that? And they said, yeah, why was that wrong? They just switched, I think it was it. Anyway, the three boys came in, little four year olds with tea towels on their heads, and they put these boxes down. The first boy said, I bring you gold. And the second boy said, I bring you mare. And the third boy said, Frank sent this. What these things have in common is that kids will take a chance. If they don't know, they'll have a go. Am I right? They're not frightened of being wrong. Now I don't mean to say that being wrong is the same thing as being creative. What we do know is if you're not prepared to be wrong, you'll never come up with anything original. If you're not prepared to be wrong. And by the time they get to be adults, most kids have lost that capacity. They have become frightened of being wrong. And we run our companies this, by the way. We stigmatise mistakes. And we're now running national education systems where mistakes are the worst thing you can make. And the result is that we are educating people out of their creative capacities. Picasso once said this, he said that all children are born artists. The problem is to remain an artist as we grow up. I believe this passionately that we don't grow into creativity, we grow out of it. Or rather, we get educated out of it. So why is this? I lived in Stratford on Avon uh until about five years ago. In fact, we moved from Stratford to Los Angeles. So you can imagine what a seamless transition you know this was from. Actually, we lived in a place called Snitterfield, uh just outside Stratford, which is where Shakespeare's father was born. Are you struck by a new thought? I was. You don't think of Shakespeare having a father, do you? Do you? Because you don't think of Shakespeare being a child? Do you Shakespeare being seven? I never thought of it. I mean he was seven at some point, he was in somebody's English class, wasn't he? How annoying would that be? Must try harder. Being sent to bed by his dad to Shakespeare, go to bed now, you know, to William Shakespeare, you know. And put the pencil down. And stop speaking like that. We moved from Stratford to Los Angeles. And I just want to say a word about the transition. Actually, my son uh didn't want to come. I've got two kids. Uh he's twenty-one now and my daughter's sixteen. He didn't want to come uh to Los Angeles. He loved it, but he had a girlfriend in England. Uh this this was the love of his life. Sarah. He'd known her for a month. Mind you, they've had their fourth anniversary. Because it's a long time when you're sixteen. Anyway, he was really upset on the plane. He said, I'll never find another girl like Sarah. And we were rather pleased about that, frankly. She was the main reason we were leaving the country. But something strikes you when you move to America and when you travel around the world, every education system on Earth has the same hierarchy of subjects. Everyone, doesn't matter where you go, you think it would be otherwise, but it isn't. At the top are mathematics and languages, then the humanity is in the bottom of the arts, everywhere on earth. And in pretty much every system, too, there's a hierarchy within the arts. Art and music are normally given a higher status in schools than drama and dance. There isn't an education system on the planet that teaches dance every day to children the way we teach them mathematics. Why? Why not? I think this is rather important. I think math is very important, but so is dance. Children dance all the time, if they're allowed to. We all do. We all have bodies, don't we? Did I miss a meeting? I mean I think I I think Truthfully what happens is as children grow up, we start to educate them progressively from the waist up. And then we focus on their heads and slightly to one side. If you were to visit education as an alien and say, what's it for? public education, I think you'd have to conclude if you look at the output, you know, who s really succeeds by this? Who does everything they should? Who gets all the brownie points? You know, who are the winners? I think you'd have to conclude the whole purpose of public education throughout the world is to produce university professors. Isn't it? They're the people who come out the top. And I I used to be one. So there. You know. And I like university professors, but you know. We shouldn't hold them up as the uh the the the the the the the the the the the h h h h h h h h h h h high watermark of all human achievement. They're just a form of life. You know another form of life. But they're rather curious, and I say this out of affection for them. There's something curious about professors, in my experience, not all of them, but typically, they live in their heads. They live up there and slightly to one side. They're disembodied, you know, in a kind of literal way. You know, they they they they they they they they they they they look upon their body as a form of transport for their heads. It's a way of getting their head to meetings. If you want real evidence of out of body experiences, by the way, get yourself along to a residential conference for senior academics. And pop into the disc attack on the final night. And there you will see it. Drone men and women writhing uncontrollably off the beat. Waiting to end so they can go home and write a paper about it. Our education system is predicated on the idea of academic ability. And there's a reason. The whole system was invented round the world. There were no public systems for education really before the 19th century. They all came into being to meet the needs of industrialism. So the hierarchy is rooted on two ideas. Number one, that the the the most useful subjects for work are at the top. So you were probably stared benignly away from things at school when you're a kid, things you liked, on the grounds you would never get a job doing that. Is that right? Don't do music, you're not going to be a musician, don't do art, you won't be an artist. Uh benign advice. Now profoundly mistaken. The whole world is engulfed in a revolution. And the second is academic ability, which has really come to dominate our view of intelligence because the universities designed the system in their image. If you think of it, the whole system of public education around the world is a protracted process of university entrance. And the consequence is that many highly talented, brilliant, creative people think they're not. Because the thing they were good at at at school wasn't valued or was actually stigmatized. And I think we can't afford to go on that way. In the next thirty years, according to UNESCO, more people worldwide will be graduating through education than since the beginning of history. More people. And it's the combination of all the things we've talked about, technology and its transformation effect on work, and demography and the huge explosion in population. Suddenly, degrees aren't worth anything. Isn't that true? When I was a student, if you had a degree, you had a job. If you didn't have a job, it's because you didn't want one. And I didn't want one, frankly. So But now kids with out with degrees are often heading home uh to carry on playing video games because you need an MA where the previous job required a BA and now you need a PhD for the other. It's a process of academic inflation and it indicates the whole structure of education is shifting beneath our feet. We need to radically rethink our view of intelligence. We know three things about intelligence. One, it's diverse. We think about the world in all the ways that we experience it. We think visually, we think in sound, we think kinesthetically, uh, we think in abstract terms, we think in movement. Secondly, intelligence is dynamic. If you look at the interactions of a human brain, as we heard yesterday from a number of presentations, intelligence is wonderfully interactive. The brain isn't divided into compartments. In fact, creativity, which I define as the process of having original ideas that have value, More often than not comes about through the interaction of different disciplinary ways of seeing things. The brain that's intentionally by the way, there's a shaft of nerves that joins the two houses of the brain called the corpus callosum. It's thicker in women. Following on from Helen Yesterday, I think this is po probably why women are better at multitasking. Because you are, aren't you? That's a raft of research. But I know it for my personal life. If my wife is cooking a meal at home, which is not often Thankfully, but you know if she's No, she's good at some things. But if she's cooking, you know, she's dealing with people on the phone, she's talking to the kids, she's painting the ceiling, you know, she's doing open heart surgery over here. If I'm cooking, the door is shut, the kids are out, the phone's on the hook, if she comes in, I get annoyed. I say, Terry, please, I'm trying to fry an egg in here. Give me a break. Actually, there was a old phil ph ph ph ph philosophical thing, if a tree falls in a in a forest and nobody hears it, did it happen? Remember that old chestnut? I saw a great t-shirt really recently which said, um if a man speaks his mind in a forest and no woman hears him, is he still wrong? And the third thing about intelligence is it's distinct. I I'm doing a new book at the moment called Epiphany, which is uh based on a series of interviews with people about how they discovered their talent. I'm fascinated by how people got to be there. Uh it's really prompted by a conversation I had with a wonderful woman who make most people have never heard of. She's called called Jillian Lynn. Have you heard of her? Some have. She's a choreographer and everybody knows her work. She did Cats and Phantom of the Opera. She's wonderful. I used to be on the board of the Royal Ballet in England. As you can see. And uh A Anyway, Jillian and I had lunch one day. I said, How'd you gotta be a dancer? And she said it was interesting. When she was at school, she was really hopeless. And the school in the thirties wrote to her parents said, We think Jillian has a learning disorder. She couldn't concentrate, she was fidgeting. I think now they'd say she had ADHD. Wouldn't you? But this was the nineteen thirties and ADHD hadn't been invented, you know, at this point. So it wasn't an available condition. People weren't aware they could have that. Anyway, she sent went to see this um this specialist. So this oak paneled room and and she was there with uh with her mother and she was led and sat on this uh chair at the end and she sat on her hands for twenty minutes while this man talked to her mother about all the problems Gillian was having at school. And at the end of it, um because she was disturbing people at homework was always late and so on, little kid of eight. In the end, uh the The doctor went and sat next to Jillian and said, Jillian, I've listened to all these things that your mother's told me. I need to speak to her privately. So she said he said, Wait here, we'll be back, we won't be very long. And uh and they went and left her. But as they went out of the room, he turned on the radio that was sitting on his desk. And when they got out of the room, he said to her mother, just stand and watch her. And um the minute they left the room, she said she was on her feet moving to the music. And they watched for a few minutes and he turned to her mother and he said, You know, Mrs. Lynn, Gillian isn't sick. She's a dancer. Take her to a dance school. I said, What happened? Said she did. I can't tell you how wonderful it was. We walked in this room and it was full of people like me. People who couldn't sit still. People who had to move to think. Who had to move to think. They did ballet, they did tap. They did jazz, they did modern, they did contemporary. She was eventually auditioned for the Royal Ballet School. She became a soloist, she had a wonderful career at the Royal Ballet. She eventually graduated from the Royal Ballet School, found found her own company, the Jillian Dance Company, met Andrew Lloyd Webber. She's been responsible for some of the most successful musical theatre productions in history. She's given pleasure to millions, and she's a multi-millionaire. Somebody else might have put on medication and told her to calm down. What I think it comes to is this. Al Gore spoke uh the other night about ecology and the revolution that was triggered um by Rachel Carson. I believe our only hope for the future is to adopt a new conception of human ecology, one in which we start to reconstitute our conception of the richness of human capacity. Our education system has mined our minds in the way that we've strip mine the earth for a particular commodity. And for the future, it won't serve us. We have to rethink the fundamental principles on which we're educating our children. There was a wonderful quote by Jonas Sulk who said, If you were to uh if all the insects were to disappear from the earth, uh within fifty years all life on earth would end. If all human beings disappeared from the earth, within fifty years all forms of life would flourish. And he's right. What Ted celebrates is the gift of the human imagination. We have to be careful now that we use this gift wisely and that we avert some of the scenarios that we've talked about. And the only way we'll do it is by seeing our creative capacities for the richness they are, and seeing our children for the hope that they are. And our task is to educate their whole being so they can face this future. By the way, we may not see this future, but they will. And our job is to help them make something of it. Thank you very much.",
+        "word_edits": 387
+      }
+    ],
+    "parent_received_seconds": 25.49502158400719,
+    "word_edits": 387,
+    "wer": 0.12459755312298777
+  },
+  "warm": {
+    "corpus_seconds": 26.439847541,
+    "phase": "warm",
+    "runtime": "transcribe-rs 0.3.8 int8",
+    "utterances": [
+      {
+        "id": "ted-ken-robinson",
+        "parts": [
+          {
+            "audio_seconds": 26.27,
+            "call_seconds": 0.591628458,
+            "text": "Good morning. How are you? It's been great, hasn't it? It's been I've been blown away by the whole thing. In fact, I'm leaving. There have been three themes, haven't there, running through the conference, which are rather relevant to what I want to talk about. One is the extraordinary evidence of human creativity."
+          },
+          {
+            "audio_seconds": 26.97,
+            "call_seconds": 0.589204333,
+            "text": "in all of the presentations that we've had and and in all the people here. Just the vr you know the the the the the the the the the the variety of it and the range of it uh the second is that it's put us in a place where we have no idea what's going to happen uh in terms of the future no idea how this may play out uh I have an interest in education uh actually what I find is everybody has an interest in education. Don't you I find this very interesting if you did a di at a dinner party"
+          },
+          {
+            "audio_seconds": 27.79,
+            "call_seconds": 0.597053083,
+            "text": "And you say you work in education. Actually you're not often at dinner parties, frankly. If you work in education, you're not asked. And you're never asked back, curiously. But if you are, and you say to somebody, uh what do you do, and you say you work in education, you can see the blood run from their face. They think, Oh my God, you know, why me?"
+          },
+          {
+            "audio_seconds": 28.48,
+            "call_seconds": 0.626696709,
+            "text": "My one night out all week. But if you ask people about their education, they pin you to the wall. It's one of those things that goes deep with people. Am I right? Like religion and money and other things. So um I have a big interest in education, and I think we all do. We have a huge vested interest in it. Partly because it's education that's meant to take us into this future that we can't grasp."
+          },
+          {
+            "audio_seconds": 26.71,
+            "call_seconds": 0.6000645,
+            "text": "If you think of it, children starting school this year will be retiring in 2065. Nobody has a clue, despite all the expertise that's been on parade for the past four days, what the world will look like in five years' time. And yet we're meant to be educating them for it. So the unpredictability, I think, is extraordinary. And the third part of this is that we've all agreed nonetheless on the really"
+          },
+          {
+            "audio_seconds": 26.16,
+            "call_seconds": 0.580494667,
+            "text": "Um extraordinary capacities that children have. The capacities for innovation. I mean Serena last night was a marvel, wasn't she? Just seeing what she could do. And she's exceptional, but I think she's not um, so to speak, exceptional in the whole of of of childhood. What you have there is a person of extraordinary dedication who found a talent. And my contention is all kids have tremendous talents and we squander them."
+          },
+          {
+            "audio_seconds": 30.0,
+            "call_seconds": 0.730016583,
+            "text": "Pretty ruthlessly. So I want to talk about education and I want to talk about creativity. My contention is that creativity now is as important in education as literacy. And we should treat it with the same status. Thank you. That was it, by the way. So fifteen minutes left."
+          },
+          {
+            "audio_seconds": 28.48,
+            "call_seconds": 0.662830333,
+            "text": "Well I was born No the um I had a great story recently uh I love telling it of a little girl who was uh in a drawing lesson, she was six and she was at the back drawing and the the teacher said this little girl hardly ever paid attention and in this drawing lesson she did. And uh the teacher was fascinated, she went over to her and she said, What are you drawing? And the girl said, I'm drawing a picture of God. And the teacher said, but nobody knows what God looks like."
+          },
+          {
+            "audio_seconds": 26.05,
+            "call_seconds": 0.61466075,
+            "text": "And the girls said they will in a minute. When my son was four in England actually he was four everywhere to be honest. Wherever he went, he was four that yeah, but he was in the Nativity play. Do you remember the story?"
+          },
+          {
+            "audio_seconds": 28.7,
+            "call_seconds": 0.708091541,
+            "text": "No, it's big. It's big story. Mel Gibson did the sequel. You may have seen it. I don't know. Nativity two. But um James got the part of Joseph, which we were thrilled about. We consider this to be one of the lead parts. We had the place crammed full of agents and T shirts, you know. James Robinson is Joseph. He didn't have to speak, but do you know the bit where the three kings come in? Now they come in bearing gifts and they they they they they they they they they they they bring gold, frankincense, and mare. This really happened. We were sitting there and they"
+          },
+          {
+            "audio_seconds": 27.76,
+            "call_seconds": 0.678780625,
+            "text": "I think just went out of sequence. Because we talked to a little boy afterwards and said, you know, you okay with that? And they said, yeah, why was that wrong? They just switched, I think it was it. Anyway, the three boys came in, little four year olds with tea towels on their heads, and they put these boxes down. The first boy said, I bring you gold. And the second boy said, I bring you mare. And the third boy said, Frank sent this."
+          },
+          {
+            "audio_seconds": 25.1,
+            "call_seconds": 0.606039416,
+            "text": "What these things have in common is that kids will take a chance. If they don't know, they'll have a go. Am I right? They're not frightened of being wrong. Now I don't mean to say that being wrong is the same thing as being creative. What we do know is if you're not prepared to be wrong, you'll never come up with anything original."
+          },
+          {
+            "audio_seconds": 27.79,
+            "call_seconds": 0.676621125,
+            "text": "If you're not prepared to be wrong. And by the time they get to be adults, most kids have lost that capacity. They have become frightened of being wrong. And we run our companies this, by the way. We stigmatise mistakes. And we're now running national education systems where mistakes are the worst thing you can make. And the result is that we are educating people out of their creative capacities. Picasso once said this, he said that all children are born artists."
+          },
+          {
+            "audio_seconds": 29.84,
+            "call_seconds": 0.730949625,
+            "text": "The problem is to remain an artist as we grow up. I believe this passionately that we don't grow into creativity, we grow out of it. Or rather, we get educated out of it. So why is this? I lived in Stratford on Avon uh until about five years ago. In fact, we moved from Stratford to Los Angeles. So you can imagine what a seamless transition you know this was from. Actually, we lived in a place called Snitterfield, uh just outside Stratford, which is where Shakespeare's father was born."
+          },
+          {
+            "audio_seconds": 29.61,
+            "call_seconds": 0.707518375,
+            "text": "Are you struck by a new thought? I was. You don't think of Shakespeare having a father, do you? Do you? Because you don't think of Shakespeare being a child? Do you Shakespeare being seven? I never thought of it. I mean he was seven at some point, he was in somebody's English class, wasn't he? How annoying would that be?"
+          },
+          {
+            "audio_seconds": 29.05,
+            "call_seconds": 0.6896715,
+            "text": "Must try harder. Being sent to bed by his dad to Shakespeare, go to bed now, you know, to William Shakespeare, you know. And put the pencil down. And stop speaking like that."
+          },
+          {
+            "audio_seconds": 29.68,
+            "call_seconds": 0.687376084,
+            "text": "We moved from Stratford to Los Angeles. And I just want to say a word about the transition. Actually, my son uh didn't want to come. I've got two kids. Uh he's twenty-one now and my daughter's sixteen. He didn't want to come uh to Los Angeles. He loved it, but he had a girlfriend in England. Uh this this was the love of his life. Sarah. He'd known her for a month. Mind you, they've had their fourth anniversary. Because it's a long time when you're sixteen. Anyway, he was really upset on the plane. He said, I'll never find another girl like Sarah."
+          },
+          {
+            "audio_seconds": 27.0,
+            "call_seconds": 0.595080583,
+            "text": "And we were rather pleased about that, frankly. She was the main reason we were leaving the country. But something strikes you when you move to America and when you travel around the world, every education system on Earth has the same hierarchy of subjects."
+          },
+          {
+            "audio_seconds": 27.97,
+            "call_seconds": 0.632234708,
+            "text": "Everyone, doesn't matter where you go, you think it would be otherwise, but it isn't. At the top are mathematics and languages, then the humanity is in the bottom of the arts, everywhere on earth. And in pretty much every system, too, there's a hierarchy within the arts. Art and music are normally given a higher status in schools than drama and dance. There isn't an education system on the planet that teaches dance every day to children the way we teach them mathematics. Why? Why not? I think this is rather important."
+          },
+          {
+            "audio_seconds": 25.48,
+            "call_seconds": 0.557879083,
+            "text": "I think math is very important, but so is dance. Children dance all the time, if they're allowed to. We all do. We all have bodies, don't we? Did I miss a meeting? I mean I think I I think Truthfully what happens is as children grow up, we start to educate them progressively from the waist up. And then we focus on their heads and slightly to one side. If you were to visit education as an alien and say, what's it for? public education,"
+          },
+          {
+            "audio_seconds": 26.68,
+            "call_seconds": 0.644326583,
+            "text": "I think you'd have to conclude if you look at the output, you know, who s really succeeds by this? Who does everything they should? Who gets all the brownie points? You know, who are the winners? I think you'd have to conclude the whole purpose of public education throughout the world is to produce university professors. Isn't it? They're the people who come out the top. And I I used to be one. So there. You know. And I like university professors, but you know."
+          },
+          {
+            "audio_seconds": 26.57,
+            "call_seconds": 0.629871625,
+            "text": "We shouldn't hold them up as the uh the the the the the the the the the the the h h h h h h h h h h h high watermark of all human achievement. They're just a form of life. You know another form of life. But they're rather curious, and I say this out of affection for them. There's something curious about professors, in my experience, not all of them, but typically, they live in their heads. They live up there and slightly to one side. They're disembodied, you know, in a kind of literal way. You know, they they they they they they they they they they they look upon their body as a form of transport for their heads."
+          },
+          {
+            "audio_seconds": 28.4,
+            "call_seconds": 0.618574125,
+            "text": "It's a way of getting their head to meetings. If you want real evidence of out of body experiences, by the way, get yourself along to a residential conference for senior academics. And pop into the disc attack on the final night. And there you will see it."
+          },
+          {
+            "audio_seconds": 26.24,
+            "call_seconds": 0.622616042,
+            "text": "Drone men and women writhing uncontrollably off the beat. Waiting to end so they can go home and write a paper about it. Our education system is predicated on the idea of academic ability. And there's a reason. The whole system was invented round the world. There were no public systems for education really before the 19th century. They all came into being to meet the needs of industrialism."
+          },
+          {
+            "audio_seconds": 25.37,
+            "call_seconds": 0.601820542,
+            "text": "So the hierarchy is rooted on two ideas. Number one, that the the the most useful subjects for work are at the top. So you were probably stared benignly away from things at school when you're a kid, things you liked, on the grounds you would never get a job doing that. Is that right? Don't do music, you're not going to be a musician, don't do art, you won't be an artist. Uh benign advice. Now profoundly mistaken. The whole world is engulfed in a revolution."
+          },
+          {
+            "audio_seconds": 25.27,
+            "call_seconds": 0.661771458,
+            "text": "And the second is academic ability, which has really come to dominate our view of intelligence because the universities designed the system in their image. If you think of it, the whole system of public education around the world is a protracted process of university entrance. And the consequence is that many highly talented, brilliant, creative people think they're not. Because the thing they were good at at at school wasn't valued or was actually stigmatized. And I think we can't afford to go on that way."
+          },
+          {
+            "audio_seconds": 27.02,
+            "call_seconds": 0.618216958,
+            "text": "In the next thirty years, according to UNESCO, more people worldwide will be graduating through education than since the beginning of history. More people. And it's the combination of all the things we've talked about, technology and its transformation effect on work, and demography and the huge explosion in population. Suddenly, degrees aren't worth anything. Isn't that true? When I was a student, if you had a degree, you had a job. If you didn't have a job, it's because you didn't want one."
+          },
+          {
+            "audio_seconds": 25.13,
+            "call_seconds": 0.567026334,
+            "text": "And I didn't want one, frankly. So But now kids with out with degrees are often heading home uh to carry on playing video games because you need an MA where the previous job required a BA and now you need a PhD for the other. It's a process of academic inflation and it indicates the whole structure of education is shifting beneath our feet. We need to radically rethink our view of intelligence. We know three things about intelligence. One, it's diverse."
+          },
+          {
+            "audio_seconds": 27.75,
+            "call_seconds": 0.637986542,
+            "text": "We think about the world in all the ways that we experience it. We think visually, we think in sound, we think kinesthetically, uh, we think in abstract terms, we think in movement. Secondly, intelligence is dynamic. If you look at the interactions of a human brain, as we heard yesterday from a number of presentations, intelligence is wonderfully interactive. The brain isn't divided into compartments. In fact, creativity, which I define as the process of having original ideas that have value,"
+          },
+          {
+            "audio_seconds": 27.45,
+            "call_seconds": 0.641465125,
+            "text": "More often than not comes about through the interaction of different disciplinary ways of seeing things. The brain that's intentionally by the way, there's a shaft of nerves that joins the two houses of the brain called the corpus callosum. It's thicker in women. Following on from Helen Yesterday, I think this is po probably why women are better at multitasking. Because you are, aren't you? That's a raft of research. But I know it for my personal life. If my wife is cooking a meal at home, which is not often"
+          },
+          {
+            "audio_seconds": 28.59,
+            "call_seconds": 0.667861959,
+            "text": "Thankfully, but you know if she's No, she's good at some things. But if she's cooking, you know, she's dealing with people on the phone, she's talking to the kids, she's painting the ceiling, you know, she's doing open heart surgery over here. If I'm cooking, the door is shut, the kids are out, the phone's on the hook, if she comes in, I get annoyed. I say, Terry, please, I'm trying to fry an egg in here."
+          },
+          {
+            "audio_seconds": 27.93,
+            "call_seconds": 0.646530708,
+            "text": "Give me a break. Actually, there was a old phil ph ph ph ph philosophical thing, if a tree falls in a in a forest and nobody hears it, did it happen? Remember that old chestnut? I saw a great t-shirt really recently which said, um if a man speaks his mind in a forest and no woman hears him, is he still wrong?"
+          },
+          {
+            "audio_seconds": 28.75,
+            "call_seconds": 0.69344725,
+            "text": "And the third thing about intelligence is it's distinct. I I'm doing a new book at the moment called Epiphany, which is uh based on a series of interviews with people about how they discovered their talent. I'm fascinated by how people got to be there. Uh it's really prompted by a conversation I had with a wonderful woman who make most people have never heard of. She's called called Jillian Lynn. Have you heard of her? Some have. She's a choreographer and everybody knows her work. She did Cats and Phantom of the Opera. She's wonderful. I used to be on the board of the Royal Ballet in England."
+          },
+          {
+            "audio_seconds": 26.57,
+            "call_seconds": 0.607623333,
+            "text": "As you can see. And uh A Anyway, Jillian and I had lunch one day. I said, How'd you gotta be a dancer? And she said it was interesting. When she was at school, she was really hopeless. And the school in the thirties wrote to her parents said, We think Jillian has a learning disorder. She couldn't concentrate, she was fidgeting. I think now they'd say she had ADHD. Wouldn't you? But this was the nineteen thirties and ADHD hadn't been invented, you know, at this point. So it wasn't an available condition."
+          },
+          {
+            "audio_seconds": 29.62,
+            "call_seconds": 0.674678,
+            "text": "People weren't aware they could have that. Anyway, she sent went to see this um this specialist. So this oak paneled room and and she was there with uh with her mother and she was led and sat on this uh chair at the end and she sat on her hands for twenty minutes while this man talked to her mother about all the problems Gillian was having at school. And at the end of it, um because she was disturbing people at homework was always late and so on, little kid of eight. In the end, uh the"
+          },
+          {
+            "audio_seconds": 25.1,
+            "call_seconds": 0.612370875,
+            "text": "The doctor went and sat next to Jillian and said, Jillian, I've listened to all these things that your mother's told me. I need to speak to her privately. So she said he said, Wait here, we'll be back, we won't be very long. And uh and they went and left her. But as they went out of the room, he turned on the radio that was sitting on his desk. And when they got out of the room, he said to her mother, just stand and watch her. And um the minute they left the room, she said she was on her feet moving to the music."
+          },
+          {
+            "audio_seconds": 26.17,
+            "call_seconds": 0.5903905,
+            "text": "And they watched for a few minutes and he turned to her mother and he said, You know, Mrs. Lynn, Gillian isn't sick. She's a dancer. Take her to a dance school. I said, What happened? Said she did. I can't tell you how wonderful it was. We walked in this room and it was full of people like me. People who couldn't sit still. People who had to move to think. Who had to move to think. They did ballet, they did tap."
+          },
+          {
+            "audio_seconds": 25.36,
+            "call_seconds": 0.58297725,
+            "text": "They did jazz, they did modern, they did contemporary. She was eventually auditioned for the Royal Ballet School. She became a soloist, she had a wonderful career at the Royal Ballet. She eventually graduated from the Royal Ballet School, found found her own company, the Jillian Dance Company, met Andrew Lloyd Webber. She's been responsible for some of the most successful musical theatre productions in history. She's given pleasure to millions, and she's a multi-millionaire. Somebody else might have put on medication and told her to calm down."
+          },
+          {
+            "audio_seconds": 26.84,
+            "call_seconds": 0.593274833,
+            "text": "What I think it comes to is this. Al Gore spoke uh the other night about ecology and the revolution that was triggered um by Rachel Carson. I believe our only hope for the future is to adopt a new conception of human ecology, one in which we start to reconstitute our conception of the richness of human capacity."
+          },
+          {
+            "audio_seconds": 25.69,
+            "call_seconds": 0.58533025,
+            "text": "Our education system has mined our minds in the way that we've strip mine the earth for a particular commodity. And for the future, it won't serve us. We have to rethink the fundamental principles on which we're educating our children. There was a wonderful quote by Jonas Sulk who said, If you were to uh if all the insects were to disappear from the earth, uh within fifty years all life on earth would end."
+          },
+          {
+            "audio_seconds": 29.19,
+            "call_seconds": 0.659113417,
+            "text": "If all human beings disappeared from the earth, within fifty years all forms of life would flourish. And he's right. What Ted celebrates is the gift of the human imagination. We have to be careful now that we use this gift wisely and that we avert some of the scenarios that we've talked about. And the only way we'll do it is by seeing our creative capacities for the richness they are, and seeing our children for the hope that they are."
+          },
+          {
+            "audio_seconds": 18.53,
+            "call_seconds": 0.419568042,
+            "text": "And our task is to educate their whole being so they can face this future. By the way, we may not see this future, but they will. And our job is to help them make something of it. Thank you very much."
+          }
+        ],
+        "text": "Good morning. How are you? It's been great, hasn't it? It's been I've been blown away by the whole thing. In fact, I'm leaving. There have been three themes, haven't there, running through the conference, which are rather relevant to what I want to talk about. One is the extraordinary evidence of human creativity. in all of the presentations that we've had and and in all the people here. Just the vr you know the the the the the the the the the the variety of it and the range of it uh the second is that it's put us in a place where we have no idea what's going to happen uh in terms of the future no idea how this may play out uh I have an interest in education uh actually what I find is everybody has an interest in education. Don't you I find this very interesting if you did a di at a dinner party And you say you work in education. Actually you're not often at dinner parties, frankly. If you work in education, you're not asked. And you're never asked back, curiously. But if you are, and you say to somebody, uh what do you do, and you say you work in education, you can see the blood run from their face. They think, Oh my God, you know, why me? My one night out all week. But if you ask people about their education, they pin you to the wall. It's one of those things that goes deep with people. Am I right? Like religion and money and other things. So um I have a big interest in education, and I think we all do. We have a huge vested interest in it. Partly because it's education that's meant to take us into this future that we can't grasp. If you think of it, children starting school this year will be retiring in 2065. Nobody has a clue, despite all the expertise that's been on parade for the past four days, what the world will look like in five years' time. And yet we're meant to be educating them for it. So the unpredictability, I think, is extraordinary. And the third part of this is that we've all agreed nonetheless on the really Um extraordinary capacities that children have. The capacities for innovation. I mean Serena last night was a marvel, wasn't she? Just seeing what she could do. And she's exceptional, but I think she's not um, so to speak, exceptional in the whole of of of childhood. What you have there is a person of extraordinary dedication who found a talent. And my contention is all kids have tremendous talents and we squander them. Pretty ruthlessly. So I want to talk about education and I want to talk about creativity. My contention is that creativity now is as important in education as literacy. And we should treat it with the same status. Thank you. That was it, by the way. So fifteen minutes left. Well I was born No the um I had a great story recently uh I love telling it of a little girl who was uh in a drawing lesson, she was six and she was at the back drawing and the the teacher said this little girl hardly ever paid attention and in this drawing lesson she did. And uh the teacher was fascinated, she went over to her and she said, What are you drawing? And the girl said, I'm drawing a picture of God. And the teacher said, but nobody knows what God looks like. And the girls said they will in a minute. When my son was four in England actually he was four everywhere to be honest. Wherever he went, he was four that yeah, but he was in the Nativity play. Do you remember the story? No, it's big. It's big story. Mel Gibson did the sequel. You may have seen it. I don't know. Nativity two. But um James got the part of Joseph, which we were thrilled about. We consider this to be one of the lead parts. We had the place crammed full of agents and T shirts, you know. James Robinson is Joseph. He didn't have to speak, but do you know the bit where the three kings come in? Now they come in bearing gifts and they they they they they they they they they they they bring gold, frankincense, and mare. This really happened. We were sitting there and they I think just went out of sequence. Because we talked to a little boy afterwards and said, you know, you okay with that? And they said, yeah, why was that wrong? They just switched, I think it was it. Anyway, the three boys came in, little four year olds with tea towels on their heads, and they put these boxes down. The first boy said, I bring you gold. And the second boy said, I bring you mare. And the third boy said, Frank sent this. What these things have in common is that kids will take a chance. If they don't know, they'll have a go. Am I right? They're not frightened of being wrong. Now I don't mean to say that being wrong is the same thing as being creative. What we do know is if you're not prepared to be wrong, you'll never come up with anything original. If you're not prepared to be wrong. And by the time they get to be adults, most kids have lost that capacity. They have become frightened of being wrong. And we run our companies this, by the way. We stigmatise mistakes. And we're now running national education systems where mistakes are the worst thing you can make. And the result is that we are educating people out of their creative capacities. Picasso once said this, he said that all children are born artists. The problem is to remain an artist as we grow up. I believe this passionately that we don't grow into creativity, we grow out of it. Or rather, we get educated out of it. So why is this? I lived in Stratford on Avon uh until about five years ago. In fact, we moved from Stratford to Los Angeles. So you can imagine what a seamless transition you know this was from. Actually, we lived in a place called Snitterfield, uh just outside Stratford, which is where Shakespeare's father was born. Are you struck by a new thought? I was. You don't think of Shakespeare having a father, do you? Do you? Because you don't think of Shakespeare being a child? Do you Shakespeare being seven? I never thought of it. I mean he was seven at some point, he was in somebody's English class, wasn't he? How annoying would that be? Must try harder. Being sent to bed by his dad to Shakespeare, go to bed now, you know, to William Shakespeare, you know. And put the pencil down. And stop speaking like that. We moved from Stratford to Los Angeles. And I just want to say a word about the transition. Actually, my son uh didn't want to come. I've got two kids. Uh he's twenty-one now and my daughter's sixteen. He didn't want to come uh to Los Angeles. He loved it, but he had a girlfriend in England. Uh this this was the love of his life. Sarah. He'd known her for a month. Mind you, they've had their fourth anniversary. Because it's a long time when you're sixteen. Anyway, he was really upset on the plane. He said, I'll never find another girl like Sarah. And we were rather pleased about that, frankly. She was the main reason we were leaving the country. But something strikes you when you move to America and when you travel around the world, every education system on Earth has the same hierarchy of subjects. Everyone, doesn't matter where you go, you think it would be otherwise, but it isn't. At the top are mathematics and languages, then the humanity is in the bottom of the arts, everywhere on earth. And in pretty much every system, too, there's a hierarchy within the arts. Art and music are normally given a higher status in schools than drama and dance. There isn't an education system on the planet that teaches dance every day to children the way we teach them mathematics. Why? Why not? I think this is rather important. I think math is very important, but so is dance. Children dance all the time, if they're allowed to. We all do. We all have bodies, don't we? Did I miss a meeting? I mean I think I I think Truthfully what happens is as children grow up, we start to educate them progressively from the waist up. And then we focus on their heads and slightly to one side. If you were to visit education as an alien and say, what's it for? public education, I think you'd have to conclude if you look at the output, you know, who s really succeeds by this? Who does everything they should? Who gets all the brownie points? You know, who are the winners? I think you'd have to conclude the whole purpose of public education throughout the world is to produce university professors. Isn't it? They're the people who come out the top. And I I used to be one. So there. You know. And I like university professors, but you know. We shouldn't hold them up as the uh the the the the the the the the the the the h h h h h h h h h h h high watermark of all human achievement. They're just a form of life. You know another form of life. But they're rather curious, and I say this out of affection for them. There's something curious about professors, in my experience, not all of them, but typically, they live in their heads. They live up there and slightly to one side. They're disembodied, you know, in a kind of literal way. You know, they they they they they they they they they they they look upon their body as a form of transport for their heads. It's a way of getting their head to meetings. If you want real evidence of out of body experiences, by the way, get yourself along to a residential conference for senior academics. And pop into the disc attack on the final night. And there you will see it. Drone men and women writhing uncontrollably off the beat. Waiting to end so they can go home and write a paper about it. Our education system is predicated on the idea of academic ability. And there's a reason. The whole system was invented round the world. There were no public systems for education really before the 19th century. They all came into being to meet the needs of industrialism. So the hierarchy is rooted on two ideas. Number one, that the the the most useful subjects for work are at the top. So you were probably stared benignly away from things at school when you're a kid, things you liked, on the grounds you would never get a job doing that. Is that right? Don't do music, you're not going to be a musician, don't do art, you won't be an artist. Uh benign advice. Now profoundly mistaken. The whole world is engulfed in a revolution. And the second is academic ability, which has really come to dominate our view of intelligence because the universities designed the system in their image. If you think of it, the whole system of public education around the world is a protracted process of university entrance. And the consequence is that many highly talented, brilliant, creative people think they're not. Because the thing they were good at at at school wasn't valued or was actually stigmatized. And I think we can't afford to go on that way. In the next thirty years, according to UNESCO, more people worldwide will be graduating through education than since the beginning of history. More people. And it's the combination of all the things we've talked about, technology and its transformation effect on work, and demography and the huge explosion in population. Suddenly, degrees aren't worth anything. Isn't that true? When I was a student, if you had a degree, you had a job. If you didn't have a job, it's because you didn't want one. And I didn't want one, frankly. So But now kids with out with degrees are often heading home uh to carry on playing video games because you need an MA where the previous job required a BA and now you need a PhD for the other. It's a process of academic inflation and it indicates the whole structure of education is shifting beneath our feet. We need to radically rethink our view of intelligence. We know three things about intelligence. One, it's diverse. We think about the world in all the ways that we experience it. We think visually, we think in sound, we think kinesthetically, uh, we think in abstract terms, we think in movement. Secondly, intelligence is dynamic. If you look at the interactions of a human brain, as we heard yesterday from a number of presentations, intelligence is wonderfully interactive. The brain isn't divided into compartments. In fact, creativity, which I define as the process of having original ideas that have value, More often than not comes about through the interaction of different disciplinary ways of seeing things. The brain that's intentionally by the way, there's a shaft of nerves that joins the two houses of the brain called the corpus callosum. It's thicker in women. Following on from Helen Yesterday, I think this is po probably why women are better at multitasking. Because you are, aren't you? That's a raft of research. But I know it for my personal life. If my wife is cooking a meal at home, which is not often Thankfully, but you know if she's No, she's good at some things. But if she's cooking, you know, she's dealing with people on the phone, she's talking to the kids, she's painting the ceiling, you know, she's doing open heart surgery over here. If I'm cooking, the door is shut, the kids are out, the phone's on the hook, if she comes in, I get annoyed. I say, Terry, please, I'm trying to fry an egg in here. Give me a break. Actually, there was a old phil ph ph ph ph philosophical thing, if a tree falls in a in a forest and nobody hears it, did it happen? Remember that old chestnut? I saw a great t-shirt really recently which said, um if a man speaks his mind in a forest and no woman hears him, is he still wrong? And the third thing about intelligence is it's distinct. I I'm doing a new book at the moment called Epiphany, which is uh based on a series of interviews with people about how they discovered their talent. I'm fascinated by how people got to be there. Uh it's really prompted by a conversation I had with a wonderful woman who make most people have never heard of. She's called called Jillian Lynn. Have you heard of her? Some have. She's a choreographer and everybody knows her work. She did Cats and Phantom of the Opera. She's wonderful. I used to be on the board of the Royal Ballet in England. As you can see. And uh A Anyway, Jillian and I had lunch one day. I said, How'd you gotta be a dancer? And she said it was interesting. When she was at school, she was really hopeless. And the school in the thirties wrote to her parents said, We think Jillian has a learning disorder. She couldn't concentrate, she was fidgeting. I think now they'd say she had ADHD. Wouldn't you? But this was the nineteen thirties and ADHD hadn't been invented, you know, at this point. So it wasn't an available condition. People weren't aware they could have that. Anyway, she sent went to see this um this specialist. So this oak paneled room and and she was there with uh with her mother and she was led and sat on this uh chair at the end and she sat on her hands for twenty minutes while this man talked to her mother about all the problems Gillian was having at school. And at the end of it, um because she was disturbing people at homework was always late and so on, little kid of eight. In the end, uh the The doctor went and sat next to Jillian and said, Jillian, I've listened to all these things that your mother's told me. I need to speak to her privately. So she said he said, Wait here, we'll be back, we won't be very long. And uh and they went and left her. But as they went out of the room, he turned on the radio that was sitting on his desk. And when they got out of the room, he said to her mother, just stand and watch her. And um the minute they left the room, she said she was on her feet moving to the music. And they watched for a few minutes and he turned to her mother and he said, You know, Mrs. Lynn, Gillian isn't sick. She's a dancer. Take her to a dance school. I said, What happened? Said she did. I can't tell you how wonderful it was. We walked in this room and it was full of people like me. People who couldn't sit still. People who had to move to think. Who had to move to think. They did ballet, they did tap. They did jazz, they did modern, they did contemporary. She was eventually auditioned for the Royal Ballet School. She became a soloist, she had a wonderful career at the Royal Ballet. She eventually graduated from the Royal Ballet School, found found her own company, the Jillian Dance Company, met Andrew Lloyd Webber. She's been responsible for some of the most successful musical theatre productions in history. She's given pleasure to millions, and she's a multi-millionaire. Somebody else might have put on medication and told her to calm down. What I think it comes to is this. Al Gore spoke uh the other night about ecology and the revolution that was triggered um by Rachel Carson. I believe our only hope for the future is to adopt a new conception of human ecology, one in which we start to reconstitute our conception of the richness of human capacity. Our education system has mined our minds in the way that we've strip mine the earth for a particular commodity. And for the future, it won't serve us. We have to rethink the fundamental principles on which we're educating our children. There was a wonderful quote by Jonas Sulk who said, If you were to uh if all the insects were to disappear from the earth, uh within fifty years all life on earth would end. If all human beings disappeared from the earth, within fifty years all forms of life would flourish. And he's right. What Ted celebrates is the gift of the human imagination. We have to be careful now that we use this gift wisely and that we avert some of the scenarios that we've talked about. And the only way we'll do it is by seeing our creative capacities for the richness they are, and seeing our children for the hope that they are. And our task is to educate their whole being so they can face this future. By the way, we may not see this future, but they will. And our job is to help them make something of it. Thank you very much.",
+        "word_edits": 387
+      }
+    ],
+    "parent_received_seconds": 51.93493954199948,
+    "word_edits": 387,
+    "wer": 0.12459755312298777
+  },
+  "process_two_pass_wall_seconds": 51.969271916983416,
+  "process_resources": {
+    "wall_clock_s": 51.96,
+    "user_cpu_s": 220.11,
+    "system_cpu_s": 25.63,
+    "max_rss_mb": 3046.84375
+  },
+  "protocol": "asr-v2",
+  "case": "en-ted-ken-robinson",
+  "engine": "onnx",
+  "device": "cpu",
+  "repetition": 3,
+  "audio_seconds": 1139.11,
+  "reference_words": 3106,
+  "manifest_sha256": "e3763b4c487d666256420d3a9760246b358bcd4800ba0bf49add42a459e44f72"
+}

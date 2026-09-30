@@ -1,0 +1,16 @@
+{
+  "youtube_url": "https://www.youtube.com/watch?v=iG9CE55wbtY",
+  "video_id": "iG9CE55wbtY",
+  "title": "Do schools kill creativity? | Sir Ken Robinson | TED",
+  "channel": "TED",
+  "channel_id": "UCAuUUnT6oDeKwE6v1NGQxug",
+  "video_duration_seconds": 1203,
+  "subtitle_source": "YouTube publisher subtitles.en, not automatic_captions",
+  "subtitle_sha256": "bc5763e2478a3fbf29394d56122f16f927d0b91dc69ded1ded6ad6d722b2c0fd",
+  "downloaded_audio_sha256": "16af4ad731a7d19085b4132338d70b01b9e2e998489320438a5c2e1b07f66e2a",
+  "crop_start_seconds": 26.603,
+  "crop_end_seconds": 1165.713,
+  "caption_cleanup": "Remove only (Laughter), (Applause), (Audience); keep spoken audience responses; preserve wording, spelling and numbers.",
+  "reference_type": "publisher-edited captions; may differ from verbatim speech",
+  "fetched_at": "2026-09-30T13:06:22.279084+00:00"
+}

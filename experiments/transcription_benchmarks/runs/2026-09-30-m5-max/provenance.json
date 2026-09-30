@@ -1,0 +1,23 @@
+{
+  "source_commit": "3b892cdff5ded62a85b3f78bd031fe8b0295fc14",
+  "python": "3.12.14 (main, Sep  1 2026, 14:09:38) [Clang 22.1.3 ]",
+  "date": "2026-09-30",
+  "sha256": {
+    "experiments/transcription_benchmarks/audio/audio_15s_16k_mono.wav": "1c60dacdd6d4e9d430e5f0e93e9e5d0f3eb20611ce2535588897e9db3bdfef95",
+    "experiments/transcription_benchmarks/audio/audio_5min_16k_mono.wav": "678582d568aade93a7a6b3803a89759aa8c124380d2c9dc961bb2e3c2e040ba1",
+    "experiments/transcription_benchmarks/references/15s.json": "eccbcd4b684a127ab4d17946cfe4dffda90adb19971f639ecf3eedfd1abf639e",
+    "experiments/transcription_benchmarks/references/5min-human.json": "023d364725261eb5ac4fd23f1bb635c53af62f8006458298b5ca6c04e687958f",
+    "experiments/transcription_benchmarks/references/5min-onnx.json": "ccfb25850a61e3214eb0aeed6e003a3f0af1ce1e717e56a9f44234559a7d3ada",
+    "target/release/fscript": "f4640e778a27821c40dd80a3865890b4c9ee5e2e8f3870d3ab3e05cee8ac1536",
+    "scripts/benchmark_transcription_engines.py": "062429dfd0ead4453a6e4f7b17e1d1f4fc8a0cda76b036f6a8128b35085ec881",
+    "scripts/rescore_transcription_benchmarks.py": "b9b4876ea1928441c1920851bf6cccd76aa66421d0a058f7a0f1cbccf2abc665",
+    "/Users/brenorb/.cache/fermion/speech/FermionResearch__Phonon-2/model_phonon2_c4c_int6/config.json": "d0daad3b2a182893844f4abdc11e4f5b7083f7d42c8ad7e8203f71559785a31b",
+    "/Users/brenorb/.cache/fermion/speech/FermionResearch__Phonon-2/model_phonon2_c4c_int6/model.fermion": "4b6bfa3a12cc3c4e0a54f2ab3ec4ca7a842b09e5c7ecfc8e7ca0ac6cc8c11468",
+    "/Users/brenorb/.cache/fermion/speech/FermionResearch__Phonon-2/model_phonon2_c4c_int6/packed_manifest.json": "3c1874501a1efb6ef569eab082aa68d91b93ec6e4d2fb00dbef7851edf2ae510",
+    "/Users/brenorb/Library/Application Support/fast-transcript/models/parakeet-tdt-0.6b-v3-int8/config.json": "666903c76b9798caf2c210afd4f6cd60b08a8dbf9800ec8d7a3bc0d2148ac466",
+    "/Users/brenorb/Library/Application Support/fast-transcript/models/parakeet-tdt-0.6b-v3-int8/decoder_joint-model.int8.onnx": "eea7483ee3d1a30375daedc8ed83e3960c91b098812127a0d99d1c8977667a70",
+    "/Users/brenorb/Library/Application Support/fast-transcript/models/parakeet-tdt-0.6b-v3-int8/encoder-model.int8.onnx": "6139d2fa7e1b086097b277c7149725edbab89cc7c7ae64b23c741be4055aff09",
+    "/Users/brenorb/Library/Application Support/fast-transcript/models/parakeet-tdt-0.6b-v3-int8/nemo128.onnx": "a9fde1486ebfcc08f328d75ad4610c67835fea58c73ba57e3209a6f6cf019e9f",
+    "/Users/brenorb/Library/Application Support/fast-transcript/models/parakeet-tdt-0.6b-v3-int8/vocab.txt": "d58544679ea4bc6ac563d1f545eb7d474bd6cfa467f0a6e2c1dc1c7d37e3c35d"
+  }
+}

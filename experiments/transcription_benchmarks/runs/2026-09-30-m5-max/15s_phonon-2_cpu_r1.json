@@ -1,0 +1,39 @@
+{
+  "metrics": {
+    "engine": "phonon-2",
+    "device": "cpu",
+    "audio_id": "15s",
+    "repetition": 1,
+    "audio_seconds": 15.0,
+    "wall_clock_s": 10.0,
+    "realtime_speedup": 1.5,
+    "max_rss_mb": 1596.0,
+    "load_seconds": null,
+    "transcribe_seconds": null,
+    "decode_seconds": 0.251,
+    "wer_vs_reference": 0.13513513513513514,
+    "cer_vs_reference": 0.07462686567164178,
+    "normalized_wer_vs_reference": 0.13513513513513514,
+    "reference_note": "human ground truth"
+  },
+  "result": {
+    "text": "Olá, nessa aula vou te ensinar como fazer o próprio collage natural em casa e destacar os cinco maiores mitos das receitas que estão divulgados na internet ou nas redes sociais. Para isso eu vou utilizar",
+    "model": "FermionResearch/Phonon-2",
+    "profile": "five-value",
+    "backend": "phonon2-five-value",
+    "engine": "cpu",
+    "duration_seconds": 15.0,
+    "decode_seconds": 0.251,
+    "wall_seconds": 9.711,
+    "segment_count": 1,
+    "segments": [
+      {
+        "id": 0,
+        "start": 0.0,
+        "end": 15.0,
+        "text": "Olá, nessa aula vou te ensinar como fazer o próprio collage natural em casa e destacar os cinco maiores mitos das receitas que estão divulgados na internet ou nas redes sociais. Para isso eu vou utilizar"
+      }
+    ],
+    "truncated": false
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "protocol": "asr-v2",
+  "manifests": [
+    "pt-15s.json",
+    "pt-5min.json",
+    "en-librispeech-50.json",
+    "en-ted-ken-robinson.json"
+  ]
+}

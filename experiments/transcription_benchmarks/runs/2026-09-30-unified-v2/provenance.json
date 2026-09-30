@@ -1,0 +1,21 @@
+{
+  "model_and_supporting_file_sha256": {
+    "/Users/brenorb/.cache/fermion/speech/FermionResearch__Phonon-2/model_phonon2_c4c_int6/config.json": "d0daad3b2a182893844f4abdc11e4f5b7083f7d42c8ad7e8203f71559785a31b",
+    "/Users/brenorb/.cache/fermion/speech/FermionResearch__Phonon-2/model_phonon2_c4c_int6/model.fermion": "4b6bfa3a12cc3c4e0a54f2ab3ec4ca7a842b09e5c7ecfc8e7ca0ac6cc8c11468",
+    "/Users/brenorb/.cache/fermion/speech/FermionResearch__Phonon-2/model_phonon2_c4c_int6/packed_manifest.json": "3c1874501a1efb6ef569eab082aa68d91b93ec6e4d2fb00dbef7851edf2ae510",
+    "/Users/brenorb/Library/Application Support/fast-transcript/models/parakeet-tdt-0.6b-v3-int8/config.json": "666903c76b9798caf2c210afd4f6cd60b08a8dbf9800ec8d7a3bc0d2148ac466",
+    "/Users/brenorb/Library/Application Support/fast-transcript/models/parakeet-tdt-0.6b-v3-int8/decoder_joint-model.int8.onnx": "eea7483ee3d1a30375daedc8ed83e3960c91b098812127a0d99d1c8977667a70",
+    "/Users/brenorb/Library/Application Support/fast-transcript/models/parakeet-tdt-0.6b-v3-int8/encoder-model.int8.onnx": "6139d2fa7e1b086097b277c7149725edbab89cc7c7ae64b23c741be4055aff09",
+    "/Users/brenorb/Library/Application Support/fast-transcript/models/parakeet-tdt-0.6b-v3-int8/nemo128.onnx": "a9fde1486ebfcc08f328d75ad4610c67835fea58c73ba57e3209a6f6cf019e9f",
+    "/Users/brenorb/Library/Application Support/fast-transcript/models/parakeet-tdt-0.6b-v3-int8/vocab.txt": "d58544679ea4bc6ac563d1f545eb7d474bd6cfa467f0a6e2c1dc1c7d37e3c35d",
+    "Cargo.lock": "d1190311d0033b826cae0cf8f6fab8bd960b0bae0b9ba8a597b1681678364812",
+    "scripts/validate_asr_benchmark.py": "a3334ce8db43b70a28d8947883dcff9a34936bf4f47abcb65274aa3d5018b8a7",
+    "scripts/report_asr_benchmark.py": "d68a1c1e7c79b187e3ac3b3cb042f1335a8797a6e79e4eecb572b295be4f45b1",
+    "experiments/transcription_benchmarks/datasets/unified-v2/ted-source.json": "ba45e679f988a744322e1086ceb08921a4185eb7fb6f3e20749105848aaa008a",
+    "experiments/transcription_benchmarks/datasets/unified-v2/ted-captions.json": "dbd02a55b54c98f1933ec60bc704a8c5e4a198750db0533a8429103928f4a078"
+  },
+  "memory_bytes": 137438953472,
+  "rustc": "rustc 1.98.1 (48a229cea 2026-09-01) (Homebrew)",
+  "ffmpeg": "ffmpeg version 9.0.2 Copyright (c) 2000-2026 the FFmpeg developers",
+  "yt_dlp": "2026.08.19"
+}

@@ -1,0 +1,50 @@
+{
+  "metrics": {
+    "engine": "parakeet-ultra",
+    "device": "mps",
+    "audio_id": "15s",
+    "repetition": 3,
+    "audio_seconds": 15.0,
+    "wall_clock_s": 2.83,
+    "realtime_speedup": 5.300353356890459,
+    "max_rss_mb": 729.921875,
+    "load_seconds": 1.2398867089941632,
+    "transcribe_seconds": 0.3510224579949863,
+    "decode_seconds": null,
+    "wer_vs_reference": 0.02702702702702703,
+    "cer_vs_reference": 0.024875621890547265,
+    "normalized_wer_vs_reference": 0.02702702702702703,
+    "reference_note": "human ground truth"
+  },
+  "result": {
+    "text": "Olá, nessa aula eu vou te ensinar como fazer o próprio colágeno natural em casa e destacar os cinco maiores mitos das receitas que são divulgadas na internet ou nas redes sociais. Para isso eu vou utilizar",
+    "language": null,
+    "task": "transcribe",
+    "duration_seconds": 15.0,
+    "source_duration_seconds": 15.0,
+    "clip_start_seconds": 0.0,
+    "clip_end_seconds": 15.0,
+    "segments": [
+      {
+        "text": "Olá, nessa aula eu vou te ensinar como fazer o próprio colágeno natural em casa e destacar os cinco maiores mitos das receitas que são divulgadas na internet ou nas redes sociais.",
+        "start": 4.08,
+        "end": 13.92
+      },
+      {
+        "text": "Para isso eu vou utilizar",
+        "start": 13.92,
+        "end": 14.64
+      }
+    ],
+    "load_seconds": 1.2398867089941632,
+    "transcribe_seconds": 0.3510224579949863,
+    "total_inside_seconds": 1.5909091669891495,
+    "model_id": "moondream/parakeet-ultra",
+    "model_revision": "510e6f5a1c4619f39c72b083c091476935734e65",
+    "runtime_versions": {
+      "moondream": "2.4.1",
+      "kestrel": "0.8.1",
+      "torch": "2.14.0"
+    }
+  }
+}

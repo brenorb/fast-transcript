@@ -1,0 +1,27 @@
+{
+  "started_at": "2026-09-30T12:33:15.618578+00:00",
+  "platform": "macOS-27.0-arm64-arm-64bit",
+  "hardware": "Apple M5 Max",
+  "memory_bytes": 137438953472,
+  "fscript_version": "fscript 1.1.3",
+  "arguments": {
+    "photon_python": ".venv/bin/python",
+    "fermion": ".venv/phonon2/bin/fermion",
+    "five_minute_reference": "experiments/transcription_benchmarks/references/5min-human.json",
+    "fscript": "target/release/fscript",
+    "out_dir": "experiments/transcription_benchmarks/runs/2026-09-30-m5-max",
+    "models": [
+      "parakeet-redux",
+      "parakeet-ultra",
+      "phonon-2"
+    ],
+    "devices": [
+      "cpu",
+      "mps"
+    ],
+    "repetitions": 3,
+    "warmup": true
+  },
+  "timing_note": "Sequential fresh processes; wall time includes imports, model loading and teardown. Warmup is a separate discarded process, not persistent-model warm inference.",
+  "normalized_wer_note": "Lowercase and remove Unicode punctuation; preserve accents and numerals. Raw WER/CER retain original case and punctuation for historical comparisons."
+}

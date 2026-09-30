@@ -1,0 +1,2155 @@
+{
+  "source": {
+    "youtube_url": "https://www.youtube.com/watch?v=iG9CE55wbtY",
+    "video_id": "iG9CE55wbtY",
+    "title": "Do schools kill creativity? | Sir Ken Robinson | TED",
+    "channel": "TED",
+    "channel_id": "UCAuUUnT6oDeKwE6v1NGQxug",
+    "video_duration_seconds": 1203,
+    "subtitle_source": "YouTube publisher subtitles.en, not automatic_captions",
+    "subtitle_sha256": "bc5763e2478a3fbf29394d56122f16f927d0b91dc69ded1ded6ad6d722b2c0fd",
+    "downloaded_audio_sha256": "16af4ad731a7d19085b4132338d70b01b9e2e998489320438a5c2e1b07f66e2a",
+    "crop_start_seconds": 26.603,
+    "crop_end_seconds": 1165.713,
+    "caption_cleanup": "Remove only (Laughter), (Applause), (Audience); keep spoken audience responses; preserve wording, spelling and numbers.",
+    "reference_type": "publisher-edited captions; may differ from verbatim speech",
+    "fetched_at": "2026-09-30T13:06:22.279084+00:00"
+  },
+  "cues": [
+    {
+      "start_s": 27.103,
+      "end_s": 29.678,
+      "text": "Good morning. How are you?"
+    },
+    {
+      "start_s": 29.702,
+      "end_s": 31.105,
+      "text": "Good."
+    },
+    {
+      "start_s": 31.129,
+      "end_s": 32.797,
+      "text": "It's been great, hasn't it?"
+    },
+    {
+      "start_s": 33.408,
+      "end_s": 35.729,
+      "text": "I've been blown away by the whole thing."
+    },
+    {
+      "start_s": 35.753,
+      "end_s": 37.245,
+      "text": "In fact, I'm leaving."
+    },
+    {
+      "start_s": 37.269,
+      "end_s": 41.175,
+      "text": ""
+    },
+    {
+      "start_s": 43.096,
+      "end_s": 46.663,
+      "text": "There have been three themes running through the conference,"
+    },
+    {
+      "start_s": 46.687,
+      "end_s": 48.973,
+      "text": "which are relevant to what I want to talk about."
+    },
+    {
+      "start_s": 48.997,
+      "end_s": 53.467,
+      "text": "One is the extraordinary evidence of human creativity"
+    },
+    {
+      "start_s": 53.491,
+      "end_s": 55.904,
+      "text": "in all of the presentations that we've had"
+    },
+    {
+      "start_s": 55.928,
+      "end_s": 57.88,
+      "text": "and in all of the people here;"
+    },
+    {
+      "start_s": 57.904,
+      "end_s": 60.555,
+      "text": "just the variety of it and the range of it."
+    },
+    {
+      "start_s": 61.158,
+      "end_s": 63.301,
+      "text": "The second is that it's put us in a place"
+    },
+    {
+      "start_s": 63.325,
+      "end_s": 65.822,
+      "text": "where we have no idea what's going to happen"
+    },
+    {
+      "start_s": 65.846,
+      "end_s": 67.237,
+      "text": "in terms of the future."
+    },
+    {
+      "start_s": 67.261,
+      "end_s": 70.246,
+      "text": "No idea how this may play out."
+    },
+    {
+      "start_s": 70.27,
+      "end_s": 71.892,
+      "text": "I have an interest in education."
+    },
+    {
+      "start_s": 71.916,
+      "end_s": 76.328,
+      "text": "Actually, what I find is, everybody has an interest in education."
+    },
+    {
+      "start_s": 76.352,
+      "end_s": 77.669,
+      "text": "Don't you?"
+    },
+    {
+      "start_s": 77.693,
+      "end_s": 79.095,
+      "text": "I find this very interesting."
+    },
+    {
+      "start_s": 79.119,
+      "end_s": 83.077,
+      "text": "If you're at a dinner party, and you say you work in education --"
+    },
+    {
+      "start_s": 83.101,
+      "end_s": 85.846,
+      "text": "actually, you're not often at dinner parties, frankly."
+    },
+    {
+      "start_s": 85.87,
+      "end_s": 89.666,
+      "text": ""
+    },
+    {
+      "start_s": 89.69,
+      "end_s": 92.118,
+      "text": "If you work in education, you're not asked."
+    },
+    {
+      "start_s": 92.142,
+      "end_s": 95.321,
+      "text": ""
+    },
+    {
+      "start_s": 95.345,
+      "end_s": 99.304,
+      "text": "And you're never asked back, curiously. That's strange to me."
+    },
+    {
+      "start_s": 99.328,
+      "end_s": 101.544,
+      "text": "But if you are, and you say to somebody,"
+    },
+    {
+      "start_s": 101.568,
+      "end_s": 103.346,
+      "text": "you know, they say, \"What do you do?\""
+    },
+    {
+      "start_s": 103.37,
+      "end_s": 105.058,
+      "text": "and you say you work in education,"
+    },
+    {
+      "start_s": 105.082,
+      "end_s": 107.131,
+      "text": "you can see the blood run from their face."
+    },
+    {
+      "start_s": 107.155,
+      "end_s": 108.84,
+      "text": "They're like, \"Oh my God. Why me?\""
+    },
+    {
+      "start_s": 108.864,
+      "end_s": 111.14,
+      "text": ""
+    },
+    {
+      "start_s": 111.164,
+      "end_s": 112.688,
+      "text": "\"My one night out all week.\""
+    },
+    {
+      "start_s": 112.712,
+      "end_s": 115.322,
+      "text": ""
+    },
+    {
+      "start_s": 115.346,
+      "end_s": 118.587,
+      "text": "But if you ask about their education, they pin you to the wall,"
+    },
+    {
+      "start_s": 118.611,
+      "end_s": 122.018,
+      "text": "because it's one of those things that goes deep with people, am I right?"
+    },
+    {
+      "start_s": 122.042,
+      "end_s": 125.535,
+      "text": "Like religion and money and other things."
+    },
+    {
+      "start_s": 125.559,
+      "end_s": 130.001,
+      "text": "So I have a big interest in education, and I think we all do."
+    },
+    {
+      "start_s": 130.025,
+      "end_s": 131.827,
+      "text": "We have a huge vested interest in it,"
+    },
+    {
+      "start_s": 131.851,
+      "end_s": 135.171,
+      "text": "partly because it's education that's meant to take us into this future"
+    },
+    {
+      "start_s": 135.195,
+      "end_s": 136.849,
+      "text": "that we can't grasp."
+    },
+    {
+      "start_s": 136.873,
+      "end_s": 138.039,
+      "text": "If you think of it,"
+    },
+    {
+      "start_s": 138.063,
+      "end_s": 144.185,
+      "text": "children starting school this year will be retiring in 2065."
+    },
+    {
+      "start_s": 145.272,
+      "end_s": 146.843,
+      "text": "Nobody has a clue,"
+    },
+    {
+      "start_s": 146.867,
+      "end_s": 150.426,
+      "text": "despite all the expertise that's been on parade for the past four days,"
+    },
+    {
+      "start_s": 150.45,
+      "end_s": 152.976,
+      "text": "what the world will look like in five years' time."
+    },
+    {
+      "start_s": 153.0,
+      "end_s": 155.294,
+      "text": "And yet, we're meant to be educating them for it."
+    },
+    {
+      "start_s": 155.318,
+      "end_s": 157.868,
+      "text": "So the unpredictability, I think, is extraordinary."
+    },
+    {
+      "start_s": 157.892,
+      "end_s": 161.32,
+      "text": "And the third part of this is that we've all agreed, nonetheless,"
+    },
+    {
+      "start_s": 161.344,
+      "end_s": 166.649,
+      "text": "on the really extraordinary capacities that children have --"
+    },
+    {
+      "start_s": 166.673,
+      "end_s": 169.008,
+      "text": "their capacities for innovation."
+    },
+    {
+      "start_s": 169.032,
+      "end_s": 171.821,
+      "text": "I mean, Sirena last night was a marvel, wasn't she?"
+    },
+    {
+      "start_s": 171.845,
+      "end_s": 173.515,
+      "text": "Just seeing what she could do."
+    },
+    {
+      "start_s": 173.539,
+      "end_s": 179.088,
+      "text": "And she's exceptional, but I think she's not, so to speak,"
+    },
+    {
+      "start_s": 179.112,
+      "end_s": 182.017,
+      "text": "exceptional in the whole of childhood."
+    },
+    {
+      "start_s": 182.041,
+      "end_s": 184.872,
+      "text": "What you have there is a person of extraordinary dedication"
+    },
+    {
+      "start_s": 184.896,
+      "end_s": 186.067,
+      "text": "who found a talent."
+    },
+    {
+      "start_s": 186.091,
+      "end_s": 188.677,
+      "text": "And my contention is, all kids have tremendous talents,"
+    },
+    {
+      "start_s": 188.701,
+      "end_s": 191.095,
+      "text": "and we squander them, pretty ruthlessly."
+    },
+    {
+      "start_s": 191.119,
+      "end_s": 192.976,
+      "text": "So I want to talk about education,"
+    },
+    {
+      "start_s": 193.0,
+      "end_s": 194.872,
+      "text": "and I want to talk about creativity."
+    },
+    {
+      "start_s": 194.896,
+      "end_s": 200.992,
+      "text": "My contention is that creativity now is as important in education as literacy,"
+    },
+    {
+      "start_s": 201.016,
+      "end_s": 203.803,
+      "text": "and we should treat it with the same status."
+    },
+    {
+      "start_s": 203.827,
+      "end_s": 204.939,
+      "text": ""
+    },
+    {
+      "start_s": 204.963,
+      "end_s": 206.152,
+      "text": "Thank you."
+    },
+    {
+      "start_s": 206.176,
+      "end_s": 210.461,
+      "text": ""
+    },
+    {
+      "start_s": 210.485,
+      "end_s": 212.771,
+      "text": "That was it, by the way. Thank you very much."
+    },
+    {
+      "start_s": 212.795,
+      "end_s": 214.91,
+      "text": ""
+    },
+    {
+      "start_s": 214.934,
+      "end_s": 216.611,
+      "text": "So, 15 minutes left."
+    },
+    {
+      "start_s": 216.635,
+      "end_s": 219.792,
+      "text": ""
+    },
+    {
+      "start_s": 219.816,
+      "end_s": 221.487,
+      "text": "\"Well, I was born ... \""
+    },
+    {
+      "start_s": 221.511,
+      "end_s": 224.982,
+      "text": ""
+    },
+    {
+      "start_s": 225.006,
+      "end_s": 227.656,
+      "text": "I heard a great story recently -- I love telling it --"
+    },
+    {
+      "start_s": 227.68,
+      "end_s": 230.051,
+      "text": "of a little girl who was in a drawing lesson."
+    },
+    {
+      "start_s": 230.075,
+      "end_s": 232.25,
+      "text": "She was six, and she was at the back, drawing,"
+    },
+    {
+      "start_s": 232.274,
+      "end_s": 235.034,
+      "text": "and the teacher said this girl hardly ever paid attention,"
+    },
+    {
+      "start_s": 235.058,
+      "end_s": 236.844,
+      "text": "and in this drawing lesson, she did."
+    },
+    {
+      "start_s": 236.868,
+      "end_s": 238.208,
+      "text": "The teacher was fascinated."
+    },
+    {
+      "start_s": 238.232,
+      "end_s": 241.021,
+      "text": "She went over to her, and she said, \"What are you drawing?\""
+    },
+    {
+      "start_s": 241.045,
+      "end_s": 243.536,
+      "text": "And the girl said, \"I'm drawing a picture of God.\""
+    },
+    {
+      "start_s": 244.642,
+      "end_s": 247.96,
+      "text": "And the teacher said, \"But nobody knows what God looks like.\""
+    },
+    {
+      "start_s": 247.984,
+      "end_s": 250.072,
+      "text": "And the girl said, \"They will in a minute.\""
+    },
+    {
+      "start_s": 250.096,
+      "end_s": 256.878,
+      "text": ""
+    },
+    {
+      "start_s": 261.662,
+      "end_s": 264.389,
+      "text": "When my son was four in England --"
+    },
+    {
+      "start_s": 264.413,
+      "end_s": 266.604,
+      "text": "actually, he was four everywhere, to be honest."
+    },
+    {
+      "start_s": 266.628,
+      "end_s": 268.38,
+      "text": ""
+    },
+    {
+      "start_s": 268.404,
+      "end_s": 271.791,
+      "text": "If we're being strict about it, wherever he went, he was four that year."
+    },
+    {
+      "start_s": 271.815,
+      "end_s": 274.453,
+      "text": "He was in the Nativity play. Do you remember the story?"
+    },
+    {
+      "start_s": 274.477,
+      "end_s": 275.696,
+      "text": ""
+    },
+    {
+      "start_s": 275.72,
+      "end_s": 277.547,
+      "text": "No, it was big, it was a big story."
+    },
+    {
+      "start_s": 277.571,
+      "end_s": 279.876,
+      "text": "Mel Gibson did the sequel, you may have seen it."
+    },
+    {
+      "start_s": 279.9,
+      "end_s": 281.161,
+      "text": ""
+    },
+    {
+      "start_s": 281.185,
+      "end_s": 282.746,
+      "text": "\"Nativity II.\""
+    },
+    {
+      "start_s": 282.77,
+      "end_s": 286.654,
+      "text": "But James got the part of Joseph, which we were thrilled about."
+    },
+    {
+      "start_s": 286.678,
+      "end_s": 289.584,
+      "text": "We considered this to be one of the lead parts."
+    },
+    {
+      "start_s": 289.608,
+      "end_s": 292.095,
+      "text": "We had the place crammed full of agents in T-shirts:"
+    },
+    {
+      "start_s": 292.119,
+      "end_s": 293.533,
+      "text": "\"James Robinson IS Joseph!\""
+    },
+    {
+      "start_s": 293.557,
+      "end_s": 294.59,
+      "text": ""
+    },
+    {
+      "start_s": 294.614,
+      "end_s": 298.242,
+      "text": "He didn't have to speak, but you know the bit where the three kings come in?"
+    },
+    {
+      "start_s": 298.266,
+      "end_s": 300.951,
+      "text": "They come in bearing gifts, gold, frankincense and myrrh."
+    },
+    {
+      "start_s": 300.975,
+      "end_s": 302.133,
+      "text": "This really happened."
+    },
+    {
+      "start_s": 302.157,
+      "end_s": 305.273,
+      "text": "We were sitting there, and I think they just went out of sequence,"
+    },
+    {
+      "start_s": 305.297,
+      "end_s": 307.876,
+      "text": "because we talked to the little boy afterward and said,"
+    },
+    {
+      "start_s": 307.9,
+      "end_s": 310.696,
+      "text": "\"You OK with that?\" They said, \"Yeah, why? Was that wrong?\""
+    },
+    {
+      "start_s": 310.72,
+      "end_s": 311.876,
+      "text": "They just switched."
+    },
+    {
+      "start_s": 311.9,
+      "end_s": 315.21,
+      "text": "The three boys came in, four-year-olds with tea towels on their heads."
+    },
+    {
+      "start_s": 315.234,
+      "end_s": 318.556,
+      "text": "They put these boxes down, and the first boy said, \"I bring you gold.\""
+    },
+    {
+      "start_s": 318.58,
+      "end_s": 320.854,
+      "text": "And the second boy said, \"I bring you myrrh.\""
+    },
+    {
+      "start_s": 320.878,
+      "end_s": 322.96,
+      "text": "And the third boy said, \"Frank sent this.\""
+    },
+    {
+      "start_s": 322.984,
+      "end_s": 328.461,
+      "text": ""
+    },
+    {
+      "start_s": 335.711,
+      "end_s": 338.801,
+      "text": "What these things have in common is that kids will take a chance."
+    },
+    {
+      "start_s": 338.825,
+      "end_s": 342.307,
+      "text": "If they don't know, they'll have a go."
+    },
+    {
+      "start_s": 342.331,
+      "end_s": 345.36,
+      "text": "Am I right? They're not frightened of being wrong."
+    },
+    {
+      "start_s": 345.924,
+      "end_s": 349.431,
+      "text": "I don't mean to say that being wrong is the same thing as being creative."
+    },
+    {
+      "start_s": 349.886,
+      "end_s": 352.976,
+      "text": "What we do know is, if you're not prepared to be wrong,"
+    },
+    {
+      "start_s": 353.0,
+      "end_s": 355.367,
+      "text": "you'll never come up with anything original --"
+    },
+    {
+      "start_s": 355.391,
+      "end_s": 357.971,
+      "text": "if you're not prepared to be wrong."
+    },
+    {
+      "start_s": 357.995,
+      "end_s": 362.438,
+      "text": "And by the time they get to be adults, most kids have lost that capacity."
+    },
+    {
+      "start_s": 362.462,
+      "end_s": 364.926,
+      "text": "They have become frightened of being wrong."
+    },
+    {
+      "start_s": 364.95,
+      "end_s": 366.64,
+      "text": "And we run our companies like this."
+    },
+    {
+      "start_s": 366.664,
+      "end_s": 368.316,
+      "text": "We stigmatize mistakes."
+    },
+    {
+      "start_s": 368.34,
+      "end_s": 370.642,
+      "text": "And we're now running national education systems"
+    },
+    {
+      "start_s": 370.666,
+      "end_s": 373.205,
+      "text": "where mistakes are the worst thing you can make."
+    },
+    {
+      "start_s": 373.8,
+      "end_s": 376.908,
+      "text": "And the result is that we are educating people"
+    },
+    {
+      "start_s": 376.932,
+      "end_s": 379.274,
+      "text": "out of their creative capacities."
+    },
+    {
+      "start_s": 379.298,
+      "end_s": 383.725,
+      "text": "Picasso once said this, he said that all children are born artists."
+    },
+    {
+      "start_s": 383.749,
+      "end_s": 386.971,
+      "text": "The problem is to remain an artist as we grow up."
+    },
+    {
+      "start_s": 386.995,
+      "end_s": 390.227,
+      "text": "I believe this passionately, that we don't grow into creativity,"
+    },
+    {
+      "start_s": 390.251,
+      "end_s": 391.956,
+      "text": "we grow out of it."
+    },
+    {
+      "start_s": 391.98,
+      "end_s": 393.863,
+      "text": "Or rather, we get educated out of it."
+    },
+    {
+      "start_s": 394.607,
+      "end_s": 396.51,
+      "text": "So why is this?"
+    },
+    {
+      "start_s": 397.124,
+      "end_s": 399.907,
+      "text": "I lived in Stratford-on-Avon until about five years ago."
+    },
+    {
+      "start_s": 399.931,
+      "end_s": 402.184,
+      "text": "In fact, we moved from Stratford to Los Angeles."
+    },
+    {
+      "start_s": 402.912,
+      "end_s": 405.536,
+      "text": "So you can imagine what a seamless transition this was."
+    },
+    {
+      "start_s": 405.56,
+      "end_s": 406.976,
+      "text": ""
+    },
+    {
+      "start_s": 407.0,
+      "end_s": 409.376,
+      "text": "Actually, we lived in a place called Snitterfield,"
+    },
+    {
+      "start_s": 409.4,
+      "end_s": 410.651,
+      "text": "just outside Stratford,"
+    },
+    {
+      "start_s": 410.675,
+      "end_s": 413.31,
+      "text": "which is where Shakespeare's father was born."
+    },
+    {
+      "start_s": 413.334,
+      "end_s": 415.457,
+      "text": "Are you struck by a new thought? I was."
+    },
+    {
+      "start_s": 415.481,
+      "end_s": 418.076,
+      "text": "You don't think of Shakespeare having a father, do you?"
+    },
+    {
+      "start_s": 418.1,
+      "end_s": 419.473,
+      "text": "Do you?"
+    },
+    {
+      "start_s": 419.497,
+      "end_s": 422.388,
+      "text": "Because you don't think of Shakespeare being a child, do you?"
+    },
+    {
+      "start_s": 422.412,
+      "end_s": 423.676,
+      "text": "Shakespeare being seven?"
+    },
+    {
+      "start_s": 423.7,
+      "end_s": 424.876,
+      "text": "I never thought of it."
+    },
+    {
+      "start_s": 424.9,
+      "end_s": 426.592,
+      "text": "I mean, he was seven at some point."
+    },
+    {
+      "start_s": 426.616,
+      "end_s": 428.882,
+      "text": "He was in somebody's English class, wasn't he?"
+    },
+    {
+      "start_s": 428.906,
+      "end_s": 435.693,
+      "text": ""
+    },
+    {
+      "start_s": 435.717,
+      "end_s": 437.046,
+      "text": "How annoying would that be?"
+    },
+    {
+      "start_s": 437.07,
+      "end_s": 440.07,
+      "text": ""
+    },
+    {
+      "start_s": 444.939,
+      "end_s": 446.279,
+      "text": "\"Must try harder.\""
+    },
+    {
+      "start_s": 446.303,
+      "end_s": 449.703,
+      "text": ""
+    },
+    {
+      "start_s": 450.559,
+      "end_s": 453.54,
+      "text": "Being sent to bed by his dad, to Shakespeare, \"Go to bed, now!\""
+    },
+    {
+      "start_s": 453.564,
+      "end_s": 454.722,
+      "text": "To William Shakespeare."
+    },
+    {
+      "start_s": 454.746,
+      "end_s": 456.017,
+      "text": "\"And put the pencil down!\""
+    },
+    {
+      "start_s": 456.041,
+      "end_s": 457.116,
+      "text": ""
+    },
+    {
+      "start_s": 457.14,
+      "end_s": 458.617,
+      "text": "\"And stop speaking like that.\""
+    },
+    {
+      "start_s": 458.641,
+      "end_s": 462.22,
+      "text": ""
+    },
+    {
+      "start_s": 462.244,
+      "end_s": 463.568,
+      "text": "\"It's confusing everybody.\""
+    },
+    {
+      "start_s": 463.592,
+      "end_s": 468.862,
+      "text": ""
+    },
+    {
+      "start_s": 468.886,
+      "end_s": 474.072,
+      "text": "Anyway, we moved from Stratford to Los Angeles,"
+    },
+    {
+      "start_s": 474.096,
+      "end_s": 476.572,
+      "text": "and I just want to say a word about the transition."
+    },
+    {
+      "start_s": 476.596,
+      "end_s": 478.398,
+      "text": "Actually, my son didn't want to come."
+    },
+    {
+      "start_s": 478.422,
+      "end_s": 480.817,
+      "text": "I've got two kids; he's 21 now, my daughter's 16."
+    },
+    {
+      "start_s": 480.841,
+      "end_s": 483.044,
+      "text": "He didn't want to come to Los Angeles."
+    },
+    {
+      "start_s": 483.068,
+      "end_s": 486.856,
+      "text": "He loved it, but he had a girlfriend in England."
+    },
+    {
+      "start_s": 486.88,
+      "end_s": 489.737,
+      "text": "This was the love of his life, Sarah."
+    },
+    {
+      "start_s": 489.761,
+      "end_s": 491.136,
+      "text": "He'd known her for a month."
+    },
+    {
+      "start_s": 491.16,
+      "end_s": 492.51,
+      "text": ""
+    },
+    {
+      "start_s": 492.534,
+      "end_s": 495.813,
+      "text": "Mind you, they'd had their fourth anniversary,"
+    },
+    {
+      "start_s": 495.837,
+      "end_s": 497.773,
+      "text": "because it's a long time when you're 16."
+    },
+    {
+      "start_s": 497.797,
+      "end_s": 499.438,
+      "text": "He was really upset on the plane."
+    },
+    {
+      "start_s": 499.462,
+      "end_s": 501.869,
+      "text": "He said, \"I'll never find another girl like Sarah.\""
+    },
+    {
+      "start_s": 501.893,
+      "end_s": 504.207,
+      "text": "And we were rather pleased about that, frankly --"
+    },
+    {
+      "start_s": 504.231,
+      "end_s": 508.464,
+      "text": ""
+    },
+    {
+      "start_s": 512.434,
+      "end_s": 515.38,
+      "text": "because she was the main reason we were leaving the country."
+    },
+    {
+      "start_s": 515.404,
+      "end_s": 518.404,
+      "text": ""
+    },
+    {
+      "start_s": 521.141,
+      "end_s": 523.503,
+      "text": "But something strikes you when you move to America"
+    },
+    {
+      "start_s": 523.527,
+      "end_s": 524.894,
+      "text": "and travel around the world:"
+    },
+    {
+      "start_s": 524.918,
+      "end_s": 528.565,
+      "text": "every education system on earth has the same hierarchy of subjects."
+    },
+    {
+      "start_s": 528.589,
+      "end_s": 530.492,
+      "text": "Every one. Doesn't matter where you go."
+    },
+    {
+      "start_s": 530.516,
+      "end_s": 532.786,
+      "text": "You'd think it would be otherwise, but it isn't."
+    },
+    {
+      "start_s": 532.81,
+      "end_s": 535.791,
+      "text": "At the top are mathematics and languages, then the humanities."
+    },
+    {
+      "start_s": 535.815,
+      "end_s": 538.106,
+      "text": "At the bottom are the arts. Everywhere on earth."
+    },
+    {
+      "start_s": 538.13,
+      "end_s": 542.495,
+      "text": "And in pretty much every system, too, there's a hierarchy within the arts."
+    },
+    {
+      "start_s": 542.519,
+      "end_s": 545.376,
+      "text": "Art and music are normally given a higher status in schools"
+    },
+    {
+      "start_s": 545.4,
+      "end_s": 546.828,
+      "text": "than drama and dance."
+    },
+    {
+      "start_s": 546.852,
+      "end_s": 548.959,
+      "text": "There isn't an education system on the planet"
+    },
+    {
+      "start_s": 548.983,
+      "end_s": 550.902,
+      "text": "that teaches dance every day to children"
+    },
+    {
+      "start_s": 550.926,
+      "end_s": 552.576,
+      "text": "the way we teach them mathematics."
+    },
+    {
+      "start_s": 552.6,
+      "end_s": 553.758,
+      "text": "Why?"
+    },
+    {
+      "start_s": 553.782,
+      "end_s": 554.949,
+      "text": "Why not?"
+    },
+    {
+      "start_s": 554.973,
+      "end_s": 556.567,
+      "text": "I think this is rather important."
+    },
+    {
+      "start_s": 556.591,
+      "end_s": 558.855,
+      "text": "I think math is very important, but so is dance."
+    },
+    {
+      "start_s": 558.879,
+      "end_s": 561.759,
+      "text": "Children dance all the time if they're allowed to, we all do."
+    },
+    {
+      "start_s": 561.783,
+      "end_s": 564.233,
+      "text": "We all have bodies, don't we? Did I miss a meeting?"
+    },
+    {
+      "start_s": 564.257,
+      "end_s": 567.621,
+      "text": ""
+    },
+    {
+      "start_s": 567.645,
+      "end_s": 569.966,
+      "text": "Truthfully, what happens is, as children grow up,"
+    },
+    {
+      "start_s": 569.99,
+      "end_s": 572.704,
+      "text": "we start to educate them progressively from the waist up."
+    },
+    {
+      "start_s": 572.728,
+      "end_s": 574.354,
+      "text": "And then we focus on their heads."
+    },
+    {
+      "start_s": 574.378,
+      "end_s": 575.868,
+      "text": "And slightly to one side."
+    },
+    {
+      "start_s": 577.044,
+      "end_s": 579.115,
+      "text": "If you were to visit education as an alien"
+    },
+    {
+      "start_s": 579.139,
+      "end_s": 582.12,
+      "text": "and say \"What's it for, public education?\""
+    },
+    {
+      "start_s": 582.144,
+      "end_s": 584.871,
+      "text": "I think you'd have to conclude, if you look at the output,"
+    },
+    {
+      "start_s": 584.895,
+      "end_s": 586.252,
+      "text": "who really succeeds by this,"
+    },
+    {
+      "start_s": 586.276,
+      "end_s": 587.976,
+      "text": "who does everything they should,"
+    },
+    {
+      "start_s": 588.0,
+      "end_s": 590.731,
+      "text": "who gets all the brownie points, who are the winners --"
+    },
+    {
+      "start_s": 590.755,
+      "end_s": 593.993,
+      "text": "I think you'd have to conclude the whole purpose of public education"
+    },
+    {
+      "start_s": 594.017,
+      "end_s": 595.215,
+      "text": "throughout the world"
+    },
+    {
+      "start_s": 595.239,
+      "end_s": 597.218,
+      "text": "is to produce university professors."
+    },
+    {
+      "start_s": 597.718,
+      "end_s": 598.886,
+      "text": "Isn't it?"
+    },
+    {
+      "start_s": 598.91,
+      "end_s": 600.894,
+      "text": "They're the people who come out the top."
+    },
+    {
+      "start_s": 600.918,
+      "end_s": 602.737,
+      "text": "And I used to be one, so there."
+    },
+    {
+      "start_s": 602.761,
+      "end_s": 606.458,
+      "text": ""
+    },
+    {
+      "start_s": 606.482,
+      "end_s": 608.082,
+      "text": "And I like university professors,"
+    },
+    {
+      "start_s": 608.106,
+      "end_s": 610.021,
+      "text": "but, you know, we shouldn't hold them up"
+    },
+    {
+      "start_s": 610.045,
+      "end_s": 612.976,
+      "text": "as the high-water mark of all human achievement."
+    },
+    {
+      "start_s": 613.0,
+      "end_s": 615.113,
+      "text": "They're just a form of life."
+    },
+    {
+      "start_s": 615.137,
+      "end_s": 616.56,
+      "text": "Another form of life."
+    },
+    {
+      "start_s": 616.584,
+      "end_s": 617.981,
+      "text": "But they're rather curious."
+    },
+    {
+      "start_s": 618.005,
+      "end_s": 619.969,
+      "text": "And I say this out of affection for them:"
+    },
+    {
+      "start_s": 619.993,
+      "end_s": 622.068,
+      "text": "there's something curious about professors."
+    },
+    {
+      "start_s": 622.092,
+      "end_s": 625.838,
+      "text": "In my experience -- not all of them, but typically -- they live in their heads."
+    },
+    {
+      "start_s": 625.862,
+      "end_s": 628.005,
+      "text": "They live up there and slightly to one side."
+    },
+    {
+      "start_s": 628.495,
+      "end_s": 631.931,
+      "text": "They're disembodied, you know, in a kind of literal way."
+    },
+    {
+      "start_s": 631.955,
+      "end_s": 635.105,
+      "text": "They look upon their body as a form of transport for their heads."
+    },
+    {
+      "start_s": 635.129,
+      "end_s": 641.176,
+      "text": ""
+    },
+    {
+      "start_s": 641.2,
+      "end_s": 642.577,
+      "text": "Don't they?"
+    },
+    {
+      "start_s": 642.601,
+      "end_s": 644.746,
+      "text": "It's a way of getting their head to meetings."
+    },
+    {
+      "start_s": 644.77,
+      "end_s": 649.998,
+      "text": ""
+    },
+    {
+      "start_s": 650.022,
+      "end_s": 653.944,
+      "text": "If you want real evidence of out-of-body experiences, by the way,"
+    },
+    {
+      "start_s": 653.968,
+      "end_s": 657.443,
+      "text": "get yourself along to a residential conference of senior academics"
+    },
+    {
+      "start_s": 657.467,
+      "end_s": 659.818,
+      "text": "and pop into the discotheque on the final night."
+    },
+    {
+      "start_s": 659.842,
+      "end_s": 662.454,
+      "text": ""
+    },
+    {
+      "start_s": 662.478,
+      "end_s": 663.834,
+      "text": "And there, you will see it."
+    },
+    {
+      "start_s": 663.858,
+      "end_s": 668.351,
+      "text": "Grown men and women writhing uncontrollably, off the beat."
+    },
+    {
+      "start_s": 668.375,
+      "end_s": 670.867,
+      "text": ""
+    },
+    {
+      "start_s": 670.891,
+      "end_s": 674.216,
+      "text": "Waiting until it ends, so they can go home and write a paper about it."
+    },
+    {
+      "start_s": 674.24,
+      "end_s": 676.221,
+      "text": ""
+    },
+    {
+      "start_s": 676.245,
+      "end_s": 680.106,
+      "text": "Our education system is predicated on the idea of academic ability."
+    },
+    {
+      "start_s": 680.13,
+      "end_s": 681.301,
+      "text": "And there's a reason."
+    },
+    {
+      "start_s": 681.325,
+      "end_s": 684.954,
+      "text": "Around the world, there were no public systems of education,"
+    },
+    {
+      "start_s": 684.978,
+      "end_s": 687.085,
+      "text": "really, before the 19th century."
+    },
+    {
+      "start_s": 687.109,
+      "end_s": 690.356,
+      "text": "They all came into being to meet the needs of industrialism."
+    },
+    {
+      "start_s": 690.38,
+      "end_s": 692.432,
+      "text": "So the hierarchy is rooted on two ideas."
+    },
+    {
+      "start_s": 692.456,
+      "end_s": 697.018,
+      "text": "Number one, that the most useful subjects for work are at the top."
+    },
+    {
+      "start_s": 697.042,
+      "end_s": 700.075,
+      "text": "So you were probably steered benignly away from things at school"
+    },
+    {
+      "start_s": 700.099,
+      "end_s": 701.251,
+      "text": "when you were a kid,"
+    },
+    {
+      "start_s": 701.275,
+      "end_s": 702.428,
+      "text": "things you liked,"
+    },
+    {
+      "start_s": 702.452,
+      "end_s": 704.894,
+      "text": "on the grounds you would never get a job doing that."
+    },
+    {
+      "start_s": 704.918,
+      "end_s": 706.069,
+      "text": "Is that right?"
+    },
+    {
+      "start_s": 706.093,
+      "end_s": 708.505,
+      "text": "\"Don't do music, you're not going to be a musician;"
+    },
+    {
+      "start_s": 708.529,
+      "end_s": 710.38,
+      "text": "don't do art, you won't be an artist.\""
+    },
+    {
+      "start_s": 710.404,
+      "end_s": 713.15,
+      "text": "Benign advice -- now, profoundly mistaken."
+    },
+    {
+      "start_s": 713.174,
+      "end_s": 715.319,
+      "text": "The whole world is engulfed in a revolution."
+    },
+    {
+      "start_s": 715.343,
+      "end_s": 717.44,
+      "text": "And the second is academic ability,"
+    },
+    {
+      "start_s": 717.464,
+      "end_s": 720.283,
+      "text": "which has really come to dominate our view of intelligence,"
+    },
+    {
+      "start_s": 720.307,
+      "end_s": 723.046,
+      "text": "because the universities design the system in their image."
+    },
+    {
+      "start_s": 723.07,
+      "end_s": 724.221,
+      "text": "If you think of it,"
+    },
+    {
+      "start_s": 724.245,
+      "end_s": 727.909,
+      "text": "the whole system of public education around the world is a protracted process"
+    },
+    {
+      "start_s": 727.933,
+      "end_s": 729.084,
+      "text": "of university entrance."
+    },
+    {
+      "start_s": 729.108,
+      "end_s": 731.401,
+      "text": "And the consequence is that many highly talented,"
+    },
+    {
+      "start_s": 731.425,
+      "end_s": 733.943,
+      "text": "brilliant, creative people think they're not,"
+    },
+    {
+      "start_s": 733.967,
+      "end_s": 736.1,
+      "text": "because the thing they were good at at school"
+    },
+    {
+      "start_s": 736.124,
+      "end_s": 738.426,
+      "text": "wasn't valued, or was actually stigmatized."
+    },
+    {
+      "start_s": 738.45,
+      "end_s": 740.679,
+      "text": "And I think we can't afford to go on that way."
+    },
+    {
+      "start_s": 740.703,
+      "end_s": 742.99,
+      "text": "In the next 30 years, according to UNESCO,"
+    },
+    {
+      "start_s": 743.014,
+      "end_s": 746.42,
+      "text": "more people worldwide will be graduating through education"
+    },
+    {
+      "start_s": 746.444,
+      "end_s": 748.639,
+      "text": "than since the beginning of history."
+    },
+    {
+      "start_s": 748.663,
+      "end_s": 749.82,
+      "text": "More people."
+    },
+    {
+      "start_s": 749.844,
+      "end_s": 752.765,
+      "text": "And it's the combination of all the things we've talked about:"
+    },
+    {
+      "start_s": 752.789,
+      "end_s": 755.182,
+      "text": "technology and its transformational effect on work,"
+    },
+    {
+      "start_s": 755.206,
+      "end_s": 757.684,
+      "text": "and demography and the huge explosion in population."
+    },
+    {
+      "start_s": 757.708,
+      "end_s": 760.145,
+      "text": "Suddenly, degrees aren't worth anything."
+    },
+    {
+      "start_s": 760.169,
+      "end_s": 761.846,
+      "text": "Isn't that true?"
+    },
+    {
+      "start_s": 761.87,
+      "end_s": 764.851,
+      "text": "When I was a student, if you had a degree, you had a job."
+    },
+    {
+      "start_s": 764.875,
+      "end_s": 767.673,
+      "text": "If you didn't have a job, it's because you didn't want one."
+    },
+    {
+      "start_s": 767.697,
+      "end_s": 770.031,
+      "text": "And I didn't want one, frankly."
+    },
+    {
+      "start_s": 770.055,
+      "end_s": 771.646,
+      "text": ""
+    },
+    {
+      "start_s": 771.67,
+      "end_s": 775.475,
+      "text": "But now kids with degrees are often heading home"
+    },
+    {
+      "start_s": 775.499,
+      "end_s": 777.293,
+      "text": "to carry on playing video games,"
+    },
+    {
+      "start_s": 777.317,
+      "end_s": 780.365,
+      "text": "because you need an MA where the previous job required a BA,"
+    },
+    {
+      "start_s": 780.389,
+      "end_s": 782.176,
+      "text": "and now you need a PhD for the other."
+    },
+    {
+      "start_s": 782.2,
+      "end_s": 783.976,
+      "text": "It's a process of academic inflation."
+    },
+    {
+      "start_s": 784.0,
+      "end_s": 787.756,
+      "text": "And it indicates the whole structure of education is shifting beneath our feet."
+    },
+    {
+      "start_s": 787.78,
+      "end_s": 790.322,
+      "text": "We need to radically rethink our view of intelligence."
+    },
+    {
+      "start_s": 790.346,
+      "end_s": 792.27,
+      "text": "We know three things about intelligence."
+    },
+    {
+      "start_s": 792.294,
+      "end_s": 793.445,
+      "text": "One, it's diverse."
+    },
+    {
+      "start_s": 793.469,
+      "end_s": 796.45,
+      "text": "We think about the world in all the ways that we experience it."
+    },
+    {
+      "start_s": 796.474,
+      "end_s": 799.451,
+      "text": "We think visually, we think in sound, we think kinesthetically."
+    },
+    {
+      "start_s": 799.475,
+      "end_s": 801.796,
+      "text": "We think in abstract terms, we think in movement."
+    },
+    {
+      "start_s": 801.82,
+      "end_s": 803.816,
+      "text": "Secondly, intelligence is dynamic."
+    },
+    {
+      "start_s": 804.673,
+      "end_s": 806.976,
+      "text": "If you look at the interactions of a human brain,"
+    },
+    {
+      "start_s": 807.0,
+      "end_s": 810.023,
+      "text": "as we heard yesterday from a number of presentations,"
+    },
+    {
+      "start_s": 810.047,
+      "end_s": 812.205,
+      "text": "intelligence is wonderfully interactive."
+    },
+    {
+      "start_s": 812.229,
+      "end_s": 814.467,
+      "text": "The brain isn't divided into compartments."
+    },
+    {
+      "start_s": 814.872,
+      "end_s": 816.446,
+      "text": "In fact, creativity --"
+    },
+    {
+      "start_s": 816.47,
+      "end_s": 820.49,
+      "text": "which I define as the process of having original ideas that have value --"
+    },
+    {
+      "start_s": 820.514,
+      "end_s": 822.444,
+      "text": "more often than not comes about"
+    },
+    {
+      "start_s": 822.468,
+      "end_s": 826.025,
+      "text": "through the interaction of different disciplinary ways of seeing things."
+    },
+    {
+      "start_s": 827.472,
+      "end_s": 831.103,
+      "text": "By the way, there's a shaft of nerves that joins the two halves of the brain,"
+    },
+    {
+      "start_s": 831.127,
+      "end_s": 832.425,
+      "text": "called the corpus callosum."
+    },
+    {
+      "start_s": 832.449,
+      "end_s": 833.67,
+      "text": "It's thicker in women."
+    },
+    {
+      "start_s": 834.471,
+      "end_s": 836.194,
+      "text": "Following off from Helen yesterday,"
+    },
+    {
+      "start_s": 836.218,
+      "end_s": 839.229,
+      "text": "this is probably why women are better at multitasking."
+    },
+    {
+      "start_s": 839.253,
+      "end_s": 841.078,
+      "text": "Because you are, aren't you?"
+    },
+    {
+      "start_s": 841.102,
+      "end_s": 844.436,
+      "text": "There's a raft of research, but I know it from my personal life."
+    },
+    {
+      "start_s": 844.865,
+      "end_s": 847.8,
+      "text": "If my wife is cooking a meal at home, which is not often ..."
+    },
+    {
+      "start_s": 849.224,
+      "end_s": 850.39,
+      "text": "thankfully."
+    },
+    {
+      "start_s": 850.414,
+      "end_s": 853.104,
+      "text": ""
+    },
+    {
+      "start_s": 853.128,
+      "end_s": 854.58,
+      "text": "No, she's good at some things."
+    },
+    {
+      "start_s": 854.604,
+      "end_s": 857.499,
+      "text": "But if she's cooking, she's dealing with people on the phone,"
+    },
+    {
+      "start_s": 857.523,
+      "end_s": 860.17,
+      "text": "she's talking to the kids, she's painting the ceiling --"
+    },
+    {
+      "start_s": 860.194,
+      "end_s": 861.209,
+      "text": ""
+    },
+    {
+      "start_s": 861.233,
+      "end_s": 863.258,
+      "text": "she's doing open-heart surgery over here."
+    },
+    {
+      "start_s": 863.282,
+      "end_s": 866.28,
+      "text": "If I'm cooking, the door is shut, the kids are out,"
+    },
+    {
+      "start_s": 866.304,
+      "end_s": 867.543,
+      "text": "the phone's on the hook,"
+    },
+    {
+      "start_s": 867.567,
+      "end_s": 869.257,
+      "text": "if she comes in, I get annoyed."
+    },
+    {
+      "start_s": 869.281,
+      "end_s": 872.071,
+      "text": "I say, \"Terry, please, I'm trying to fry an egg in here.\""
+    },
+    {
+      "start_s": 872.095,
+      "end_s": 878.825,
+      "text": ""
+    },
+    {
+      "start_s": 879.254,
+      "end_s": 880.454,
+      "text": "\"Give me a break.\""
+    },
+    {
+      "start_s": 880.478,
+      "end_s": 882.198,
+      "text": ""
+    },
+    {
+      "start_s": 882.222,
+      "end_s": 884.721,
+      "text": "Actually, do you know that old philosophical thing,"
+    },
+    {
+      "start_s": 884.745,
+      "end_s": 888.228,
+      "text": "\"If a tree falls in a forest, and nobody hears it, did it happen?\""
+    },
+    {
+      "start_s": 888.252,
+      "end_s": 889.581,
+      "text": "Remember that old chestnut?"
+    },
+    {
+      "start_s": 889.605,
+      "end_s": 892.515,
+      "text": "I saw a great T-shirt recently, which said,"
+    },
+    {
+      "start_s": 892.539,
+      "end_s": 895.976,
+      "text": "\"If a man speaks his mind in a forest, and no woman hears him,"
+    },
+    {
+      "start_s": 896.0,
+      "end_s": 897.396,
+      "text": "is he still wrong?\""
+    },
+    {
+      "start_s": 897.42,
+      "end_s": 903.026,
+      "text": ""
+    },
+    {
+      "start_s": 905.089,
+      "end_s": 907.128,
+      "text": "And the third thing about intelligence is,"
+    },
+    {
+      "start_s": 907.152,
+      "end_s": 908.521,
+      "text": "it's distinct."
+    },
+    {
+      "start_s": 909.114,
+      "end_s": 911.618,
+      "text": "I'm doing a new book at the moment called \"Epiphany,\""
+    },
+    {
+      "start_s": 911.642,
+      "end_s": 914.083,
+      "text": "which is based on a series of interviews with people"
+    },
+    {
+      "start_s": 914.107,
+      "end_s": 915.971,
+      "text": "about how they discovered their talent."
+    },
+    {
+      "start_s": 915.995,
+      "end_s": 918.116,
+      "text": "I'm fascinated by how people got to be there."
+    },
+    {
+      "start_s": 918.14,
+      "end_s": 921.331,
+      "text": "It's really prompted by a conversation I had with a wonderful woman"
+    },
+    {
+      "start_s": 921.355,
+      "end_s": 924.032,
+      "text": "who maybe most people have never heard of, Gillian Lynne."
+    },
+    {
+      "start_s": 924.056,
+      "end_s": 925.652,
+      "text": "Have you heard of her? Some have."
+    },
+    {
+      "start_s": 925.676,
+      "end_s": 928.128,
+      "text": "She's a choreographer, and everybody knows her work."
+    },
+    {
+      "start_s": 928.152,
+      "end_s": 930.168,
+      "text": "She did \"Cats\" and \"Phantom of the Opera.\""
+    },
+    {
+      "start_s": 930.192,
+      "end_s": 931.343,
+      "text": "She's wonderful."
+    },
+    {
+      "start_s": 931.367,
+      "end_s": 934.314,
+      "text": "I used to be on the board of The Royal Ballet, as you can see."
+    },
+    {
+      "start_s": 934.338,
+      "end_s": 936.267,
+      "text": ""
+    },
+    {
+      "start_s": 936.291,
+      "end_s": 939.816,
+      "text": "Gillian and I had lunch one day. I said, \"How did you get to be a dancer?\""
+    },
+    {
+      "start_s": 939.84,
+      "end_s": 940.991,
+      "text": "It was interesting."
+    },
+    {
+      "start_s": 941.015,
+      "end_s": 943.262,
+      "text": "When she was at school, she was really hopeless."
+    },
+    {
+      "start_s": 943.286,
+      "end_s": 946.075,
+      "text": "And the school, in the '30s, wrote to her parents and said,"
+    },
+    {
+      "start_s": 946.099,
+      "end_s": 948.134,
+      "text": "\"We think Gillian has a learning disorder.\""
+    },
+    {
+      "start_s": 948.158,
+      "end_s": 950.256,
+      "text": "She couldn't concentrate; she was fidgeting."
+    },
+    {
+      "start_s": 950.28,
+      "end_s": 952.157,
+      "text": "I think now they'd say she had ADHD."
+    },
+    {
+      "start_s": 952.181,
+      "end_s": 953.48,
+      "text": "Wouldn't you?"
+    },
+    {
+      "start_s": 953.504,
+      "end_s": 957.681,
+      "text": "But this was the 1930s, and ADHD hadn't been invented at this point."
+    },
+    {
+      "start_s": 957.705,
+      "end_s": 959.745,
+      "text": "It wasn't an available condition."
+    },
+    {
+      "start_s": 959.769,
+      "end_s": 962.984,
+      "text": ""
+    },
+    {
+      "start_s": 963.008,
+      "end_s": 965.05,
+      "text": "People weren't aware they could have that."
+    },
+    {
+      "start_s": 965.074,
+      "end_s": 967.499,
+      "text": ""
+    },
+    {
+      "start_s": 967.523,
+      "end_s": 971.699,
+      "text": "Anyway, she went to see this specialist."
+    },
+    {
+      "start_s": 971.723,
+      "end_s": 975.43,
+      "text": "So, this oak-paneled room, and she was there with her mother,"
+    },
+    {
+      "start_s": 975.454,
+      "end_s": 977.781,
+      "text": "and she was led and sat on this chair at the end,"
+    },
+    {
+      "start_s": 977.805,
+      "end_s": 979.75,
+      "text": "and she sat on her hands for 20 minutes,"
+    },
+    {
+      "start_s": 979.774,
+      "end_s": 981.455,
+      "text": "while this man talked to her mother"
+    },
+    {
+      "start_s": 981.479,
+      "end_s": 983.943,
+      "text": "about all the problems Gillian was having at school,"
+    },
+    {
+      "start_s": 983.967,
+      "end_s": 987.516,
+      "text": "because she was disturbing people, her homework was always late, and so on."
+    },
+    {
+      "start_s": 987.54,
+      "end_s": 988.691,
+      "text": "Little kid of eight."
+    },
+    {
+      "start_s": 988.715,
+      "end_s": 991.626,
+      "text": "In the end, the doctor went and sat next to Gillian and said,"
+    },
+    {
+      "start_s": 991.65,
+      "end_s": 994.363,
+      "text": "\"I've listened to all these things your mother's told me."
+    },
+    {
+      "start_s": 994.387,
+      "end_s": 995.981,
+      "text": "I need to speak to her privately."
+    },
+    {
+      "start_s": 996.005,
+      "end_s": 998.321,
+      "text": "Wait here. We'll be back. We won't be very long,\""
+    },
+    {
+      "start_s": 998.345,
+      "end_s": 1000.995,
+      "text": "and they went and left her."
+    },
+    {
+      "start_s": 1001.019,
+      "end_s": 1002.659,
+      "text": "But as they went out of the room,"
+    },
+    {
+      "start_s": 1002.683,
+      "end_s": 1005.539,
+      "text": "he turned on the radio that was sitting on his desk."
+    },
+    {
+      "start_s": 1005.563,
+      "end_s": 1007.201,
+      "text": "And when they got out of the room,"
+    },
+    {
+      "start_s": 1007.225,
+      "end_s": 1009.603,
+      "text": "he said to her mother, \"Just stand and watch her.\""
+    },
+    {
+      "start_s": 1009.627,
+      "end_s": 1012.139,
+      "text": "And the minute they left the room,"
+    },
+    {
+      "start_s": 1012.163,
+      "end_s": 1014.758,
+      "text": "she was on her feet, moving to the music."
+    },
+    {
+      "start_s": 1014.782,
+      "end_s": 1018.285,
+      "text": "And they watched for a few minutes, and he turned to her mother and said,"
+    },
+    {
+      "start_s": 1018.309,
+      "end_s": 1020.288,
+      "text": "\"Mrs. Lynne, Gillian isn't sick."
+    },
+    {
+      "start_s": 1020.312,
+      "end_s": 1021.976,
+      "text": "She's a dancer."
+    },
+    {
+      "start_s": 1023.338,
+      "end_s": 1024.724,
+      "text": "Take her to a dance school.\""
+    },
+    {
+      "start_s": 1024.748,
+      "end_s": 1025.976,
+      "text": "I said, \"What happened?\""
+    },
+    {
+      "start_s": 1026.0,
+      "end_s": 1028.976,
+      "text": "She said, \"She did. I can't tell you how wonderful it was."
+    },
+    {
+      "start_s": 1029.0,
+      "end_s": 1031.829,
+      "text": "We walked in this room, and it was full of people like me --"
+    },
+    {
+      "start_s": 1031.853,
+      "end_s": 1034.075,
+      "text": "people who couldn't sit still,"
+    },
+    {
+      "start_s": 1034.099,
+      "end_s": 1037.006,
+      "text": "people who had to move to think.\""
+    },
+    {
+      "start_s": 1037.03,
+      "end_s": 1038.862,
+      "text": "Who had to move to think."
+    },
+    {
+      "start_s": 1038.886,
+      "end_s": 1042.496,
+      "text": "They did ballet, they did tap, jazz; they did modern; they did contemporary."
+    },
+    {
+      "start_s": 1042.52,
+      "end_s": 1045.266,
+      "text": "She was eventually auditioned for the Royal Ballet School."
+    },
+    {
+      "start_s": 1045.29,
+      "end_s": 1048.543,
+      "text": "She became a soloist; she had a wonderful career at the Royal Ballet."
+    },
+    {
+      "start_s": 1048.567,
+      "end_s": 1051.122,
+      "text": "She eventually graduated from the Royal Ballet School,"
+    },
+    {
+      "start_s": 1051.146,
+      "end_s": 1053.074,
+      "text": "founded the Gillian Lynne Dance Company,"
+    },
+    {
+      "start_s": 1053.098,
+      "end_s": 1054.335,
+      "text": "met Andrew Lloyd Webber."
+    },
+    {
+      "start_s": 1054.359,
+      "end_s": 1055.655,
+      "text": "She's been responsible for"
+    },
+    {
+      "start_s": 1055.679,
+      "end_s": 1058.827,
+      "text": "some of the most successful musical theater productions in history,"
+    },
+    {
+      "start_s": 1058.851,
+      "end_s": 1060.447,
+      "text": "she's given pleasure to millions,"
+    },
+    {
+      "start_s": 1060.471,
+      "end_s": 1061.878,
+      "text": "and she's a multimillionaire."
+    },
+    {
+      "start_s": 1061.902,
+      "end_s": 1065.612,
+      "text": "Somebody else might have put her on medication and told her to calm down."
+    },
+    {
+      "start_s": 1065.636,
+      "end_s": 1072.418,
+      "text": ""
+    },
+    {
+      "start_s": 1073.603,
+      "end_s": 1075.176,
+      "text": "What I think it comes to is this:"
+    },
+    {
+      "start_s": 1075.2,
+      "end_s": 1076.976,
+      "text": "Al Gore spoke the other night"
+    },
+    {
+      "start_s": 1077.0,
+      "end_s": 1081.519,
+      "text": "about ecology and the revolution that was triggered by Rachel Carson."
+    },
+    {
+      "start_s": 1082.257,
+      "end_s": 1084.369,
+      "text": "I believe our only hope for the future"
+    },
+    {
+      "start_s": 1084.393,
+      "end_s": 1088.268,
+      "text": "is to adopt a new conception of human ecology,"
+    },
+    {
+      "start_s": 1088.292,
+      "end_s": 1090.819,
+      "text": "one in which we start to reconstitute our conception"
+    },
+    {
+      "start_s": 1090.843,
+      "end_s": 1093.104,
+      "text": "of the richness of human capacity."
+    },
+    {
+      "start_s": 1093.128,
+      "end_s": 1096.499,
+      "text": "Our education system has mined our minds"
+    },
+    {
+      "start_s": 1096.523,
+      "end_s": 1099.964,
+      "text": "in the way that we strip-mine the earth for a particular commodity."
+    },
+    {
+      "start_s": 1100.377,
+      "end_s": 1102.799,
+      "text": "And for the future, it won't serve us."
+    },
+    {
+      "start_s": 1102.823,
+      "end_s": 1104.976,
+      "text": "We have to rethink the fundamental principles"
+    },
+    {
+      "start_s": 1105.0,
+      "end_s": 1107.063,
+      "text": "on which we're educating our children."
+    },
+    {
+      "start_s": 1107.087,
+      "end_s": 1109.761,
+      "text": "There was a wonderful quote by Jonas Salk, who said,"
+    },
+    {
+      "start_s": 1109.785,
+      "end_s": 1114.882,
+      "text": "\"If all the insects were to disappear from the Earth,"
+    },
+    {
+      "start_s": 1114.906,
+      "end_s": 1117.689,
+      "text": "within 50 years, all life on Earth would end."
+    },
+    {
+      "start_s": 1118.77,
+      "end_s": 1121.807,
+      "text": "If all human beings disappeared from the Earth,"
+    },
+    {
+      "start_s": 1121.831,
+      "end_s": 1124.465,
+      "text": "within 50 years, all forms of life would flourish.\""
+    },
+    {
+      "start_s": 1125.378,
+      "end_s": 1126.663,
+      "text": "And he's right."
+    },
+    {
+      "start_s": 1127.39,
+      "end_s": 1131.121,
+      "text": "What TED celebrates is the gift of the human imagination."
+    },
+    {
+      "start_s": 1131.533,
+      "end_s": 1135.767,
+      "text": "We have to be careful now that we use this gift wisely,"
+    },
+    {
+      "start_s": 1135.791,
+      "end_s": 1139.02,
+      "text": "and that we avert some of the scenarios that we've talked about."
+    },
+    {
+      "start_s": 1139.044,
+      "end_s": 1142.799,
+      "text": "And the only way we'll do it is by seeing our creative capacities"
+    },
+    {
+      "start_s": 1142.823,
+      "end_s": 1144.61,
+      "text": "for the richness they are"
+    },
+    {
+      "start_s": 1144.634,
+      "end_s": 1147.816,
+      "text": "and seeing our children for the hope that they are."
+    },
+    {
+      "start_s": 1147.84,
+      "end_s": 1150.238,
+      "text": "And our task is to educate their whole being,"
+    },
+    {
+      "start_s": 1150.262,
+      "end_s": 1151.675,
+      "text": "so they can face this future."
+    },
+    {
+      "start_s": 1151.699,
+      "end_s": 1154.204,
+      "text": "By the way -- we may not see this future,"
+    },
+    {
+      "start_s": 1154.228,
+      "end_s": 1155.791,
+      "text": "but they will."
+    },
+    {
+      "start_s": 1155.815,
+      "end_s": 1158.533,
+      "text": "And our job is to help them make something of it."
+    },
+    {
+      "start_s": 1158.557,
+      "end_s": 1159.742,
+      "text": "Thank you very much."
+    },
+    {
+      "start_s": 1159.766,
+      "end_s": 1165.213,
+      "text": ""
+    }
+  ]
+}

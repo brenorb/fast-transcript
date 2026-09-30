@@ -1,0 +1,13 @@
+{
+  "repo": "FermionResearch/Phonon-2",
+  "name": "Phonon-2",
+  "character": "Five-value Parakeet-TDT; the smallest download",
+  "backend": "phonon2-five-value",
+  "filename": "phonon-2.bps.tar.zst",
+  "sha256": "98125795b6dda72f5c6eee9ba33d19815df65dcb18b50a357bf9f73c9935309e",
+  "download_bytes": 163515201,
+  "unpacked_bytes": 177716675,
+  "unpack_dir": "model_phonon2_c4c_int6",
+  "published": true,
+  "staged": true
+}

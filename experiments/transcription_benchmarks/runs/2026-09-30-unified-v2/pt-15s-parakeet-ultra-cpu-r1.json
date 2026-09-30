@@ -1,0 +1,71 @@
+{
+  "cold": {
+    "phase": "cold",
+    "corpus_seconds": 0.30312670799321495,
+    "utterances": [
+      {
+        "id": "pt-15s",
+        "text": "Olá, nessa aula eu vou te ensinar como fazer o próprio colágeno natural em casa e destacar os cinco maiores mitos das receitas que são divulgadas na internet ou nas redes sociais. Para isso eu vou utilizar",
+        "parts": [
+          {
+            "text": "Olá, nessa aula eu vou te ensinar como fazer o próprio colágeno natural em casa e destacar os cinco maiores mitos das receitas que são divulgadas na internet ou nas redes sociais. Para isso eu vou utilizar",
+            "call_seconds": 0.3031207909807563
+          }
+        ],
+        "word_edits": 1
+      }
+    ],
+    "model": "moondream/parakeet-ultra",
+    "model_revision": "510e6f5a1c4619f39c72b083c091476935734e65",
+    "runtime_versions": {
+      "moondream": "2.4.1",
+      "kestrel": "0.8.1",
+      "torch": "2.14.0"
+    },
+    "parent_received_seconds": 1.9654707920271903,
+    "word_edits": 1,
+    "wer": 0.02702702702702703
+  },
+  "warm": {
+    "phase": "warm",
+    "corpus_seconds": 0.2551045829895884,
+    "utterances": [
+      {
+        "id": "pt-15s",
+        "text": "Olá, nessa aula eu vou te ensinar como fazer o próprio colágeno natural em casa e destacar os cinco maiores mitos das receitas que são divulgadas na internet ou nas redes sociais. Para isso eu vou utilizar",
+        "parts": [
+          {
+            "text": "Olá, nessa aula eu vou te ensinar como fazer o próprio colágeno natural em casa e destacar os cinco maiores mitos das receitas que são divulgadas na internet ou nas redes sociais. Para isso eu vou utilizar",
+            "call_seconds": 0.25510137499077246
+          }
+        ],
+        "word_edits": 1
+      }
+    ],
+    "model": "moondream/parakeet-ultra",
+    "model_revision": "510e6f5a1c4619f39c72b083c091476935734e65",
+    "runtime_versions": {
+      "moondream": "2.4.1",
+      "kestrel": "0.8.1",
+      "torch": "2.14.0"
+    },
+    "parent_received_seconds": 2.220562417001929,
+    "word_edits": 1,
+    "wer": 0.02702702702702703
+  },
+  "process_two_pass_wall_seconds": 2.7284896670025773,
+  "process_resources": {
+    "wall_clock_s": 2.72,
+    "user_cpu_s": 2.03,
+    "system_cpu_s": 1.06,
+    "max_rss_mb": 4137.671875
+  },
+  "protocol": "asr-v2",
+  "case": "pt-15s",
+  "engine": "parakeet-ultra",
+  "device": "cpu",
+  "repetition": 1,
+  "audio_seconds": 15.0,
+  "reference_words": 37,
+  "manifest_sha256": "3b2b64d39a1d7daff3b60c602b2cdf2506078bf597c5719d8880cbf0f4c16a75"
+}

@@ -1,0 +1,1097 @@
+{
+  "process": {
+    "wall_clock_s": 25.51,
+    "user_cpu_s": 30.32,
+    "system_cpu_s": 5.39,
+    "max_rss_mb": 4289.53125
+  },
+  "passes": [
+    {
+      "repetition": 1,
+      "transcribe_seconds": 5.577617749106139,
+      "realtime_speedup": 41.59571531003192,
+      "word_edits": 6,
+      "reference_words": 789,
+      "wer": 0.0076045627376425855
+    },
+    {
+      "repetition": 2,
+      "transcribe_seconds": 5.738495916069951,
+      "realtime_speedup": 40.429583534301834,
+      "word_edits": 6,
+      "reference_words": 789,
+      "wer": 0.0076045627376425855
+    },
+    {
+      "repetition": 3,
+      "transcribe_seconds": 5.682062332081841,
+      "realtime_speedup": 40.83112546831145,
+      "word_edits": 6,
+      "reference_words": 789,
+      "wer": 0.0076045627376425855
+    }
+  ],
+  "engine": "parakeet-ultra",
+  "device": "cpu",
+  "initialization_seconds": 1.9130411249934696,
+  "warmup_seconds": 5.741894000006141,
+  "runs": [
+    {
+      "repetition": 1,
+      "id": "2277-149896-0000",
+      "transcribe_seconds": 0.13571229099761695,
+      "text": "He was in a fevered state of mind, owing to the blight his wife's action threatened to cast upon his entire future.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149896-0001",
+      "transcribe_seconds": 0.1363746249990072,
+      "text": "he would have to pay her the money which she would now regularly demand, or there would be trouble. It did not matter what he did.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149896-0002",
+      "transcribe_seconds": 0.10565291601233184,
+      "text": "Hurstwood walked the floor, mentally arranging the chief points of his situation.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149896-0003",
+      "transcribe_seconds": 0.09407070800079964,
+      "text": "He also thought of his managerial position,",
+      "word_edits": 0
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149896-0004",
+      "transcribe_seconds": 0.07129770799656399,
+      "text": "How would the papers talk about it?",
+      "word_edits": 0
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149896-0005",
+      "transcribe_seconds": 0.12870324999676086,
+      "text": "Many little wrinkles gathered between his eyes as he contemplated this, and his brow moistened.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149896-0006",
+      "transcribe_seconds": 0.10630658399895765,
+      "text": "He could arrange that satisfactorily, for Carrie would be glad to wait, if necessary.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149896-0007",
+      "transcribe_seconds": 0.12866304200724699,
+      "text": "He would see how things turned out to morrow, and then he would talk to her. They were going to meet as usual.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149896-0008",
+      "transcribe_seconds": 0.13875458401162177,
+      "text": "For some reason he felt as if something might come that way, and was relieved when all the envelopes had been scanned and nothing suspicious noticed.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149896-0009",
+      "transcribe_seconds": 0.1296242499956861,
+      "text": "While the danger had not lessened, it had not as yet materialized, and with him no news was good news.",
+      "word_edits": 1
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149896-0010",
+      "transcribe_seconds": 0.12737691699294373,
+      "text": "So little did he consider Drua that it never once occurred to him to worry about his finding out.",
+      "word_edits": 1
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149896-0011",
+      "transcribe_seconds": 0.10328533401479945,
+      "text": "He grew restless as he ruminated, and then decided that perhaps it was nothing.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149896-0012",
+      "transcribe_seconds": 0.07457129101385362,
+      "text": "She had not been able to get away this morning.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149896-0013",
+      "transcribe_seconds": 0.12893274999805726,
+      "text": "He would get one to day. It would probably be on his desk when he got back. He would look for it at once.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149896-0014",
+      "transcribe_seconds": 0.10222425000392832,
+      "text": "After a time he gave up waiting and drearily headed for the Madison car,",
+      "word_edits": 0
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149896-0015",
+      "transcribe_seconds": 0.09797695899032988,
+      "text": "He went in and examined his letters, but there was nothing from Carey.",
+      "word_edits": 1
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149896-0016",
+      "transcribe_seconds": 0.09542275001876988,
+      "text": "Fortunately there was nothing from his wife, either.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149896-0017",
+      "transcribe_seconds": 0.1086945410061162,
+      "text": "At one thirty he went to Rectors for lunch, and when he returned a messenger was waiting for him,",
+      "word_edits": 0
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149896-0018",
+      "transcribe_seconds": 0.10349279100773856,
+      "text": "His first impulse was to write but four words in reply Go to the devil.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149896-0019",
+      "transcribe_seconds": 0.09739816599176265,
+      "text": "but he compromised by telling the boy that there would be no reply.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149896-0020",
+      "transcribe_seconds": 0.12742095900466666,
+      "text": "Then he sat down in his chair and gazed without seeing, contemplating the result of his work.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149896-0021",
+      "transcribe_seconds": 0.0962904579937458,
+      "text": "What would she do about that, the confounded wretch?",
+      "word_edits": 0
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149896-0022",
+      "transcribe_seconds": 0.09638262502267025,
+      "text": "Later, however, his old discretion asserted itself,",
+      "word_edits": 0
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149896-0023",
+      "transcribe_seconds": 0.10132779099512845,
+      "text": "Something had to be done. A climax was near, and she would not sit idle.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149896-0024",
+      "transcribe_seconds": 0.10454191701137461,
+      "text": "He knew her well enough to know that when she had decided upon a plan she would follow it up.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149896-0025",
+      "transcribe_seconds": 0.09746220801025629,
+      "text": "He arose from his chair and went and looked out into the street,",
+      "word_edits": 0
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149896-0026",
+      "transcribe_seconds": 0.10718287498457357,
+      "text": "The long drizzle had begun. Pedestrians had turned up collars and trousers at the bottom.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149896-0027",
+      "transcribe_seconds": 0.09864766598911956,
+      "text": "Hurstwood almost exclaimed out loud at the insistency of this thing.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149896-0028",
+      "transcribe_seconds": 0.09520345900091343,
+      "text": "He put on his hat and looked around for his umbrella,",
+      "word_edits": 0
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149896-0029",
+      "transcribe_seconds": 0.09261741698719561,
+      "text": "he would have some arrangement of this thing.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149896-0030",
+      "transcribe_seconds": 0.1318365829938557,
+      "text": "He began to wish that he had compromised in some way or other, that he had sent the money. Perhaps he could do it up here,",
+      "word_edits": 0
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149896-0031",
+      "transcribe_seconds": 0.09616362501401454,
+      "text": "He would go in and see, anyhow. He would have no row.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149896-0032",
+      "transcribe_seconds": 0.19896862501627766,
+      "text": "By the time he reached his own street he was keenly alive to the difficulties of his situation, and wished over and over that some solution would offer itself, that he could see his way out.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149896-0033",
+      "transcribe_seconds": 0.0946054169908166,
+      "text": "Then he rang the bell no answer.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149896-0034",
+      "transcribe_seconds": 0.09891050000442192,
+      "text": "He rang again, this time harder. Still no answer.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149897-0000",
+      "transcribe_seconds": 0.10313225002028048,
+      "text": "When Hurstwood got back to his office again, he was in a greater quandary than ever.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149897-0001",
+      "transcribe_seconds": 0.09449195797787979,
+      "text": "He could hardly realize how it had all come about,",
+      "word_edits": 1
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149897-0002",
+      "transcribe_seconds": 0.13426649998291396,
+      "text": "No letter had come, no word of any kind, and yet here it was late in the evening, and she had agreed to meet him that morning.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149897-0003",
+      "transcribe_seconds": 0.1059308750263881,
+      "text": "He saw that in the excitement of recent events he had not formulated a plan upon that score.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149897-0004",
+      "transcribe_seconds": 0.12988029199186713,
+      "text": "He was getting some vague comfort out of a good cigar, but it was no panacea for the ill which affected him.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149897-0005",
+      "transcribe_seconds": 0.2084796249982901,
+      "text": "It was with great opposition, after two or three hours of the most urgent mental affirmation and denial, that at last he got an envelope, placed in it the requested amount, and slowly sealed it up.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149897-0006",
+      "transcribe_seconds": 0.09828316699713469,
+      "text": "Then he called Harry, the boy of all work around the place.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149897-0007",
+      "transcribe_seconds": 0.16345425002509728,
+      "text": "You take this to this address, he said, handing him the envelope, and give it to Mrs Hurstwood. Yes, sir, said the boy.",
+      "word_edits": 1
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149897-0008",
+      "transcribe_seconds": 0.09261233397410251,
+      "text": "Any answer? I guess not.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149897-0009",
+      "transcribe_seconds": 0.0979305830260273,
+      "text": "The boy hastened away, and the manager fell to his musings.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149897-0010",
+      "transcribe_seconds": 0.09771904099034145,
+      "text": "He was beaten for to night, and he might just as well make the best of it.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149897-0011",
+      "transcribe_seconds": 0.09669100001337938,
+      "text": "she would take the envelope and know that she had triumphed.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149897-0012",
+      "transcribe_seconds": 0.09631379198981449,
+      "text": "If he only had that letter back, he wouldn't send it.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149897-0013",
+      "transcribe_seconds": 0.10293704201467335,
+      "text": "For relief he arose and joined in the conversation with a few friends who were drinking.",
+      "word_edits": 1
+    },
+    {
+      "repetition": 1,
+      "id": "2277-149897-0014",
+      "transcribe_seconds": 0.10339720800402574,
+      "text": "All the time his thoughts would run out to his home and see the scene being therein enacted.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149896-0000",
+      "transcribe_seconds": 0.13601662500877865,
+      "text": "He was in a fevered state of mind, owing to the blight his wife's action threatened to cast upon his entire future.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149896-0001",
+      "transcribe_seconds": 0.13638254199759103,
+      "text": "he would have to pay her the money which she would now regularly demand, or there would be trouble. It did not matter what he did.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149896-0002",
+      "transcribe_seconds": 0.10748058397439308,
+      "text": "Hurstwood walked the floor, mentally arranging the chief points of his situation.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149896-0003",
+      "transcribe_seconds": 0.10741887500626035,
+      "text": "He also thought of his managerial position,",
+      "word_edits": 0
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149896-0004",
+      "transcribe_seconds": 0.07073875001515262,
+      "text": "How would the papers talk about it?",
+      "word_edits": 0
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149896-0005",
+      "transcribe_seconds": 0.12954237501253374,
+      "text": "Many little wrinkles gathered between his eyes as he contemplated this, and his brow moistened.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149896-0006",
+      "transcribe_seconds": 0.1059209159866441,
+      "text": "He could arrange that satisfactorily, for Carrie would be glad to wait, if necessary.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149896-0007",
+      "transcribe_seconds": 0.12855370799661614,
+      "text": "He would see how things turned out to morrow, and then he would talk to her. They were going to meet as usual.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149896-0008",
+      "transcribe_seconds": 0.13898474999587052,
+      "text": "For some reason he felt as if something might come that way, and was relieved when all the envelopes had been scanned and nothing suspicious noticed.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149896-0009",
+      "transcribe_seconds": 0.13096445801784284,
+      "text": "While the danger had not lessened, it had not as yet materialized, and with him no news was good news.",
+      "word_edits": 1
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149896-0010",
+      "transcribe_seconds": 0.12745254198671319,
+      "text": "So little did he consider Drua that it never once occurred to him to worry about his finding out.",
+      "word_edits": 1
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149896-0011",
+      "transcribe_seconds": 0.10314395802561194,
+      "text": "He grew restless as he ruminated, and then decided that perhaps it was nothing.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149896-0012",
+      "transcribe_seconds": 0.07433241698890924,
+      "text": "She had not been able to get away this morning.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149896-0013",
+      "transcribe_seconds": 0.12904975001583807,
+      "text": "He would get one to day. It would probably be on his desk when he got back. He would look for it at once.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149896-0014",
+      "transcribe_seconds": 0.10166408299119212,
+      "text": "After a time he gave up waiting and drearily headed for the Madison car,",
+      "word_edits": 0
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149896-0015",
+      "transcribe_seconds": 0.09882658300921321,
+      "text": "He went in and examined his letters, but there was nothing from Carey.",
+      "word_edits": 1
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149896-0016",
+      "transcribe_seconds": 0.09657333302311599,
+      "text": "Fortunately there was nothing from his wife, either.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149896-0017",
+      "transcribe_seconds": 0.10946183302439749,
+      "text": "At one thirty he went to Rectors for lunch, and when he returned a messenger was waiting for him,",
+      "word_edits": 0
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149896-0018",
+      "transcribe_seconds": 0.1087422919808887,
+      "text": "His first impulse was to write but four words in reply Go to the devil.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149896-0019",
+      "transcribe_seconds": 0.10066066699801013,
+      "text": "but he compromised by telling the boy that there would be no reply.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149896-0020",
+      "transcribe_seconds": 0.1304951250203885,
+      "text": "Then he sat down in his chair and gazed without seeing, contemplating the result of his work.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149896-0021",
+      "transcribe_seconds": 0.1200892089982517,
+      "text": "What would she do about that, the confounded wretch?",
+      "word_edits": 0
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149896-0022",
+      "transcribe_seconds": 0.09907462500268593,
+      "text": "Later, however, his old discretion asserted itself,",
+      "word_edits": 0
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149896-0023",
+      "transcribe_seconds": 0.10322991601424292,
+      "text": "Something had to be done. A climax was near, and she would not sit idle.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149896-0024",
+      "transcribe_seconds": 0.10738737499923445,
+      "text": "He knew her well enough to know that when she had decided upon a plan she would follow it up.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149896-0025",
+      "transcribe_seconds": 0.09894724999321625,
+      "text": "He arose from his chair and went and looked out into the street,",
+      "word_edits": 0
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149896-0026",
+      "transcribe_seconds": 0.10903320799116045,
+      "text": "The long drizzle had begun. Pedestrians had turned up collars and trousers at the bottom.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149896-0027",
+      "transcribe_seconds": 0.09976712500792928,
+      "text": "Hurstwood almost exclaimed out loud at the insistency of this thing.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149896-0028",
+      "transcribe_seconds": 0.09714454200002365,
+      "text": "He put on his hat and looked around for his umbrella,",
+      "word_edits": 0
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149896-0029",
+      "transcribe_seconds": 0.09488658397458494,
+      "text": "he would have some arrangement of this thing.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149896-0030",
+      "transcribe_seconds": 0.13449024999863468,
+      "text": "He began to wish that he had compromised in some way or other, that he had sent the money. Perhaps he could do it up here,",
+      "word_edits": 0
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149896-0031",
+      "transcribe_seconds": 0.09838591699372046,
+      "text": "He would go in and see, anyhow. He would have no row.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149896-0032",
+      "transcribe_seconds": 0.20265616700635292,
+      "text": "By the time he reached his own street he was keenly alive to the difficulties of his situation, and wished over and over that some solution would offer itself, that he could see his way out.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149896-0033",
+      "transcribe_seconds": 0.09472550000646152,
+      "text": "Then he rang the bell no answer.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149896-0034",
+      "transcribe_seconds": 0.10065249999752268,
+      "text": "He rang again, this time harder. Still no answer.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149897-0000",
+      "transcribe_seconds": 0.10664579199510626,
+      "text": "When Hurstwood got back to his office again, he was in a greater quandary than ever.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149897-0001",
+      "transcribe_seconds": 0.09778516599908471,
+      "text": "He could hardly realize how it had all come about,",
+      "word_edits": 1
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149897-0002",
+      "transcribe_seconds": 0.13852483298978768,
+      "text": "No letter had come, no word of any kind, and yet here it was late in the evening, and she had agreed to meet him that morning.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149897-0003",
+      "transcribe_seconds": 0.11050999999861233,
+      "text": "He saw that in the excitement of recent events he had not formulated a plan upon that score.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149897-0004",
+      "transcribe_seconds": 0.13513800001237541,
+      "text": "He was getting some vague comfort out of a good cigar, but it was no panacea for the ill which affected him.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149897-0005",
+      "transcribe_seconds": 0.21154029198805802,
+      "text": "It was with great opposition, after two or three hours of the most urgent mental affirmation and denial, that at last he got an envelope, placed in it the requested amount, and slowly sealed it up.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149897-0006",
+      "transcribe_seconds": 0.1006231660139747,
+      "text": "Then he called Harry, the boy of all work around the place.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149897-0007",
+      "transcribe_seconds": 0.17188391700619832,
+      "text": "You take this to this address, he said, handing him the envelope, and give it to Mrs Hurstwood. Yes, sir, said the boy.",
+      "word_edits": 1
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149897-0008",
+      "transcribe_seconds": 0.10204166700714268,
+      "text": "Any answer? I guess not.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149897-0009",
+      "transcribe_seconds": 0.1039444159832783,
+      "text": "The boy hastened away, and the manager fell to his musings.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149897-0010",
+      "transcribe_seconds": 0.10239145800005645,
+      "text": "He was beaten for to night, and he might just as well make the best of it.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149897-0011",
+      "transcribe_seconds": 0.10394950001500547,
+      "text": "she would take the envelope and know that she had triumphed.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149897-0012",
+      "transcribe_seconds": 0.10298583301482722,
+      "text": "If he only had that letter back, he wouldn't send it.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149897-0013",
+      "transcribe_seconds": 0.10937837499659508,
+      "text": "For relief he arose and joined in the conversation with a few friends who were drinking.",
+      "word_edits": 1
+    },
+    {
+      "repetition": 2,
+      "id": "2277-149897-0014",
+      "transcribe_seconds": 0.10827716698986478,
+      "text": "All the time his thoughts would run out to his home and see the scene being therein enacted.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149896-0000",
+      "transcribe_seconds": 0.14123141602613032,
+      "text": "He was in a fevered state of mind, owing to the blight his wife's action threatened to cast upon his entire future.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149896-0001",
+      "transcribe_seconds": 0.14120208300300874,
+      "text": "he would have to pay her the money which she would now regularly demand, or there would be trouble. It did not matter what he did.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149896-0002",
+      "transcribe_seconds": 0.11034704200574197,
+      "text": "Hurstwood walked the floor, mentally arranging the chief points of his situation.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149896-0003",
+      "transcribe_seconds": 0.09804945799987763,
+      "text": "He also thought of his managerial position,",
+      "word_edits": 0
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149896-0004",
+      "transcribe_seconds": 0.07392729198909365,
+      "text": "How would the papers talk about it?",
+      "word_edits": 0
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149896-0005",
+      "transcribe_seconds": 0.13415858300868422,
+      "text": "Many little wrinkles gathered between his eyes as he contemplated this, and his brow moistened.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149896-0006",
+      "transcribe_seconds": 0.10983704100362957,
+      "text": "He could arrange that satisfactorily, for Carrie would be glad to wait, if necessary.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149896-0007",
+      "transcribe_seconds": 0.1324282500136178,
+      "text": "He would see how things turned out to morrow, and then he would talk to her. They were going to meet as usual.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149896-0008",
+      "transcribe_seconds": 0.1435340830066707,
+      "text": "For some reason he felt as if something might come that way, and was relieved when all the envelopes had been scanned and nothing suspicious noticed.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149896-0009",
+      "transcribe_seconds": 0.13451083400286734,
+      "text": "While the danger had not lessened, it had not as yet materialized, and with him no news was good news.",
+      "word_edits": 1
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149896-0010",
+      "transcribe_seconds": 0.1295592079986818,
+      "text": "So little did he consider Drua that it never once occurred to him to worry about his finding out.",
+      "word_edits": 1
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149896-0011",
+      "transcribe_seconds": 0.10550887498538941,
+      "text": "He grew restless as he ruminated, and then decided that perhaps it was nothing.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149896-0012",
+      "transcribe_seconds": 0.07507170899771154,
+      "text": "She had not been able to get away this morning.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149896-0013",
+      "transcribe_seconds": 0.1320232909929473,
+      "text": "He would get one to day. It would probably be on his desk when he got back. He would look for it at once.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149896-0014",
+      "transcribe_seconds": 0.1036030419927556,
+      "text": "After a time he gave up waiting and drearily headed for the Madison car,",
+      "word_edits": 0
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149896-0015",
+      "transcribe_seconds": 0.10019804100738838,
+      "text": "He went in and examined his letters, but there was nothing from Carey.",
+      "word_edits": 1
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149896-0016",
+      "transcribe_seconds": 0.09693116598646156,
+      "text": "Fortunately there was nothing from his wife, either.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149896-0017",
+      "transcribe_seconds": 0.11124666599789634,
+      "text": "At one thirty he went to Rectors for lunch, and when he returned a messenger was waiting for him,",
+      "word_edits": 0
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149896-0018",
+      "transcribe_seconds": 0.10610483298660256,
+      "text": "His first impulse was to write but four words in reply Go to the devil.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149896-0019",
+      "transcribe_seconds": 0.09853970797848888,
+      "text": "but he compromised by telling the boy that there would be no reply.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149896-0020",
+      "transcribe_seconds": 0.13051879202248529,
+      "text": "Then he sat down in his chair and gazed without seeing, contemplating the result of his work.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149896-0021",
+      "transcribe_seconds": 0.09776645901729353,
+      "text": "What would she do about that, the confounded wretch?",
+      "word_edits": 0
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149896-0022",
+      "transcribe_seconds": 0.09867324997321703,
+      "text": "Later, however, his old discretion asserted itself,",
+      "word_edits": 0
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149896-0023",
+      "transcribe_seconds": 0.10309604200301692,
+      "text": "Something had to be done. A climax was near, and she would not sit idle.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149896-0024",
+      "transcribe_seconds": 0.10559233301319182,
+      "text": "He knew her well enough to know that when she had decided upon a plan she would follow it up.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149896-0025",
+      "transcribe_seconds": 0.0989768750150688,
+      "text": "He arose from his chair and went and looked out into the street,",
+      "word_edits": 0
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149896-0026",
+      "transcribe_seconds": 0.10839675000170246,
+      "text": "The long drizzle had begun. Pedestrians had turned up collars and trousers at the bottom.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149896-0027",
+      "transcribe_seconds": 0.09970508399419487,
+      "text": "Hurstwood almost exclaimed out loud at the insistency of this thing.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149896-0028",
+      "transcribe_seconds": 0.0950116669991985,
+      "text": "He put on his hat and looked around for his umbrella,",
+      "word_edits": 0
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149896-0029",
+      "transcribe_seconds": 0.09270929201738909,
+      "text": "he would have some arrangement of this thing.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149896-0030",
+      "transcribe_seconds": 0.13143524999031797,
+      "text": "He began to wish that he had compromised in some way or other, that he had sent the money. Perhaps he could do it up here,",
+      "word_edits": 0
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149896-0031",
+      "transcribe_seconds": 0.09677908301819116,
+      "text": "He would go in and see, anyhow. He would have no row.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149896-0032",
+      "transcribe_seconds": 0.19858779100468382,
+      "text": "By the time he reached his own street he was keenly alive to the difficulties of his situation, and wished over and over that some solution would offer itself, that he could see his way out.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149896-0033",
+      "transcribe_seconds": 0.09406458400189877,
+      "text": "Then he rang the bell no answer.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149896-0034",
+      "transcribe_seconds": 0.09929424998699687,
+      "text": "He rang again, this time harder. Still no answer.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149897-0000",
+      "transcribe_seconds": 0.10337083300692029,
+      "text": "When Hurstwood got back to his office again, he was in a greater quandary than ever.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149897-0001",
+      "transcribe_seconds": 0.09413745897472836,
+      "text": "He could hardly realize how it had all come about,",
+      "word_edits": 1
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149897-0002",
+      "transcribe_seconds": 0.13434070799848996,
+      "text": "No letter had come, no word of any kind, and yet here it was late in the evening, and she had agreed to meet him that morning.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149897-0003",
+      "transcribe_seconds": 0.10556950001046062,
+      "text": "He saw that in the excitement of recent events he had not formulated a plan upon that score.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149897-0004",
+      "transcribe_seconds": 0.1580032920173835,
+      "text": "He was getting some vague comfort out of a good cigar, but it was no panacea for the ill which affected him.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149897-0005",
+      "transcribe_seconds": 0.20588799999677576,
+      "text": "It was with great opposition, after two or three hours of the most urgent mental affirmation and denial, that at last he got an envelope, placed in it the requested amount, and slowly sealed it up.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149897-0006",
+      "transcribe_seconds": 0.09807733300840482,
+      "text": "Then he called Harry, the boy of all work around the place.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149897-0007",
+      "transcribe_seconds": 0.16369612500420772,
+      "text": "You take this to this address, he said, handing him the envelope, and give it to Mrs Hurstwood. Yes, sir, said the boy.",
+      "word_edits": 1
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149897-0008",
+      "transcribe_seconds": 0.09314541699131951,
+      "text": "Any answer? I guess not.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149897-0009",
+      "transcribe_seconds": 0.09777208400191739,
+      "text": "The boy hastened away, and the manager fell to his musings.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149897-0010",
+      "transcribe_seconds": 0.09790170800988562,
+      "text": "He was beaten for to night, and he might just as well make the best of it.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149897-0011",
+      "transcribe_seconds": 0.09709883300820366,
+      "text": "she would take the envelope and know that she had triumphed.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149897-0012",
+      "transcribe_seconds": 0.0960733339888975,
+      "text": "If he only had that letter back, he wouldn't send it.",
+      "word_edits": 0
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149897-0013",
+      "transcribe_seconds": 0.10423625001567416,
+      "text": "For relief he arose and joined in the conversation with a few friends who were drinking.",
+      "word_edits": 1
+    },
+    {
+      "repetition": 3,
+      "id": "2277-149897-0014",
+      "transcribe_seconds": 0.10413133300608024,
+      "text": "All the time his thoughts would run out to his home and see the scene being therein enacted.",
+      "word_edits": 0
+    }
+  ],
+  "model": "moondream/parakeet-ultra",
+  "model_revision": "510e6f5a1c4619f39c72b083c091476935734e65",
+  "runtime_versions": {
+    "moondream": "2.4.1",
+    "kestrel": "0.8.1",
+    "torch": "2.14.0"
+  }
+}

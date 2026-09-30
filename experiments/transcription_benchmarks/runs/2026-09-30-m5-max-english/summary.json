@@ -1,0 +1,121 @@
+{
+  "dataset": "openslr/librispeech_asr",
+  "revision": "71cacbfb7e2354c4226d01e70d77d5fca3d04ba1",
+  "audio_seconds": 232.005,
+  "utterances": 50,
+  "repetitions": 3,
+  "results": [
+    {
+      "engine": "onnx",
+      "device": "cpu",
+      "median_transcribe_seconds": 6.007600748,
+      "median_realtime_speedup": 38.618578319678974,
+      "median_wer": 0.01394169835234474,
+      "word_edits_by_pass": [
+        11,
+        11,
+        11
+      ],
+      "reference_words": 789,
+      "peak_rss_mib": 2085.6875,
+      "process_wall_seconds": 24.6,
+      "transcripts_stable": true
+    },
+    {
+      "engine": "parakeet-redux",
+      "device": "cpu",
+      "median_transcribe_seconds": 3.6512213341193274,
+      "median_realtime_speedup": 63.541751860397554,
+      "median_wer": 0.010139416983523447,
+      "word_edits_by_pass": [
+        8,
+        8,
+        8
+      ],
+      "reference_words": 789,
+      "peak_rss_mib": 1240.0,
+      "process_wall_seconds": 17.82,
+      "transcripts_stable": true
+    },
+    {
+      "engine": "parakeet-redux",
+      "device": "mps",
+      "median_transcribe_seconds": 1.8308545399922878,
+      "median_realtime_speedup": 126.71951535864629,
+      "median_wer": 0.010139416983523447,
+      "word_edits_by_pass": [
+        8,
+        8,
+        8
+      ],
+      "reference_words": 789,
+      "peak_rss_mib": 1029.78125,
+      "process_wall_seconds": 19.88,
+      "transcripts_stable": true
+    },
+    {
+      "engine": "parakeet-ultra",
+      "device": "cpu",
+      "median_transcribe_seconds": 5.682062332081841,
+      "median_realtime_speedup": 40.83112546831145,
+      "median_wer": 0.0076045627376425855,
+      "word_edits_by_pass": [
+        6,
+        6,
+        6
+      ],
+      "reference_words": 789,
+      "peak_rss_mib": 4289.53125,
+      "process_wall_seconds": 25.51,
+      "transcripts_stable": true
+    },
+    {
+      "engine": "parakeet-ultra",
+      "device": "mps",
+      "median_transcribe_seconds": 1.30339920806,
+      "median_realtime_speedup": 177.99995470713833,
+      "median_wer": 0.0076045627376425855,
+      "word_edits_by_pass": [
+        6,
+        6,
+        6
+      ],
+      "reference_words": 789,
+      "peak_rss_mib": 1047.390625,
+      "process_wall_seconds": 9.81,
+      "transcripts_stable": true
+    },
+    {
+      "engine": "phonon-2",
+      "device": "cpu",
+      "median_transcribe_seconds": 4.1072724620462395,
+      "median_realtime_speedup": 56.48639142980432,
+      "median_wer": 0.008871989860583017,
+      "word_edits_by_pass": [
+        7,
+        7,
+        7
+      ],
+      "reference_words": 789,
+      "peak_rss_mib": 1674.34375,
+      "process_wall_seconds": 26.15,
+      "transcripts_stable": true
+    },
+    {
+      "engine": "phonon-2",
+      "device": "mlx",
+      "median_transcribe_seconds": 0.977573336858768,
+      "median_realtime_speedup": 237.32746306839815,
+      "median_wer": 0.008871989860583017,
+      "word_edits_by_pass": [
+        7,
+        7,
+        7
+      ],
+      "reference_words": 789,
+      "peak_rss_mib": 2936.5625,
+      "process_wall_seconds": 11.01,
+      "transcripts_stable": true
+    }
+  ]
+}

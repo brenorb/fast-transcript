@@ -1,74 +1,113 @@
-# Transcription benchmarks
+# Canonical transcription benchmark (ASR v2)
 
-This directory brings the reusable audio and ONNX reference runs from
-`vtsd-fluxo-transcript` into this repository and adds a direct comparison with
-Moondream's `moondream/parakeet-redux`.
+The canonical runner is `scripts/benchmark_asr.py`. All current comparisons
+use the same protocol, references, audio partitions and timing columns.
+Machine: Apple M5 Max, 128 GiB unified memory, macOS 27.0.
+The previous reports are preserved in [HISTORICAL.md](HISTORICAL.md); their
+fresh-process, resident-only and internal decoder times must not be mixed.
 
-The two shared inputs are a 15-second Portuguese clip with a human reference
-and a 5-minute Portuguese lecture whose reference is the existing ONNX output.
-The 5-minute score is therefore a distance-from-baseline metric, not human
-ground truth.
+## Inputs and reference quality
 
-Run the comparison with a Python environment that has Moondream 2.4 and its
-Photon dependencies installed:
+| Case | Audio | Reference |
+| --- | ---: | --- |
+| Portuguese short | 15.000 s | Original 37-word human reference |
+| Portuguese lecture | 300.032 s | 988 words reviewed by the user from an Ultra draft |
+| English LibriSpeech | 232.005 s, 50 files | 789 words from the dataset; one speaker |
+| English TED | 1,139.110 s (18m59s) | 3,106 words from publisher English captions |
+
+TED source: [Do schools kill creativity? — Sir Ken Robinson, TED](https://www.youtube.com/watch?v=iG9CE55wbtY).
+The public video is 20m03s. The benchmark uses the complete captioned talk
+from 26.603 to 1165.713 seconds, including a half-second margin at each end.
+This excludes the uncaptioned opening/closing sequence. Captions were taken
+from YouTube's publisher `subtitles.en` track, not `automatic_captions`.
+Only `(Laughter)`, `(Applause)` and the `(Audience)` speaker label were
+removed; the audience's spoken words were retained. The original wording,
+spelling and numbers were preserved.
+
+Publisher captions are an independent reference, but can edit repetitions,
+fillers and spelling. WER here is agreement with those captions, not a claim
+that every difference is an ASR mistake. The Portuguese long reference began
+as an Ultra draft. These recordings do not establish a general language ranking.
+
+## One timing protocol
+
+Each of seven engine/device configurations runs sequentially, with three
+fresh-worker repetitions per input case. Each worker loads its model once,
+transcribes the complete case, emits the first result, then transcribes the
+same case again with the model still resident.
+
+- **New process → first result:** parent wall timer from process launch until
+  receipt of the complete first transcript. Includes interpreter startup,
+  imports, model loading, WAV reading, transcription and result serialization.
+  Ends at the result, before process teardown. Downloads and preprocessing
+  are excluded; the filesystem/model download cache is already populated.
+- **Loaded model:** complete second-pass wall timer inside the worker,
+  including WAV reading, all inference calls, concatenation and GPU
+  synchronization. The first pass serves as warmup. Model loading and result
+  serialization are excluded.
+- Tables use medians of three measurements. WER is independently reported
+  for both passes in JSON; variability and exact repetitions are retained.
+  Internal Phonon decode timers are diagnostic fields only.
+
+All engines receive identical 16-kHz mono PCM parts. Long recordings are
+split at the lowest-energy 200-ms window between 25 and 30 seconds after
+the previous cut; the final remainder is at most 31 seconds. This uses
+only audio, without looking at reference text. Parts cover every sample
+exactly once, with no overlap or dropped samples. Text is concatenated
+before scoring each original recording. This shared segmentation bounds
+ONNX memory and removes the different outer chunking policies of the old
+benchmarks. Engine-internal processing remains at its default settings.
+There are no hotwords or diarization, and no thread tuning.
+The measured processes are benchmark workers using the native SDK/library APIs,
+not the existing production CLIs. ONNX uses `transcribe-rs 0.3.8`, int8 weights
+and segment timestamps; the same worker protocol applies to the Python models.
+
+WER lowercases, removes Unicode punctuation and collapses whitespace,
+preserving accents and numerals. It sums word edit counts across original
+recordings and divides by the total reference words. It does not average
+utterance percentages or silently equate number/spelling variants.
+
+GPU labels identify the runtime: **Metal/MPS** for Moondream via PyTorch,
+**Metal/MLX** for Phonon. Both use the Apple GPU.
+
+## Results
+
+The completed [canonical report](runs/2026-09-30-unified-v2/REPORT.md) contains
+all four input cases and seven configurations, with the two timing columns
+side by side. All 84 process repetitions (168 corpus passes, 2,226 original
+utterance transcripts) passed independent jiwer validation. Audio parts were
+reassembled and checked byte-for-byte against the original PCM samples.
+
+The historical Portuguese WERs also change under the shared chunking policy:
+for example, Ultra's reviewed lecture WER is 4.05% in v2, compared with 2.43%
+under its previous native long-file processing. Both sets are retained; this
+is a different input partitioning policy, not a replacement of the reference.
+Timing and quality claims should use the v2 rows together.
+
+## Reproduction
+
+Use the pinned Python environments documented in the
+[historical setup](HISTORICAL.md#phonon-2-on-apple-m5-max-2026-09-30).
+Preparation additionally requires NumPy, ffmpeg and yt-dlp. Download the
+public TED audio and publisher English subtitles, preserving source metadata:
 
 ```bash
-python3 scripts/benchmark_transcription_engines.py \
-  --redux-python /path/to/moondream-python
+mkdir -p experiments/transcription_benchmarks/datasets/ted-ken-robinson
+uvx yt-dlp==2026.08.19 --skip-download --dump-single-json --no-playlist \
+  'https://www.youtube.com/watch?v=iG9CE55wbtY' > /tmp/ted-info.json
+uvx yt-dlp==2026.08.19 --load-info-json /tmp/ted-info.json -f 251 \
+  --write-subs --no-write-auto-subs --sub-langs en --sub-format json3 \
+  -o 'experiments/transcription_benchmarks/datasets/ted-ken-robinson/source.%(ext)s'
+# Fetch the pinned 50 LibriSpeech utterances if they are not cached yet:
+.venv/bin/python scripts/benchmark_english_transcription.py --prepare
+.venv/bin/python scripts/prepare_asr_benchmarks.py --youtube-info /tmp/ted-info.json
+cargo build --release --locked --example benchmark_asr_onnx
+.venv/bin/python scripts/benchmark_asr.py --out-dir /tmp/asr-v2-run
+uv run --no-project --with jiwer==4.0.0 python scripts/validate_asr_benchmark.py \
+  --runs-dir /tmp/asr-v2-run
+.venv/bin/python scripts/report_asr_benchmark.py --runs-dir /tmp/asr-v2-run
 ```
 
-The runner measures the current `fscript` ONNX path and Redux on both CPU and
-MPS, writing one JSON file per run plus `runs/results.csv`.
-
-## Result on this MacBook Pro M1
-
-| input | engine | device | wall s | realtime | peak RSS MB | WER |
-| --- | --- | --- | ---: | ---: | ---: | ---: |
-| 15s | current ONNX | CPU | 1.54 | 9.74x | 1,250 | **0.000** |
-| 15s | Parakeet Redux | CPU | 5.97 | 2.51x | 1,071 | 0.135 |
-| 15s | Parakeet Redux | MPS | 5.40 | 2.78x | 656 | 0.135 |
-| 5min | current ONNX | CPU | 24.63 | 12.18x | 2,284 | **0.082** |
-| 5min | Parakeet Redux | CPU | 19.86 | 15.11x | 2,225 | 0.160 |
-| 5min | Parakeet Redux | MPS | 19.23 | 15.60x | 662 | 0.161 |
-
-Redux is faster and uses less memory on the long clip, but it loses badly on
-the short ground-truth clip and is materially farther from the current ONNX
-transcript on the long clip. Keep the existing ONNX model as the
-`fast-transcript` standard. An ONNX conversion of Redux is not justified by
-these results.
-
-## Short LibriSpeech validation
-
-The first 50 `validation.clean` utterances from LibriSpeech were run as
-separate short files (232.005 seconds total). WER uses the dataset text after
-lowercasing and removing punctuation. The warm column excludes model load;
-the CLI wall column includes the current `fscript` process startup for every
-utterance.
-
-| engine | device | warm inference | CLI/process wall | WER |
-| --- | --- | ---: | ---: | ---: |
-| current ONNX | CPU | 20.61x | 4.87x | 0.0152 |
-| Parakeet Redux | CPU | 25.50x | 12.82x | 0.0114 |
-| Parakeet Redux | MPS | 9.95x | 8.93x | 0.0114 |
-
-Redux wins this short-set warm-inference test by 24%, with a small WER edge.
-That is not enough to replace the current standard: the ONNX model remains
-more accurate on the checked-in ground-truth clip, and the MPS Redux path is
-slower on this M1 for short calls.
-
-## Underdog ASR check
-
-Underdog's **Husky** package is an inference engine for the text-only Woof
-model, so it cannot be compared as a transcription engine. The closest valid
-test is Underdog's separate 4-bit MLX ASR model,
-`ConwayResearch/Underdog-Bark-0.8B-1.0`.
-
-| input | engine | wall realtime | WER |
-| --- | --- | ---: | ---: |
-| LibriSpeech, 50 short utterances | Bark MLX | 11.00x warm | 0.0177 |
-| Portuguese, 15s | Bark MLX | 5.74x | 0.150 |
-| Portuguese, 5min | Bark MLX | 7.82x | 0.185 |
-
-Bark is slower and less accurate than the current ONNX path on both
-Portuguese clips, and slower than Redux on the short English set. It does not
-replace the current standard.
+`--resume` continues a partial run only when input/script/binary hashes match.
+The raw audio cache is ignored by Git; the reference manifests, source
+metadata, partition boundaries and SHA-256 checksums are retained.

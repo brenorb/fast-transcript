@@ -1,0 +1,1153 @@
+{
+  "protocol": "asr-v2",
+  "results": [
+    {
+      "case": "en-ted-ken-robinson",
+      "engine": "onnx",
+      "device": "cpu",
+      "repetitions": 3,
+      "audio_seconds": 1139.11,
+      "reference_words": 3106,
+      "cold_result_seconds": 25.13902020797832,
+      "cold_result_seconds_range": [
+        23.895347750018118,
+        25.49502158400719
+      ],
+      "warm_transcribe_seconds": 25.108301292,
+      "warm_transcribe_seconds_range": [
+        23.828486,
+        26.439847541
+      ],
+      "cold_wer": 0.12459755312298777,
+      "cold_wer_range": [
+        0.12459755312298777,
+        0.12459755312298777
+      ],
+      "warm_wer": 0.12459755312298777,
+      "warm_wer_range": [
+        0.12459755312298777,
+        0.12459755312298777
+      ],
+      "cold_realtime_speedup": 45.31242628296559,
+      "warm_realtime_speedup": 45.36786406824514,
+      "cold_word_edits": [
+        387,
+        387,
+        387
+      ],
+      "warm_word_edits": [
+        387,
+        387,
+        387
+      ],
+      "transcripts_stable": true
+    },
+    {
+      "case": "en-ted-ken-robinson",
+      "engine": "parakeet-redux",
+      "device": "cpu",
+      "repetitions": 3,
+      "audio_seconds": 1139.11,
+      "reference_words": 3106,
+      "cold_result_seconds": 23.79059054199024,
+      "cold_result_seconds_range": [
+        22.83098187498399,
+        25.981580666993978
+      ],
+      "warm_transcribe_seconds": 23.22295216700877,
+      "warm_transcribe_seconds_range": [
+        21.522469582996564,
+        24.204205540998373
+      ],
+      "cold_wer": 0.11912427559562137,
+      "cold_wer_range": [
+        0.11912427559562137,
+        0.11912427559562137
+      ],
+      "warm_wer": 0.11912427559562137,
+      "warm_wer_range": [
+        0.11912427559562137,
+        0.11912427559562137
+      ],
+      "cold_realtime_speedup": 47.880694596020135,
+      "warm_realtime_speedup": 49.05104190923039,
+      "cold_word_edits": [
+        370,
+        370,
+        370
+      ],
+      "warm_word_edits": [
+        370,
+        370,
+        370
+      ],
+      "transcripts_stable": true
+    },
+    {
+      "case": "en-ted-ken-robinson",
+      "engine": "parakeet-redux",
+      "device": "mps",
+      "repetitions": 3,
+      "audio_seconds": 1139.11,
+      "reference_words": 3106,
+      "cold_result_seconds": 10.149821708007948,
+      "cold_result_seconds_range": [
+        10.006963374995394,
+        15.350748249999015
+      ],
+      "warm_transcribe_seconds": 7.980916000000434,
+      "warm_transcribe_seconds_range": [
+        7.682158500014339,
+        8.04392933298368
+      ],
+      "cold_wer": 0.1210560206052801,
+      "cold_wer_range": [
+        0.1210560206052801,
+        0.1210560206052801
+      ],
+      "warm_wer": 0.1210560206052801,
+      "warm_wer_range": [
+        0.1210560206052801,
+        0.1210560206052801
+      ],
+      "cold_realtime_speedup": 112.22955759915186,
+      "warm_realtime_speedup": 142.72923057953975,
+      "cold_word_edits": [
+        376,
+        376,
+        376
+      ],
+      "warm_word_edits": [
+        376,
+        376,
+        376
+      ],
+      "transcripts_stable": true
+    },
+    {
+      "case": "en-ted-ken-robinson",
+      "engine": "parakeet-ultra",
+      "device": "cpu",
+      "repetitions": 3,
+      "audio_seconds": 1139.11,
+      "reference_words": 3106,
+      "cold_result_seconds": 23.747568249993492,
+      "cold_result_seconds_range": [
+        23.436337999999523,
+        24.12123008299386
+      ],
+      "warm_transcribe_seconds": 22.190667959017446,
+      "warm_transcribe_seconds_range": [
+        21.773090790986316,
+        22.34245408300194
+      ],
+      "cold_wer": 0.09755312298776561,
+      "cold_wer_range": [
+        0.09755312298776561,
+        0.09755312298776561
+      ],
+      "warm_wer": 0.09755312298776561,
+      "warm_wer_range": [
+        0.09755312298776561,
+        0.09755312298776561
+      ],
+      "cold_realtime_speedup": 47.96743767650029,
+      "warm_realtime_speedup": 51.332839646997144,
+      "cold_word_edits": [
+        303,
+        303,
+        303
+      ],
+      "warm_word_edits": [
+        303,
+        303,
+        303
+      ],
+      "transcripts_stable": true
+    },
+    {
+      "case": "en-ted-ken-robinson",
+      "engine": "parakeet-ultra",
+      "device": "mps",
+      "repetitions": 3,
+      "audio_seconds": 1139.11,
+      "reference_words": 3106,
+      "cold_result_seconds": 7.24153374999878,
+      "cold_result_seconds_range": [
+        7.130209124996327,
+        7.30651270900853
+      ],
+      "warm_transcribe_seconds": 5.243576000008034,
+      "warm_transcribe_seconds_range": [
+        5.199895165977068,
+        5.316731208004057
+      ],
+      "cold_wer": 0.09723116548615583,
+      "cold_wer_range": [
+        0.09723116548615583,
+        0.09723116548615583
+      ],
+      "warm_wer": 0.09723116548615583,
+      "warm_wer_range": [
+        0.09723116548615583,
+        0.09723116548615583
+      ],
+      "cold_realtime_speedup": 157.30231182036428,
+      "warm_realtime_speedup": 217.23915129641577,
+      "cold_word_edits": [
+        302,
+        302,
+        302
+      ],
+      "warm_word_edits": [
+        302,
+        302,
+        302
+      ],
+      "transcripts_stable": true
+    },
+    {
+      "case": "en-ted-ken-robinson",
+      "engine": "phonon-2",
+      "device": "cpu",
+      "repetitions": 3,
+      "audio_seconds": 1139.11,
+      "reference_words": 3106,
+      "cold_result_seconds": 36.832780249998905,
+      "cold_result_seconds_range": [
+        36.49301737500355,
+        36.8350185409945
+      ],
+      "warm_transcribe_seconds": 28.81936658298946,
+      "warm_transcribe_seconds_range": [
+        28.71956958298688,
+        28.86195316602243
+      ],
+      "cold_wer": 0.128783000643915,
+      "cold_wer_range": [
+        0.128783000643915,
+        0.128783000643915
+      ],
+      "warm_wer": 0.128783000643915,
+      "warm_wer_range": [
+        0.128783000643915,
+        0.128783000643915
+      ],
+      "cold_realtime_speedup": 30.926527736119887,
+      "warm_realtime_speedup": 39.52585136525367,
+      "cold_word_edits": [
+        400,
+        400,
+        400
+      ],
+      "warm_word_edits": [
+        400,
+        400,
+        400
+      ],
+      "transcripts_stable": true
+    },
+    {
+      "case": "en-ted-ken-robinson",
+      "engine": "phonon-2",
+      "device": "mlx",
+      "repetitions": 3,
+      "audio_seconds": 1139.11,
+      "reference_words": 3106,
+      "cold_result_seconds": 9.044501374999527,
+      "cold_result_seconds_range": [
+        8.996341582998866,
+        9.06871304201195
+      ],
+      "warm_transcribe_seconds": 3.435733959020581,
+      "warm_transcribe_seconds_range": [
+        3.3572286249836907,
+        3.6633607499825303
+      ],
+      "cold_wer": 0.12556342562781714,
+      "cold_wer_range": [
+        0.12556342562781714,
+        0.12556342562781714
+      ],
+      "warm_wer": 0.12556342562781714,
+      "warm_wer_range": [
+        0.12556342562781714,
+        0.12556342562781714
+      ],
+      "cold_realtime_speedup": 125.94503033065872,
+      "warm_realtime_speedup": 331.5477896678368,
+      "cold_word_edits": [
+        390,
+        390,
+        390
+      ],
+      "warm_word_edits": [
+        390,
+        390,
+        390
+      ],
+      "transcripts_stable": true
+    },
+    {
+      "case": "en-librispeech-50",
+      "engine": "onnx",
+      "device": "cpu",
+      "repetitions": 3,
+      "audio_seconds": 232.005,
+      "reference_words": 789,
+      "cold_result_seconds": 7.532081499986816,
+      "cold_result_seconds_range": [
+        7.478645333001623,
+        7.83023870800389
+      ],
+      "warm_transcribe_seconds": 6.954769875,
+      "warm_transcribe_seconds_range": [
+        6.943603208,
+        6.9986605
+      ],
+      "cold_wer": 0.01394169835234474,
+      "cold_wer_range": [
+        0.01394169835234474,
+        0.01394169835234474
+      ],
+      "warm_wer": 0.01394169835234474,
+      "warm_wer_range": [
+        0.01394169835234474,
+        0.01394169835234474
+      ],
+      "cold_realtime_speedup": 30.802242381525755,
+      "warm_realtime_speedup": 33.35911959272412,
+      "cold_word_edits": [
+        11,
+        11,
+        11
+      ],
+      "warm_word_edits": [
+        11,
+        11,
+        11
+      ],
+      "transcripts_stable": true
+    },
+    {
+      "case": "en-librispeech-50",
+      "engine": "parakeet-redux",
+      "device": "cpu",
+      "repetitions": 3,
+      "audio_seconds": 232.005,
+      "reference_words": 789,
+      "cold_result_seconds": 5.94820066599641,
+      "cold_result_seconds_range": [
+        5.905943666002713,
+        6.2208217500010505
+      ],
+      "warm_transcribe_seconds": 4.320558417006396,
+      "warm_transcribe_seconds_range": [
+        4.239177000010386,
+        4.332453207985964
+      ],
+      "cold_wer": 0.010139416983523447,
+      "cold_wer_range": [
+        0.010139416983523447,
+        0.010139416983523447
+      ],
+      "warm_wer": 0.010139416983523447,
+      "warm_wer_range": [
+        0.010139416983523447,
+        0.010139416983523447
+      ],
+      "cold_realtime_speedup": 39.004232208621325,
+      "warm_realtime_speedup": 53.69791994636432,
+      "cold_word_edits": [
+        8,
+        8,
+        8
+      ],
+      "warm_word_edits": [
+        8,
+        8,
+        8
+      ],
+      "transcripts_stable": true
+    },
+    {
+      "case": "en-librispeech-50",
+      "engine": "parakeet-redux",
+      "device": "mps",
+      "repetitions": 3,
+      "audio_seconds": 232.005,
+      "reference_words": 789,
+      "cold_result_seconds": 4.8821279169933405,
+      "cold_result_seconds_range": [
+        4.6685373749933206,
+        4.934935958008282
+      ],
+      "warm_transcribe_seconds": 1.9369428330101073,
+      "warm_transcribe_seconds_range": [
+        1.9144320829946082,
+        1.9596641660027672
+      ],
+      "cold_wer": 0.010139416983523447,
+      "cold_wer_range": [
+        0.010139416983523447,
+        0.010139416983523447
+      ],
+      "warm_wer": 0.010139416983523447,
+      "warm_wer_range": [
+        0.010139416983523447,
+        0.010139416983523447
+      ],
+      "cold_realtime_speedup": 47.521286607926555,
+      "warm_realtime_speedup": 119.77896097194179,
+      "cold_word_edits": [
+        8,
+        8,
+        8
+      ],
+      "warm_word_edits": [
+        8,
+        8,
+        8
+      ],
+      "transcripts_stable": true
+    },
+    {
+      "case": "en-librispeech-50",
+      "engine": "parakeet-ultra",
+      "device": "cpu",
+      "repetitions": 3,
+      "audio_seconds": 232.005,
+      "reference_words": 789,
+      "cold_result_seconds": 7.508872667007381,
+      "cold_result_seconds_range": [
+        7.486490916984621,
+        7.675833417015383
+      ],
+      "warm_transcribe_seconds": 5.703401917009614,
+      "warm_transcribe_seconds_range": [
+        5.674900624988368,
+        5.873202749993652
+      ],
+      "cold_wer": 0.0076045627376425855,
+      "cold_wer_range": [
+        0.0076045627376425855,
+        0.0076045627376425855
+      ],
+      "warm_wer": 0.0076045627376425855,
+      "warm_wer_range": [
+        0.0076045627376425855,
+        0.0076045627376425855
+      ],
+      "cold_realtime_speedup": 30.897447631438432,
+      "warm_realtime_speedup": 40.678353617001264,
+      "cold_word_edits": [
+        6,
+        6,
+        6
+      ],
+      "warm_word_edits": [
+        6,
+        6,
+        6
+      ],
+      "transcripts_stable": true
+    },
+    {
+      "case": "en-librispeech-50",
+      "engine": "parakeet-ultra",
+      "device": "mps",
+      "repetitions": 3,
+      "audio_seconds": 232.005,
+      "reference_words": 789,
+      "cold_result_seconds": 4.077743792004185,
+      "cold_result_seconds_range": [
+        4.018000540992944,
+        4.121224790986162
+      ],
+      "warm_transcribe_seconds": 1.239852124999743,
+      "warm_transcribe_seconds_range": [
+        1.2340627499797847,
+        1.2612377089972142
+      ],
+      "cold_wer": 0.0076045627376425855,
+      "cold_wer_range": [
+        0.0076045627376425855,
+        0.0076045627376425855
+      ],
+      "warm_wer": 0.0076045627376425855,
+      "warm_wer_range": [
+        0.0076045627376425855,
+        0.0076045627376425855
+      ],
+      "cold_realtime_speedup": 56.895433316562304,
+      "warm_realtime_speedup": 187.12312163843578,
+      "cold_word_edits": [
+        6,
+        6,
+        6
+      ],
+      "warm_word_edits": [
+        6,
+        6,
+        6
+      ],
+      "transcripts_stable": true
+    },
+    {
+      "case": "en-librispeech-50",
+      "engine": "phonon-2",
+      "device": "cpu",
+      "repetitions": 3,
+      "audio_seconds": 232.005,
+      "reference_words": 789,
+      "cold_result_seconds": 13.383163666992914,
+      "cold_result_seconds_range": [
+        13.370935292012291,
+        15.915747416001977
+      ],
+      "warm_transcribe_seconds": 4.97188945801463,
+      "warm_transcribe_seconds_range": [
+        4.966844292008318,
+        5.621468875004211
+      ],
+      "cold_wer": 0.008871989860583017,
+      "cold_wer_range": [
+        0.008871989860583017,
+        0.008871989860583017
+      ],
+      "warm_wer": 0.008871989860583017,
+      "warm_wer_range": [
+        0.008871989860583017,
+        0.008871989860583017
+      ],
+      "cold_realtime_speedup": 17.335587143135463,
+      "warm_realtime_speedup": 46.663346391583694,
+      "cold_word_edits": [
+        7,
+        7,
+        7
+      ],
+      "warm_word_edits": [
+        7,
+        7,
+        7
+      ],
+      "transcripts_stable": true
+    },
+    {
+      "case": "en-librispeech-50",
+      "engine": "phonon-2",
+      "device": "mlx",
+      "repetitions": 3,
+      "audio_seconds": 232.005,
+      "reference_words": 789,
+      "cold_result_seconds": 8.277588625001954,
+      "cold_result_seconds_range": [
+        7.589504125004169,
+        8.665923791995738
+      ],
+      "warm_transcribe_seconds": 0.9875676250085235,
+      "warm_transcribe_seconds_range": [
+        0.9865085839992389,
+        1.3962687920138706
+      ],
+      "cold_wer": 0.008871989860583017,
+      "cold_wer_range": [
+        0.008871989860583017,
+        0.008871989860583017
+      ],
+      "warm_wer": 0.008871989860583017,
+      "warm_wer_range": [
+        0.008871989860583017,
+        0.008871989860583017
+      ],
+      "cold_realtime_speedup": 28.028090125093073,
+      "warm_realtime_speedup": 234.9256842011175,
+      "cold_word_edits": [
+        7,
+        7,
+        7
+      ],
+      "warm_word_edits": [
+        7,
+        7,
+        7
+      ],
+      "transcripts_stable": true
+    },
+    {
+      "case": "pt-15s",
+      "engine": "onnx",
+      "device": "cpu",
+      "repetitions": 3,
+      "audio_seconds": 15.0,
+      "reference_words": 37,
+      "cold_result_seconds": 0.8313533749897033,
+      "cold_result_seconds_range": [
+        0.7924720419978257,
+        0.8683599169889931
+      ],
+      "warm_transcribe_seconds": 0.346050208,
+      "warm_transcribe_seconds_range": [
+        0.339794916,
+        0.356082625
+      ],
+      "cold_wer": 0.0,
+      "cold_wer_range": [
+        0.0,
+        0.0
+      ],
+      "warm_wer": 0.0,
+      "warm_wer_range": [
+        0.0,
+        0.0
+      ],
+      "cold_realtime_speedup": 18.042868954715896,
+      "warm_realtime_speedup": 43.34631118037068,
+      "cold_word_edits": [
+        0,
+        0,
+        0
+      ],
+      "warm_word_edits": [
+        0,
+        0,
+        0
+      ],
+      "transcripts_stable": true
+    },
+    {
+      "case": "pt-15s",
+      "engine": "parakeet-redux",
+      "device": "cpu",
+      "repetitions": 3,
+      "audio_seconds": 15.0,
+      "reference_words": 37,
+      "cold_result_seconds": 2.4126911250059493,
+      "cold_result_seconds_range": [
+        2.400884542003041,
+        2.6235697499942034
+      ],
+      "warm_transcribe_seconds": 0.20312070799991488,
+      "warm_transcribe_seconds_range": [
+        0.200895624991972,
+        0.2049070410139393
+      ],
+      "cold_wer": 0.13513513513513514,
+      "cold_wer_range": [
+        0.13513513513513514,
+        0.13513513513513514
+      ],
+      "warm_wer": 0.13513513513513514,
+      "warm_wer_range": [
+        0.13513513513513514,
+        0.13513513513513514
+      ],
+      "cold_realtime_speedup": 6.217124042333854,
+      "warm_realtime_speedup": 73.84771423702543,
+      "cold_word_edits": [
+        5,
+        5,
+        5
+      ],
+      "warm_word_edits": [
+        5,
+        5,
+        5
+      ],
+      "transcripts_stable": true
+    },
+    {
+      "case": "pt-15s",
+      "engine": "parakeet-redux",
+      "device": "mps",
+      "repetitions": 3,
+      "audio_seconds": 15.0,
+      "reference_words": 37,
+      "cold_result_seconds": 2.457182583020767,
+      "cold_result_seconds_range": [
+        2.163943624997046,
+        2.468388166016666
+      ],
+      "warm_transcribe_seconds": 0.06942120898747817,
+      "warm_transcribe_seconds_range": [
+        0.06904433300951496,
+        0.06944695900892839
+      ],
+      "cold_wer": 0.13513513513513514,
+      "cold_wer_range": [
+        0.13513513513513514,
+        0.13513513513513514
+      ],
+      "warm_wer": 0.13513513513513514,
+      "warm_wer_range": [
+        0.13513513513513514,
+        0.13513513513513514
+      ],
+      "cold_realtime_speedup": 6.104552467387087,
+      "warm_realtime_speedup": 216.07229575482648,
+      "cold_word_edits": [
+        5,
+        5,
+        5
+      ],
+      "warm_word_edits": [
+        5,
+        5,
+        5
+      ],
+      "transcripts_stable": true
+    },
+    {
+      "case": "pt-15s",
+      "engine": "parakeet-ultra",
+      "device": "cpu",
+      "repetitions": 3,
+      "audio_seconds": 15.0,
+      "reference_words": 37,
+      "cold_result_seconds": 1.9654707920271903,
+      "cold_result_seconds_range": [
+        1.891631625010632,
+        2.2255832079972606
+      ],
+      "warm_transcribe_seconds": 0.25277666602050886,
+      "warm_transcribe_seconds_range": [
+        0.24577808298636228,
+        0.2551045829895884
+      ],
+      "cold_wer": 0.02702702702702703,
+      "cold_wer_range": [
+        0.02702702702702703,
+        0.02702702702702703
+      ],
+      "warm_wer": 0.02702702702702703,
+      "warm_wer_range": [
+        0.02702702702702703,
+        0.02702702702702703
+      ],
+      "cold_realtime_speedup": 7.6317593020697965,
+      "warm_realtime_speedup": 59.34092033155855,
+      "cold_word_edits": [
+        1,
+        1,
+        1
+      ],
+      "warm_word_edits": [
+        1,
+        1,
+        1
+      ],
+      "transcripts_stable": true
+    },
+    {
+      "case": "pt-15s",
+      "engine": "parakeet-ultra",
+      "device": "mps",
+      "repetitions": 3,
+      "audio_seconds": 15.0,
+      "reference_words": 37,
+      "cold_result_seconds": 2.0902147499728017,
+      "cold_result_seconds_range": [
+        2.0825870409898926,
+        2.2038132500019856
+      ],
+      "warm_transcribe_seconds": 0.05107595899607986,
+      "warm_transcribe_seconds_range": [
+        0.04906583300908096,
+        0.05151870800182223
+      ],
+      "cold_wer": 0.02702702702702703,
+      "cold_wer_range": [
+        0.02702702702702703,
+        0.02702702702702703
+      ],
+      "warm_wer": 0.02702702702702703,
+      "warm_wer_range": [
+        0.02702702702702703,
+        0.02702702702702703
+      ],
+      "cold_realtime_speedup": 7.176296119905949,
+      "warm_realtime_speedup": 293.68024203228896,
+      "cold_word_edits": [
+        1,
+        1,
+        1
+      ],
+      "warm_word_edits": [
+        1,
+        1,
+        1
+      ],
+      "transcripts_stable": true
+    },
+    {
+      "case": "pt-15s",
+      "engine": "phonon-2",
+      "device": "cpu",
+      "repetitions": 3,
+      "audio_seconds": 15.0,
+      "reference_words": 37,
+      "cold_result_seconds": 9.6802176249912,
+      "cold_result_seconds_range": [
+        9.640211082994938,
+        9.68397987500066
+      ],
+      "warm_transcribe_seconds": 0.24611429101787508,
+      "warm_transcribe_seconds_range": [
+        0.24583870801143348,
+        0.24756341701140627
+      ],
+      "cold_wer": 0.13513513513513514,
+      "cold_wer_range": [
+        0.13513513513513514,
+        0.13513513513513514
+      ],
+      "warm_wer": 0.13513513513513514,
+      "warm_wer_range": [
+        0.13513513513513514,
+        0.13513513513513514
+      ],
+      "cold_realtime_speedup": 1.5495519399558577,
+      "warm_realtime_speedup": 60.94729378762716,
+      "cold_word_edits": [
+        5,
+        5,
+        5
+      ],
+      "warm_word_edits": [
+        5,
+        5,
+        5
+      ],
+      "transcripts_stable": true
+    },
+    {
+      "case": "pt-15s",
+      "engine": "phonon-2",
+      "device": "mlx",
+      "repetitions": 3,
+      "audio_seconds": 15.0,
+      "reference_words": 37,
+      "cold_result_seconds": 6.579407582990825,
+      "cold_result_seconds_range": [
+        6.568338207987836,
+        6.586148790986044
+      ],
+      "warm_transcribe_seconds": 0.03379716697963886,
+      "warm_transcribe_seconds_range": [
+        0.033516166993649676,
+        0.03424449998419732
+      ],
+      "cold_wer": 0.13513513513513514,
+      "cold_wer_range": [
+        0.13513513513513514,
+        0.13513513513513514
+      ],
+      "warm_wer": 0.13513513513513514,
+      "warm_wer_range": [
+        0.13513513513513514,
+        0.13513513513513514
+      ],
+      "cold_realtime_speedup": 2.279840519194799,
+      "warm_realtime_speedup": 443.82418233566045,
+      "cold_word_edits": [
+        5,
+        5,
+        5
+      ],
+      "warm_word_edits": [
+        5,
+        5,
+        5
+      ],
+      "transcripts_stable": true
+    },
+    {
+      "case": "pt-5min",
+      "engine": "onnx",
+      "device": "cpu",
+      "repetitions": 3,
+      "audio_seconds": 300.032,
+      "reference_words": 988,
+      "cold_result_seconds": 7.127276167011587,
+      "cold_result_seconds_range": [
+        6.96583216599538,
+        7.174690625019139
+      ],
+      "warm_transcribe_seconds": 6.869430541,
+      "warm_transcribe_seconds_range": [
+        6.855129166,
+        6.949464291
+      ],
+      "cold_wer": 0.09109311740890688,
+      "cold_wer_range": [
+        0.09109311740890688,
+        0.09109311740890688
+      ],
+      "warm_wer": 0.09109311740890688,
+      "warm_wer_range": [
+        0.09109311740890688,
+        0.09109311740890688
+      ],
+      "cold_realtime_speedup": 42.096306214243576,
+      "warm_realtime_speedup": 43.67640057050836,
+      "cold_word_edits": [
+        90,
+        90,
+        90
+      ],
+      "warm_word_edits": [
+        90,
+        90,
+        90
+      ],
+      "transcripts_stable": true
+    },
+    {
+      "case": "pt-5min",
+      "engine": "parakeet-redux",
+      "device": "cpu",
+      "repetitions": 3,
+      "audio_seconds": 300.032,
+      "reference_words": 988,
+      "cold_result_seconds": 6.850889624998672,
+      "cold_result_seconds_range": [
+        6.804201584018301,
+        7.064359957992565
+      ],
+      "warm_transcribe_seconds": 5.143064792006044,
+      "warm_transcribe_seconds_range": [
+        5.0901995839958545,
+        5.1545112500025425
+      ],
+      "cold_wer": 0.07894736842105263,
+      "cold_wer_range": [
+        0.07894736842105263,
+        0.07894736842105263
+      ],
+      "warm_wer": 0.07894736842105263,
+      "warm_wer_range": [
+        0.07894736842105263,
+        0.07894736842105263
+      ],
+      "cold_realtime_speedup": 43.794604266458045,
+      "warm_realtime_speedup": 58.337200119731136,
+      "cold_word_edits": [
+        78,
+        78,
+        78
+      ],
+      "warm_word_edits": [
+        78,
+        78,
+        78
+      ],
+      "transcripts_stable": true
+    },
+    {
+      "case": "pt-5min",
+      "engine": "parakeet-redux",
+      "device": "mps",
+      "repetitions": 3,
+      "audio_seconds": 300.032,
+      "reference_words": 988,
+      "cold_result_seconds": 4.065300125017529,
+      "cold_result_seconds_range": [
+        4.014277958980529,
+        5.8987028330157045
+      ],
+      "warm_transcribe_seconds": 1.5092960000038147,
+      "warm_transcribe_seconds_range": [
+        1.4878296249953564,
+        1.5374470420065336
+      ],
+      "cold_wer": 0.07995951417004049,
+      "cold_wer_range": [
+        0.07995951417004049,
+        0.07995951417004049
+      ],
+      "warm_wer": 0.07995951417004049,
+      "warm_wer_range": [
+        0.07995951417004049,
+        0.07995951417004049
+      ],
+      "cold_realtime_speedup": 73.80316108855709,
+      "warm_realtime_speedup": 198.789369347856,
+      "cold_word_edits": [
+        79,
+        79,
+        79
+      ],
+      "warm_word_edits": [
+        79,
+        79,
+        79
+      ],
+      "transcripts_stable": true
+    },
+    {
+      "case": "pt-5min",
+      "engine": "parakeet-ultra",
+      "device": "cpu",
+      "repetitions": 3,
+      "audio_seconds": 300.032,
+      "reference_words": 988,
+      "cold_result_seconds": 7.081470459001139,
+      "cold_result_seconds_range": [
+        7.055580374988494,
+        7.217194750002818
+      ],
+      "warm_transcribe_seconds": 5.147603624995099,
+      "warm_transcribe_seconds_range": [
+        5.116682374995435,
+        5.167743583006086
+      ],
+      "cold_wer": 0.04048582995951417,
+      "cold_wer_range": [
+        0.04048582995951417,
+        0.04048582995951417
+      ],
+      "warm_wer": 0.04048582995951417,
+      "warm_wer_range": [
+        0.04048582995951417,
+        0.04048582995951417
+      ],
+      "cold_realtime_speedup": 42.368601512505684,
+      "warm_realtime_speedup": 58.285762047244965,
+      "cold_word_edits": [
+        40,
+        40,
+        40
+      ],
+      "warm_word_edits": [
+        40,
+        40,
+        40
+      ],
+      "transcripts_stable": true
+    },
+    {
+      "case": "pt-5min",
+      "engine": "parakeet-ultra",
+      "device": "mps",
+      "repetitions": 3,
+      "audio_seconds": 300.032,
+      "reference_words": 988,
+      "cold_result_seconds": 3.3672733749845065,
+      "cold_result_seconds_range": [
+        3.1854057910095435,
+        3.4182920419843867
+      ],
+      "warm_transcribe_seconds": 1.1171027919917833,
+      "warm_transcribe_seconds_range": [
+        1.090558041993063,
+        1.1180217920045834
+      ],
+      "cold_wer": 0.04048582995951417,
+      "cold_wer_range": [
+        0.04048582995951417,
+        0.04048582995951417
+      ],
+      "warm_wer": 0.04048582995951417,
+      "warm_wer_range": [
+        0.04048582995951417,
+        0.04048582995951417
+      ],
+      "cold_realtime_speedup": 89.1023586706501,
+      "warm_realtime_speedup": 268.5804763454631,
+      "cold_word_edits": [
+        40,
+        40,
+        40
+      ],
+      "warm_word_edits": [
+        40,
+        40,
+        40
+      ],
+      "transcripts_stable": true
+    },
+    {
+      "case": "pt-5min",
+      "engine": "phonon-2",
+      "device": "cpu",
+      "repetitions": 3,
+      "audio_seconds": 300.032,
+      "reference_words": 988,
+      "cold_result_seconds": 15.254455499991309,
+      "cold_result_seconds_range": [
+        15.220652666990645,
+        15.263872916984838
+      ],
+      "warm_transcribe_seconds": 6.717258125019725,
+      "warm_transcribe_seconds_range": [
+        6.112648832990089,
+        7.0980475829856005
+      ],
+      "cold_wer": 0.16194331983805668,
+      "cold_wer_range": [
+        0.16194331983805668,
+        0.16194331983805668
+      ],
+      "warm_wer": 0.16194331983805668,
+      "warm_wer_range": [
+        0.16194331983805668,
+        0.16194331983805668
+      ],
+      "cold_realtime_speedup": 19.668483086805093,
+      "warm_realtime_speedup": 44.66584347599698,
+      "cold_word_edits": [
+        160,
+        160,
+        160
+      ],
+      "warm_word_edits": [
+        160,
+        160,
+        160
+      ],
+      "transcripts_stable": true
+    },
+    {
+      "case": "pt-5min",
+      "engine": "phonon-2",
+      "device": "mlx",
+      "repetitions": 3,
+      "audio_seconds": 300.032,
+      "reference_words": 988,
+      "cold_result_seconds": 7.246664625010453,
+      "cold_result_seconds_range": [
+        7.240781667002011,
+        7.89450433300226
+      ],
+      "warm_transcribe_seconds": 0.6685380830022041,
+      "warm_transcribe_seconds_range": [
+        0.6673958330065943,
+        0.6793008339882363
+      ],
+      "cold_wer": 0.15890688259109312,
+      "cold_wer_range": [
+        0.15890688259109312,
+        0.15890688259109312
+      ],
+      "warm_wer": 0.15890688259109312,
+      "warm_wer_range": [
+        0.15890688259109312,
+        0.15890688259109312
+      ],
+      "cold_realtime_speedup": 41.402771554308984,
+      "warm_realtime_speedup": 448.7881956591706,
+      "cold_word_edits": [
+        157,
+        157,
+        157
+      ],
+      "warm_word_edits": [
+        157,
+        157,
+        157
+      ],
+      "transcripts_stable": true
+    }
+  ]
+}

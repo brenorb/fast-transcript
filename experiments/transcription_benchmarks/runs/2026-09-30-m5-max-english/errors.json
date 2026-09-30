@@ -1,0 +1,322 @@
+{
+  "onnx-cpu": [
+    {
+      "id": "2277-149896-0007",
+      "reference": "HE WOULD SEE HOW THINGS TURNED OUT TO MORROW AND THEN HE WOULD TALK TO HER THEY WERE GOING TO MEET AS USUAL",
+      "hypothesis": "He would see how things turned out tomorrow, and then he would talk to her. They were going to meet as usual.",
+      "word_edits": 2
+    },
+    {
+      "id": "2277-149896-0009",
+      "reference": "WHILE THE DANGER HAD NOT LESSENED IT HAD NOT AS YET MATERIALISED AND WITH HIM NO NEWS WAS GOOD NEWS",
+      "hypothesis": "While the danger had not lessened, it had not as yet materialized, and with him no news was good news.",
+      "word_edits": 1
+    },
+    {
+      "id": "2277-149896-0010",
+      "reference": "SO LITTLE DID HE CONSIDER DROUET THAT IT NEVER ONCE OCCURRED TO HIM TO WORRY ABOUT HIS FINDING OUT",
+      "hypothesis": "So little did he consider Drua that it never once occurred to him to worry about his finding out.",
+      "word_edits": 1
+    },
+    {
+      "id": "2277-149896-0015",
+      "reference": "HE WENT IN AND EXAMINED HIS LETTERS BUT THERE WAS NOTHING FROM CARRIE",
+      "hypothesis": "He went in and examined his letters, but there was nothing from Carey.",
+      "word_edits": 1
+    },
+    {
+      "id": "2277-149897-0001",
+      "reference": "HE COULD HARDLY REALISE HOW IT HAD ALL COME ABOUT",
+      "hypothesis": "He could hardly realize how it had all come about.",
+      "word_edits": 1
+    },
+    {
+      "id": "2277-149897-0004",
+      "reference": "HE WAS GETTING SOME VAGUE COMFORT OUT OF A GOOD CIGAR BUT IT WAS NO PANACEA FOR THE ILL WHICH AFFECTED HIM",
+      "hypothesis": "He was getting some vague comfort out of a good cigar, but it was no peniacea for the ill which affected him.",
+      "word_edits": 1
+    },
+    {
+      "id": "2277-149897-0007",
+      "reference": "YOU TAKE THIS TO THIS ADDRESS HE SAID HANDING HIM THE ENVELOPE AND GIVE IT TO MISSUS HURSTWOOD YES SIR SAID THE BOY",
+      "hypothesis": "You take this to this address, he said, handing him the envelope, and give it to misses Hurstwood. Yes, sir, said the boy.",
+      "word_edits": 1
+    },
+    {
+      "id": "2277-149897-0010",
+      "reference": "HE WAS BEATEN FOR TO NIGHT AND HE MIGHT JUST AS WELL MAKE THE BEST OF IT",
+      "hypothesis": "He was beaten for tonight, and he might just as well make the best of it.",
+      "word_edits": 2
+    },
+    {
+      "id": "2277-149897-0013",
+      "reference": "FOR RELIEF HE AROSE AND JOINED IN CONVERSATION WITH A FEW FRIENDS WHO WERE DRINKING",
+      "hypothesis": "For relief he arose and joined in the conversation with a few friends who were drinking.",
+      "word_edits": 1
+    }
+  ],
+  "parakeet-redux-cpu": [
+    {
+      "id": "2277-149896-0009",
+      "reference": "WHILE THE DANGER HAD NOT LESSENED IT HAD NOT AS YET MATERIALISED AND WITH HIM NO NEWS WAS GOOD NEWS",
+      "hypothesis": "While the danger had not lessened, it had not as yet materialized, and with him no news was good news.",
+      "word_edits": 1
+    },
+    {
+      "id": "2277-149896-0010",
+      "reference": "SO LITTLE DID HE CONSIDER DROUET THAT IT NEVER ONCE OCCURRED TO HIM TO WORRY ABOUT HIS FINDING OUT",
+      "hypothesis": "so little did he consider Drewa that it never once occurred to him to worry about his finding out",
+      "word_edits": 1
+    },
+    {
+      "id": "2277-149896-0015",
+      "reference": "HE WENT IN AND EXAMINED HIS LETTERS BUT THERE WAS NOTHING FROM CARRIE",
+      "hypothesis": "He went in and examined his letters, but there was nothing from Kerry.",
+      "word_edits": 1
+    },
+    {
+      "id": "2277-149897-0001",
+      "reference": "HE COULD HARDLY REALISE HOW IT HAD ALL COME ABOUT",
+      "hypothesis": "He could hardly realize how it had all come about",
+      "word_edits": 1
+    },
+    {
+      "id": "2277-149897-0002",
+      "reference": "NO LETTER HAD COME NO WORD OF ANY KIND AND YET HERE IT WAS LATE IN THE EVENING AND SHE HAD AGREED TO MEET HIM THAT MORNING",
+      "hypothesis": "No letter had come, no bird of any kind, and yet here it was, late in the evening, and she had agreed to meet him that morning.",
+      "word_edits": 1
+    },
+    {
+      "id": "2277-149897-0004",
+      "reference": "HE WAS GETTING SOME VAGUE COMFORT OUT OF A GOOD CIGAR BUT IT WAS NO PANACEA FOR THE ILL WHICH AFFECTED HIM",
+      "hypothesis": "He was getting some vague comfort out of a good cigar, but it was no panacia for the ill which affected him.",
+      "word_edits": 1
+    },
+    {
+      "id": "2277-149897-0007",
+      "reference": "YOU TAKE THIS TO THIS ADDRESS HE SAID HANDING HIM THE ENVELOPE AND GIVE IT TO MISSUS HURSTWOOD YES SIR SAID THE BOY",
+      "hypothesis": "You take this to this address, he said, handing him the envelope, and give it to Mrs. Hurstwood. Yes, sir, said the boy.",
+      "word_edits": 1
+    },
+    {
+      "id": "2277-149897-0013",
+      "reference": "FOR RELIEF HE AROSE AND JOINED IN CONVERSATION WITH A FEW FRIENDS WHO WERE DRINKING",
+      "hypothesis": "For relief he arose and joined in the conversation with a few friends who were drinking.",
+      "word_edits": 1
+    }
+  ],
+  "parakeet-redux-mps": [
+    {
+      "id": "2277-149896-0009",
+      "reference": "WHILE THE DANGER HAD NOT LESSENED IT HAD NOT AS YET MATERIALISED AND WITH HIM NO NEWS WAS GOOD NEWS",
+      "hypothesis": "While the danger had not lessened, it had not as yet materialized, and with him no news was good news.",
+      "word_edits": 1
+    },
+    {
+      "id": "2277-149896-0010",
+      "reference": "SO LITTLE DID HE CONSIDER DROUET THAT IT NEVER ONCE OCCURRED TO HIM TO WORRY ABOUT HIS FINDING OUT",
+      "hypothesis": "so little did he consider Drewa that it never once occurred to him to worry about his finding out",
+      "word_edits": 1
+    },
+    {
+      "id": "2277-149896-0015",
+      "reference": "HE WENT IN AND EXAMINED HIS LETTERS BUT THERE WAS NOTHING FROM CARRIE",
+      "hypothesis": "He went in and examined his letters, but there was nothing from Kerry.",
+      "word_edits": 1
+    },
+    {
+      "id": "2277-149897-0001",
+      "reference": "HE COULD HARDLY REALISE HOW IT HAD ALL COME ABOUT",
+      "hypothesis": "He could hardly realize how it had all come about",
+      "word_edits": 1
+    },
+    {
+      "id": "2277-149897-0002",
+      "reference": "NO LETTER HAD COME NO WORD OF ANY KIND AND YET HERE IT WAS LATE IN THE EVENING AND SHE HAD AGREED TO MEET HIM THAT MORNING",
+      "hypothesis": "No letter had come, no bird of any kind, and yet here it was, late in the evening, and she had agreed to meet him that morning.",
+      "word_edits": 1
+    },
+    {
+      "id": "2277-149897-0004",
+      "reference": "HE WAS GETTING SOME VAGUE COMFORT OUT OF A GOOD CIGAR BUT IT WAS NO PANACEA FOR THE ILL WHICH AFFECTED HIM",
+      "hypothesis": "He was getting some vague comfort out of a good cigar, but it was no panacia for the ill which affected him.",
+      "word_edits": 1
+    },
+    {
+      "id": "2277-149897-0007",
+      "reference": "YOU TAKE THIS TO THIS ADDRESS HE SAID HANDING HIM THE ENVELOPE AND GIVE IT TO MISSUS HURSTWOOD YES SIR SAID THE BOY",
+      "hypothesis": "You take this to this address, he said, handing him the envelope, and give it to Mrs. Hurstwood. Yes, sir, said the boy.",
+      "word_edits": 1
+    },
+    {
+      "id": "2277-149897-0013",
+      "reference": "FOR RELIEF HE AROSE AND JOINED IN CONVERSATION WITH A FEW FRIENDS WHO WERE DRINKING",
+      "hypothesis": "For relief he arose and joined in the conversation with a few friends who were drinking.",
+      "word_edits": 1
+    }
+  ],
+  "parakeet-ultra-cpu": [
+    {
+      "id": "2277-149896-0009",
+      "reference": "WHILE THE DANGER HAD NOT LESSENED IT HAD NOT AS YET MATERIALISED AND WITH HIM NO NEWS WAS GOOD NEWS",
+      "hypothesis": "While the danger had not lessened, it had not as yet materialized, and with him no news was good news.",
+      "word_edits": 1
+    },
+    {
+      "id": "2277-149896-0010",
+      "reference": "SO LITTLE DID HE CONSIDER DROUET THAT IT NEVER ONCE OCCURRED TO HIM TO WORRY ABOUT HIS FINDING OUT",
+      "hypothesis": "So little did he consider Drua that it never once occurred to him to worry about his finding out.",
+      "word_edits": 1
+    },
+    {
+      "id": "2277-149896-0015",
+      "reference": "HE WENT IN AND EXAMINED HIS LETTERS BUT THERE WAS NOTHING FROM CARRIE",
+      "hypothesis": "He went in and examined his letters, but there was nothing from Carey.",
+      "word_edits": 1
+    },
+    {
+      "id": "2277-149897-0001",
+      "reference": "HE COULD HARDLY REALISE HOW IT HAD ALL COME ABOUT",
+      "hypothesis": "He could hardly realize how it had all come about,",
+      "word_edits": 1
+    },
+    {
+      "id": "2277-149897-0007",
+      "reference": "YOU TAKE THIS TO THIS ADDRESS HE SAID HANDING HIM THE ENVELOPE AND GIVE IT TO MISSUS HURSTWOOD YES SIR SAID THE BOY",
+      "hypothesis": "You take this to this address, he said, handing him the envelope, and give it to Mrs Hurstwood. Yes, sir, said the boy.",
+      "word_edits": 1
+    },
+    {
+      "id": "2277-149897-0013",
+      "reference": "FOR RELIEF HE AROSE AND JOINED IN CONVERSATION WITH A FEW FRIENDS WHO WERE DRINKING",
+      "hypothesis": "For relief he arose and joined in the conversation with a few friends who were drinking.",
+      "word_edits": 1
+    }
+  ],
+  "parakeet-ultra-mps": [
+    {
+      "id": "2277-149896-0009",
+      "reference": "WHILE THE DANGER HAD NOT LESSENED IT HAD NOT AS YET MATERIALISED AND WITH HIM NO NEWS WAS GOOD NEWS",
+      "hypothesis": "While the danger had not lessened, it had not as yet materialized, and with him no news was good news.",
+      "word_edits": 1
+    },
+    {
+      "id": "2277-149896-0010",
+      "reference": "SO LITTLE DID HE CONSIDER DROUET THAT IT NEVER ONCE OCCURRED TO HIM TO WORRY ABOUT HIS FINDING OUT",
+      "hypothesis": "So little did he consider Drua that it never once occurred to him to worry about his finding out.",
+      "word_edits": 1
+    },
+    {
+      "id": "2277-149896-0015",
+      "reference": "HE WENT IN AND EXAMINED HIS LETTERS BUT THERE WAS NOTHING FROM CARRIE",
+      "hypothesis": "He went in and examined his letters, but there was nothing from Carey.",
+      "word_edits": 1
+    },
+    {
+      "id": "2277-149897-0001",
+      "reference": "HE COULD HARDLY REALISE HOW IT HAD ALL COME ABOUT",
+      "hypothesis": "He could hardly realize how it had all come about,",
+      "word_edits": 1
+    },
+    {
+      "id": "2277-149897-0007",
+      "reference": "YOU TAKE THIS TO THIS ADDRESS HE SAID HANDING HIM THE ENVELOPE AND GIVE IT TO MISSUS HURSTWOOD YES SIR SAID THE BOY",
+      "hypothesis": "You take this to this address, he said, handing him the envelope, and give it to Mrs Hurstwood. Yes, sir, said the boy.",
+      "word_edits": 1
+    },
+    {
+      "id": "2277-149897-0013",
+      "reference": "FOR RELIEF HE AROSE AND JOINED IN CONVERSATION WITH A FEW FRIENDS WHO WERE DRINKING",
+      "hypothesis": "For relief he arose and joined in the conversation with a few friends who were drinking.",
+      "word_edits": 1
+    }
+  ],
+  "phonon-2-cpu": [
+    {
+      "id": "2277-149896-0006",
+      "reference": "HE COULD ARRANGE THAT SATISFACTORILY FOR CARRIE WOULD BE GLAD TO WAIT IF NECESSARY",
+      "hypothesis": "He could arrange that satisfactorily, for Carey would be glad to wait, if necessary.",
+      "word_edits": 1
+    },
+    {
+      "id": "2277-149896-0009",
+      "reference": "WHILE THE DANGER HAD NOT LESSENED IT HAD NOT AS YET MATERIALISED AND WITH HIM NO NEWS WAS GOOD NEWS",
+      "hypothesis": "While the danger had not lessened, it had not as yet materialized, and with him no news was good news.",
+      "word_edits": 1
+    },
+    {
+      "id": "2277-149896-0010",
+      "reference": "SO LITTLE DID HE CONSIDER DROUET THAT IT NEVER ONCE OCCURRED TO HIM TO WORRY ABOUT HIS FINDING OUT",
+      "hypothesis": "So little did he consider Drua that it never once occurred to him to worry about his finding out.",
+      "word_edits": 1
+    },
+    {
+      "id": "2277-149896-0015",
+      "reference": "HE WENT IN AND EXAMINED HIS LETTERS BUT THERE WAS NOTHING FROM CARRIE",
+      "hypothesis": "He went in and examined his letters, but there was nothing from Carey.",
+      "word_edits": 1
+    },
+    {
+      "id": "2277-149897-0001",
+      "reference": "HE COULD HARDLY REALISE HOW IT HAD ALL COME ABOUT",
+      "hypothesis": "He could hardly realize how it had all come about.",
+      "word_edits": 1
+    },
+    {
+      "id": "2277-149897-0007",
+      "reference": "YOU TAKE THIS TO THIS ADDRESS HE SAID HANDING HIM THE ENVELOPE AND GIVE IT TO MISSUS HURSTWOOD YES SIR SAID THE BOY",
+      "hypothesis": "You take this to this address, he said, handing him the envelope, and give it to misses Hurstwood. Yes, sir, said the boy.",
+      "word_edits": 1
+    },
+    {
+      "id": "2277-149897-0013",
+      "reference": "FOR RELIEF HE AROSE AND JOINED IN CONVERSATION WITH A FEW FRIENDS WHO WERE DRINKING",
+      "hypothesis": "For relief he arose and joined in the conversation with a few friends who were drinking.",
+      "word_edits": 1
+    }
+  ],
+  "phonon-2-mlx": [
+    {
+      "id": "2277-149896-0006",
+      "reference": "HE COULD ARRANGE THAT SATISFACTORILY FOR CARRIE WOULD BE GLAD TO WAIT IF NECESSARY",
+      "hypothesis": "He could arrange that satisfactorily, for Carey would be glad to wait, if necessary.",
+      "word_edits": 1
+    },
+    {
+      "id": "2277-149896-0009",
+      "reference": "WHILE THE DANGER HAD NOT LESSENED IT HAD NOT AS YET MATERIALISED AND WITH HIM NO NEWS WAS GOOD NEWS",
+      "hypothesis": "While the danger had not lessened, it had not as yet materialized, and with him no news was good news.",
+      "word_edits": 1
+    },
+    {
+      "id": "2277-149896-0010",
+      "reference": "SO LITTLE DID HE CONSIDER DROUET THAT IT NEVER ONCE OCCURRED TO HIM TO WORRY ABOUT HIS FINDING OUT",
+      "hypothesis": "So little did he consider Drua that it never once occurred to him to worry about his finding out.",
+      "word_edits": 1
+    },
+    {
+      "id": "2277-149896-0015",
+      "reference": "HE WENT IN AND EXAMINED HIS LETTERS BUT THERE WAS NOTHING FROM CARRIE",
+      "hypothesis": "He went in and examined his letters, but there was nothing from Carey.",
+      "word_edits": 1
+    },
+    {
+      "id": "2277-149897-0001",
+      "reference": "HE COULD HARDLY REALISE HOW IT HAD ALL COME ABOUT",
+      "hypothesis": "He could hardly realize how it had all come about.",
+      "word_edits": 1
+    },
+    {
+      "id": "2277-149897-0007",
+      "reference": "YOU TAKE THIS TO THIS ADDRESS HE SAID HANDING HIM THE ENVELOPE AND GIVE IT TO MISSUS HURSTWOOD YES SIR SAID THE BOY",
+      "hypothesis": "You take this to this address, he said, handing him the envelope, and give it to misses Hurstwood. Yes, sir, said the boy.",
+      "word_edits": 1
+    },
+    {
+      "id": "2277-149897-0013",
+      "reference": "FOR RELIEF HE AROSE AND JOINED IN CONVERSATION WITH A FEW FRIENDS WHO WERE DRINKING",
+      "hypothesis": "For relief he arose and joined in the conversation with a few friends who were drinking.",
+      "word_edits": 1
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "metrics": {
+    "engine": "onnx",
+    "device": "cpu",
+    "audio_id": "15s",
+    "repetition": 1,
+    "audio_seconds": 15.0,
+    "wall_clock_s": 0.82,
+    "realtime_speedup": 18.29268292682927,
+    "max_rss_mb": 1930.078125,
+    "load_seconds": 0.452666375,
+    "transcribe_seconds": 0.325164125,
+    "wer_vs_reference": 0.02702702702702703,
+    "cer_vs_reference": 0.004975124378109453,
+    "normalized_wer_vs_reference": 0.0,
+    "reference_note": "human ground truth"
+  },
+  "result": {
+    "input_source": "/Users/brenorb/code/PROJECTS/fast-transcript/experiments/transcription_benchmarks/audio/audio_15s_16k_mono.wav",
+    "model_dir": "/Users/brenorb/Library/Application Support/fast-transcript/models/parakeet-tdt-0.6b-v3-int8",
+    "audio_path": "/Users/brenorb/code/PROJECTS/fast-transcript/experiments/transcription_benchmarks/audio/audio_15s_16k_mono.wav",
+    "prepared_audio_path": "/Users/brenorb/code/PROJECTS/fast-transcript/experiments/transcription_benchmarks/audio/audio_15s_16k_mono.wav",
+    "used_ffmpeg_normalization": false,
+    "used_local_model": true,
+    "transcript_source": "local-audio-local-model",
+    "audio_seconds": 15.0,
+    "load_seconds": 0.452666375,
+    "transcribe_seconds": 0.325164125,
+    "total_inside_seconds": 0.7778305000000001,
+    "seconds_per_audio_second": 0.05185536666666667,
+    "realtime_speedup": 19.2844070784059,
+    "text": "Olá, nessa aula eu vou te ensinar como fazer o próprio colágeno natural em casa e destacar os 5 maiores mitos das receitas que são divulgadas na internet ou nas redes sociais. Para isso, eu vou utilizar",
+    "chunk_seconds": 120.0,
+    "chunk_overlap_seconds": 2.0,
+    "chunk_count": 1,
+    "chunks": [
+      {
+        "index": 0,
+        "start_s": 0.0,
+        "end_s": 15.0,
+        "audio_seconds": 15.0,
+        "transcribe_seconds": 0.325164125,
+        "text": "Olá, nessa aula eu vou te ensinar como fazer o próprio colágeno natural em casa e destacar os 5 maiores mitos das receitas que são divulgadas na internet ou nas redes sociais. Para isso, eu vou utilizar"
+      }
+    ],
+    "segments": [
+      {
+        "start_s": 4.150000095367432,
+        "end_s": 13.90999984741211,
+        "text": "Olá, nessa aula eu vou te ensinar como fazer o próprio colágeno natural em casa e destacar os5 maiores mitos das receitas que são divulgadas na internet ou nas redes sociais."
+      },
+      {
+        "start_s": 13.90999984741211,
+        "end_s": 14.59999942779541,
+        "text": "Para isso, eu vou utilizar"
+      }
+    ]
+  }
+}

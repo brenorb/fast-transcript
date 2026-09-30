@@ -1,0 +1,71 @@
+{
+  "cold": {
+    "phase": "cold",
+    "corpus_seconds": 0.21357108300435357,
+    "utterances": [
+      {
+        "id": "pt-15s",
+        "text": "Olá, nesta aula eu vou te ensinar como fazer o próprio colégio natural em casa e destacar os cinco maiores mitos das receitas que são adulgados na internet ou nas redes sociais. Para isso vou utilizar",
+        "parts": [
+          {
+            "text": "Olá, nesta aula eu vou te ensinar como fazer o próprio colégio natural em casa e destacar os cinco maiores mitos das receitas que são adulgados na internet ou nas redes sociais. Para isso vou utilizar",
+            "call_seconds": 0.2135644170048181
+          }
+        ],
+        "word_edits": 5
+      }
+    ],
+    "model": "moondream/parakeet-redux",
+    "model_revision": "af60db939ebab3ca8b95b5983174e669599a2352",
+    "runtime_versions": {
+      "moondream": "2.4.1",
+      "kestrel": "0.8.1",
+      "torch": "2.14.0"
+    },
+    "parent_received_seconds": 2.6235697499942034,
+    "word_edits": 5,
+    "wer": 0.13513513513513514
+  },
+  "warm": {
+    "phase": "warm",
+    "corpus_seconds": 0.20312070799991488,
+    "utterances": [
+      {
+        "id": "pt-15s",
+        "text": "Olá, nesta aula eu vou te ensinar como fazer o próprio colégio natural em casa e destacar os cinco maiores mitos das receitas que são adulgados na internet ou nas redes sociais. Para isso vou utilizar",
+        "parts": [
+          {
+            "text": "Olá, nesta aula eu vou te ensinar como fazer o próprio colégio natural em casa e destacar os cinco maiores mitos das receitas que são adulgados na internet ou nas redes sociais. Para isso vou utilizar",
+            "call_seconds": 0.20311737500014715
+          }
+        ],
+        "word_edits": 5
+      }
+    ],
+    "model": "moondream/parakeet-redux",
+    "model_revision": "af60db939ebab3ca8b95b5983174e669599a2352",
+    "runtime_versions": {
+      "moondream": "2.4.1",
+      "kestrel": "0.8.1",
+      "torch": "2.14.0"
+    },
+    "parent_received_seconds": 2.826671125018038,
+    "word_edits": 5,
+    "wer": 0.13513513513513514
+  },
+  "process_two_pass_wall_seconds": 3.553905917011434,
+  "process_resources": {
+    "wall_clock_s": 3.55,
+    "user_cpu_s": 4.41,
+    "system_cpu_s": 0.45,
+    "max_rss_mb": 1070.40625
+  },
+  "protocol": "asr-v2",
+  "case": "pt-15s",
+  "engine": "parakeet-redux",
+  "device": "cpu",
+  "repetition": 1,
+  "audio_seconds": 15.0,
+  "reference_words": 37,
+  "manifest_sha256": "3b2b64d39a1d7daff3b60c602b2cdf2506078bf597c5719d8880cbf0f4c16a75"
+}

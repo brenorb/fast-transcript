@@ -1,0 +1,1149 @@
+{
+  "cold": {
+    "phase": "cold",
+    "corpus_seconds": 5.658759750018362,
+    "utterances": [
+      {
+        "id": "2277-149896-0000",
+        "text": "He was in a fevered state of mind, owing to the blight his wife's action threatened to cast upon his entire future.",
+        "parts": [
+          {
+            "text": "He was in a fevered state of mind, owing to the blight his wife's action threatened to cast upon his entire future.",
+            "call_seconds": 0.2244552080228459
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0001",
+        "text": "he would have to pay her the money which she would now regularly demand, or there would be trouble. It did not matter what he did.",
+        "parts": [
+          {
+            "text": "he would have to pay her the money which she would now regularly demand, or there would be trouble. It did not matter what he did.",
+            "call_seconds": 0.13926941601675935
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0002",
+        "text": "Hurstwood walked the floor, mentally arranging the chief points of his situation.",
+        "parts": [
+          {
+            "text": "Hurstwood walked the floor, mentally arranging the chief points of his situation.",
+            "call_seconds": 0.1046554580098018
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0003",
+        "text": "He also thought of his managerial position,",
+        "parts": [
+          {
+            "text": "He also thought of his managerial position,",
+            "call_seconds": 0.09395995902013965
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0004",
+        "text": "How would the papers talk about it?",
+        "parts": [
+          {
+            "text": "How would the papers talk about it?",
+            "call_seconds": 0.0705420000012964
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0005",
+        "text": "Many little wrinkles gathered between his eyes as he contemplated this, and his brow moistened.",
+        "parts": [
+          {
+            "text": "Many little wrinkles gathered between his eyes as he contemplated this, and his brow moistened.",
+            "call_seconds": 0.12744800001382828
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0006",
+        "text": "He could arrange that satisfactorily, for Carrie would be glad to wait, if necessary.",
+        "parts": [
+          {
+            "text": "He could arrange that satisfactorily, for Carrie would be glad to wait, if necessary.",
+            "call_seconds": 0.10495033301413059
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0007",
+        "text": "He would see how things turned out to morrow, and then he would talk to her. They were going to meet as usual.",
+        "parts": [
+          {
+            "text": "He would see how things turned out to morrow, and then he would talk to her. They were going to meet as usual.",
+            "call_seconds": 0.12711095801205374
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0008",
+        "text": "For some reason he felt as if something might come that way, and was relieved when all the envelopes had been scanned and nothing suspicious noticed.",
+        "parts": [
+          {
+            "text": "For some reason he felt as if something might come that way, and was relieved when all the envelopes had been scanned and nothing suspicious noticed.",
+            "call_seconds": 0.13676925000618212
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0009",
+        "text": "While the danger had not lessened, it had not as yet materialized, and with him no news was good news.",
+        "parts": [
+          {
+            "text": "While the danger had not lessened, it had not as yet materialized, and with him no news was good news.",
+            "call_seconds": 0.12920854199910536
+          }
+        ],
+        "word_edits": 1
+      },
+      {
+        "id": "2277-149896-0010",
+        "text": "So little did he consider Drua that it never once occurred to him to worry about his finding out.",
+        "parts": [
+          {
+            "text": "So little did he consider Drua that it never once occurred to him to worry about his finding out.",
+            "call_seconds": 0.12532254197867587
+          }
+        ],
+        "word_edits": 1
+      },
+      {
+        "id": "2277-149896-0011",
+        "text": "He grew restless as he ruminated, and then decided that perhaps it was nothing.",
+        "parts": [
+          {
+            "text": "He grew restless as he ruminated, and then decided that perhaps it was nothing.",
+            "call_seconds": 0.10244766698451713
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0012",
+        "text": "She had not been able to get away this morning.",
+        "parts": [
+          {
+            "text": "She had not been able to get away this morning.",
+            "call_seconds": 0.0735857920080889
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0013",
+        "text": "He would get one to day. It would probably be on his desk when he got back. He would look for it at once.",
+        "parts": [
+          {
+            "text": "He would get one to day. It would probably be on his desk when he got back. He would look for it at once.",
+            "call_seconds": 0.12749541699304245
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0014",
+        "text": "After a time he gave up waiting and drearily headed for the Madison car,",
+        "parts": [
+          {
+            "text": "After a time he gave up waiting and drearily headed for the Madison car,",
+            "call_seconds": 0.1017047920031473
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0015",
+        "text": "He went in and examined his letters, but there was nothing from Carey.",
+        "parts": [
+          {
+            "text": "He went in and examined his letters, but there was nothing from Carey.",
+            "call_seconds": 0.09991304200957529
+          }
+        ],
+        "word_edits": 1
+      },
+      {
+        "id": "2277-149896-0016",
+        "text": "Fortunately there was nothing from his wife, either.",
+        "parts": [
+          {
+            "text": "Fortunately there was nothing from his wife, either.",
+            "call_seconds": 0.09556091597187333
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0017",
+        "text": "At one thirty he went to Rectors for lunch, and when he returned a messenger was waiting for him,",
+        "parts": [
+          {
+            "text": "At one thirty he went to Rectors for lunch, and when he returned a messenger was waiting for him,",
+            "call_seconds": 0.10820183300529607
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0018",
+        "text": "His first impulse was to write but four words in reply Go to the devil.",
+        "parts": [
+          {
+            "text": "His first impulse was to write but four words in reply Go to the devil.",
+            "call_seconds": 0.10369312498369254
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0019",
+        "text": "but he compromised by telling the boy that there would be no reply.",
+        "parts": [
+          {
+            "text": "but he compromised by telling the boy that there would be no reply.",
+            "call_seconds": 0.09720037499209866
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0020",
+        "text": "Then he sat down in his chair and gazed without seeing, contemplating the result of his work.",
+        "parts": [
+          {
+            "text": "Then he sat down in his chair and gazed without seeing, contemplating the result of his work.",
+            "call_seconds": 0.1271059580030851
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0021",
+        "text": "What would she do about that, the confounded wretch?",
+        "parts": [
+          {
+            "text": "What would she do about that, the confounded wretch?",
+            "call_seconds": 0.09585424998658709
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0022",
+        "text": "Later, however, his old discretion asserted itself,",
+        "parts": [
+          {
+            "text": "Later, however, his old discretion asserted itself,",
+            "call_seconds": 0.09614654199685901
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0023",
+        "text": "Something had to be done. A climax was near, and she would not sit idle.",
+        "parts": [
+          {
+            "text": "Something had to be done. A climax was near, and she would not sit idle.",
+            "call_seconds": 0.10081450000870973
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0024",
+        "text": "He knew her well enough to know that when she had decided upon a plan she would follow it up.",
+        "parts": [
+          {
+            "text": "He knew her well enough to know that when she had decided upon a plan she would follow it up.",
+            "call_seconds": 0.10396820900496095
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0025",
+        "text": "He arose from his chair and went and looked out into the street,",
+        "parts": [
+          {
+            "text": "He arose from his chair and went and looked out into the street,",
+            "call_seconds": 0.09714125000755303
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0026",
+        "text": "The long drizzle had begun. Pedestrians had turned up collars and trousers at the bottom.",
+        "parts": [
+          {
+            "text": "The long drizzle had begun. Pedestrians had turned up collars and trousers at the bottom.",
+            "call_seconds": 0.10549229101161472
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0027",
+        "text": "Hurstwood almost exclaimed out loud at the insistency of this thing.",
+        "parts": [
+          {
+            "text": "Hurstwood almost exclaimed out loud at the insistency of this thing.",
+            "call_seconds": 0.09842075000051409
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0028",
+        "text": "He put on his hat and looked around for his umbrella,",
+        "parts": [
+          {
+            "text": "He put on his hat and looked around for his umbrella,",
+            "call_seconds": 0.0940602500049863
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0029",
+        "text": "he would have some arrangement of this thing.",
+        "parts": [
+          {
+            "text": "he would have some arrangement of this thing.",
+            "call_seconds": 0.09268991701537743
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0030",
+        "text": "He began to wish that he had compromised in some way or other, that he had sent the money. Perhaps he could do it up here,",
+        "parts": [
+          {
+            "text": "He began to wish that he had compromised in some way or other, that he had sent the money. Perhaps he could do it up here,",
+            "call_seconds": 0.1309299580170773
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0031",
+        "text": "He would go in and see, anyhow. He would have no row.",
+        "parts": [
+          {
+            "text": "He would go in and see, anyhow. He would have no row.",
+            "call_seconds": 0.0962412919907365
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0032",
+        "text": "By the time he reached his own street he was keenly alive to the difficulties of his situation, and wished over and over that some solution would offer itself, that he could see his way out.",
+        "parts": [
+          {
+            "text": "By the time he reached his own street he was keenly alive to the difficulties of his situation, and wished over and over that some solution would offer itself, that he could see his way out.",
+            "call_seconds": 0.19877799999085255
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0033",
+        "text": "Then he rang the bell no answer.",
+        "parts": [
+          {
+            "text": "Then he rang the bell no answer.",
+            "call_seconds": 0.0934117499855347
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0034",
+        "text": "He rang again, this time harder. Still no answer.",
+        "parts": [
+          {
+            "text": "He rang again, this time harder. Still no answer.",
+            "call_seconds": 0.0977089999942109
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149897-0000",
+        "text": "When Hurstwood got back to his office again, he was in a greater quandary than ever.",
+        "parts": [
+          {
+            "text": "When Hurstwood got back to his office again, he was in a greater quandary than ever.",
+            "call_seconds": 0.10476616700179875
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149897-0001",
+        "text": "He could hardly realize how it had all come about,",
+        "parts": [
+          {
+            "text": "He could hardly realize how it had all come about,",
+            "call_seconds": 0.09352829100680538
+          }
+        ],
+        "word_edits": 1
+      },
+      {
+        "id": "2277-149897-0002",
+        "text": "No letter had come, no word of any kind, and yet here it was late in the evening, and she had agreed to meet him that morning.",
+        "parts": [
+          {
+            "text": "No letter had come, no word of any kind, and yet here it was late in the evening, and she had agreed to meet him that morning.",
+            "call_seconds": 0.1337346670043189
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149897-0003",
+        "text": "He saw that in the excitement of recent events he had not formulated a plan upon that score.",
+        "parts": [
+          {
+            "text": "He saw that in the excitement of recent events he had not formulated a plan upon that score.",
+            "call_seconds": 0.10408341698348522
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149897-0004",
+        "text": "He was getting some vague comfort out of a good cigar, but it was no panacea for the ill which affected him.",
+        "parts": [
+          {
+            "text": "He was getting some vague comfort out of a good cigar, but it was no panacea for the ill which affected him.",
+            "call_seconds": 0.1292047500028275
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149897-0005",
+        "text": "It was with great opposition, after two or three hours of the most urgent mental affirmation and denial, that at last he got an envelope, placed in it the requested amount, and slowly sealed it up.",
+        "parts": [
+          {
+            "text": "It was with great opposition, after two or three hours of the most urgent mental affirmation and denial, that at last he got an envelope, placed in it the requested amount, and slowly sealed it up.",
+            "call_seconds": 0.20469054198474623
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149897-0006",
+        "text": "Then he called Harry, the boy of all work around the place.",
+        "parts": [
+          {
+            "text": "Then he called Harry, the boy of all work around the place.",
+            "call_seconds": 0.09677174998796545
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149897-0007",
+        "text": "You take this to this address, he said, handing him the envelope, and give it to Mrs Hurstwood. Yes, sir, said the boy.",
+        "parts": [
+          {
+            "text": "You take this to this address, he said, handing him the envelope, and give it to Mrs Hurstwood. Yes, sir, said the boy.",
+            "call_seconds": 0.182135124981869
+          }
+        ],
+        "word_edits": 1
+      },
+      {
+        "id": "2277-149897-0008",
+        "text": "Any answer? I guess not.",
+        "parts": [
+          {
+            "text": "Any answer? I guess not.",
+            "call_seconds": 0.09353808299056254
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149897-0009",
+        "text": "The boy hastened away, and the manager fell to his musings.",
+        "parts": [
+          {
+            "text": "The boy hastened away, and the manager fell to his musings.",
+            "call_seconds": 0.09786304098088294
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149897-0010",
+        "text": "He was beaten for to night, and he might just as well make the best of it.",
+        "parts": [
+          {
+            "text": "He was beaten for to night, and he might just as well make the best of it.",
+            "call_seconds": 0.09813304099952802
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149897-0011",
+        "text": "she would take the envelope and know that she had triumphed.",
+        "parts": [
+          {
+            "text": "she would take the envelope and know that she had triumphed.",
+            "call_seconds": 0.09624549999716692
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149897-0012",
+        "text": "If he only had that letter back, he wouldn't send it.",
+        "parts": [
+          {
+            "text": "If he only had that letter back, he wouldn't send it.",
+            "call_seconds": 0.09596566698746756
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149897-0013",
+        "text": "For relief he arose and joined in the conversation with a few friends who were drinking.",
+        "parts": [
+          {
+            "text": "For relief he arose and joined in the conversation with a few friends who were drinking.",
+            "call_seconds": 0.10228591700433753
+          }
+        ],
+        "word_edits": 1
+      },
+      {
+        "id": "2277-149897-0014",
+        "text": "All the time his thoughts would run out to his home and see the scene being therein enacted.",
+        "parts": [
+          {
+            "text": "All the time his thoughts would run out to his home and see the scene being therein enacted.",
+            "call_seconds": 0.10344191701733507
+          }
+        ],
+        "word_edits": 0
+      }
+    ],
+    "model": "moondream/parakeet-ultra",
+    "model_revision": "510e6f5a1c4619f39c72b083c091476935734e65",
+    "runtime_versions": {
+      "moondream": "2.4.1",
+      "kestrel": "0.8.1",
+      "torch": "2.14.0"
+    },
+    "parent_received_seconds": 7.486490916984621,
+    "word_edits": 6,
+    "wer": 0.0076045627376425855
+  },
+  "warm": {
+    "phase": "warm",
+    "corpus_seconds": 5.674900624988368,
+    "utterances": [
+      {
+        "id": "2277-149896-0000",
+        "text": "He was in a fevered state of mind, owing to the blight his wife's action threatened to cast upon his entire future.",
+        "parts": [
+          {
+            "text": "He was in a fevered state of mind, owing to the blight his wife's action threatened to cast upon his entire future.",
+            "call_seconds": 0.13479166699107736
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0001",
+        "text": "he would have to pay her the money which she would now regularly demand, or there would be trouble. It did not matter what he did.",
+        "parts": [
+          {
+            "text": "he would have to pay her the money which she would now regularly demand, or there would be trouble. It did not matter what he did.",
+            "call_seconds": 0.13636345797567628
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0002",
+        "text": "Hurstwood walked the floor, mentally arranging the chief points of his situation.",
+        "parts": [
+          {
+            "text": "Hurstwood walked the floor, mentally arranging the chief points of his situation.",
+            "call_seconds": 0.10598941601347178
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0003",
+        "text": "He also thought of his managerial position,",
+        "parts": [
+          {
+            "text": "He also thought of his managerial position,",
+            "call_seconds": 0.09397412498947233
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0004",
+        "text": "How would the papers talk about it?",
+        "parts": [
+          {
+            "text": "How would the papers talk about it?",
+            "call_seconds": 0.07153708298574202
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0005",
+        "text": "Many little wrinkles gathered between his eyes as he contemplated this, and his brow moistened.",
+        "parts": [
+          {
+            "text": "Many little wrinkles gathered between his eyes as he contemplated this, and his brow moistened.",
+            "call_seconds": 0.12883804200100712
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0006",
+        "text": "He could arrange that satisfactorily, for Carrie would be glad to wait, if necessary.",
+        "parts": [
+          {
+            "text": "He could arrange that satisfactorily, for Carrie would be glad to wait, if necessary.",
+            "call_seconds": 0.1060367499885615
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0007",
+        "text": "He would see how things turned out to morrow, and then he would talk to her. They were going to meet as usual.",
+        "parts": [
+          {
+            "text": "He would see how things turned out to morrow, and then he would talk to her. They were going to meet as usual.",
+            "call_seconds": 0.1274156250001397
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0008",
+        "text": "For some reason he felt as if something might come that way, and was relieved when all the envelopes had been scanned and nothing suspicious noticed.",
+        "parts": [
+          {
+            "text": "For some reason he felt as if something might come that way, and was relieved when all the envelopes had been scanned and nothing suspicious noticed.",
+            "call_seconds": 0.13823595899157226
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0009",
+        "text": "While the danger had not lessened, it had not as yet materialized, and with him no news was good news.",
+        "parts": [
+          {
+            "text": "While the danger had not lessened, it had not as yet materialized, and with him no news was good news.",
+            "call_seconds": 0.13283862499520183
+          }
+        ],
+        "word_edits": 1
+      },
+      {
+        "id": "2277-149896-0010",
+        "text": "So little did he consider Drua that it never once occurred to him to worry about his finding out.",
+        "parts": [
+          {
+            "text": "So little did he consider Drua that it never once occurred to him to worry about his finding out.",
+            "call_seconds": 0.12675333299557678
+          }
+        ],
+        "word_edits": 1
+      },
+      {
+        "id": "2277-149896-0011",
+        "text": "He grew restless as he ruminated, and then decided that perhaps it was nothing.",
+        "parts": [
+          {
+            "text": "He grew restless as he ruminated, and then decided that perhaps it was nothing.",
+            "call_seconds": 0.10323779200552963
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0012",
+        "text": "She had not been able to get away this morning.",
+        "parts": [
+          {
+            "text": "She had not been able to get away this morning.",
+            "call_seconds": 0.0737426670093555
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0013",
+        "text": "He would get one to day. It would probably be on his desk when he got back. He would look for it at once.",
+        "parts": [
+          {
+            "text": "He would get one to day. It would probably be on his desk when he got back. He would look for it at once.",
+            "call_seconds": 0.12842562500736676
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0014",
+        "text": "After a time he gave up waiting and drearily headed for the Madison car,",
+        "parts": [
+          {
+            "text": "After a time he gave up waiting and drearily headed for the Madison car,",
+            "call_seconds": 0.10149533301591873
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0015",
+        "text": "He went in and examined his letters, but there was nothing from Carey.",
+        "parts": [
+          {
+            "text": "He went in and examined his letters, but there was nothing from Carey.",
+            "call_seconds": 0.09875770899816416
+          }
+        ],
+        "word_edits": 1
+      },
+      {
+        "id": "2277-149896-0016",
+        "text": "Fortunately there was nothing from his wife, either.",
+        "parts": [
+          {
+            "text": "Fortunately there was nothing from his wife, either.",
+            "call_seconds": 0.09494362500845455
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0017",
+        "text": "At one thirty he went to Rectors for lunch, and when he returned a messenger was waiting for him,",
+        "parts": [
+          {
+            "text": "At one thirty he went to Rectors for lunch, and when he returned a messenger was waiting for him,",
+            "call_seconds": 0.10801904200343415
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0018",
+        "text": "His first impulse was to write but four words in reply Go to the devil.",
+        "parts": [
+          {
+            "text": "His first impulse was to write but four words in reply Go to the devil.",
+            "call_seconds": 0.10332950000884011
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0019",
+        "text": "but he compromised by telling the boy that there would be no reply.",
+        "parts": [
+          {
+            "text": "but he compromised by telling the boy that there would be no reply.",
+            "call_seconds": 0.09636991698062047
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0020",
+        "text": "Then he sat down in his chair and gazed without seeing, contemplating the result of his work.",
+        "parts": [
+          {
+            "text": "Then he sat down in his chair and gazed without seeing, contemplating the result of his work.",
+            "call_seconds": 0.12657966697588563
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0021",
+        "text": "What would she do about that, the confounded wretch?",
+        "parts": [
+          {
+            "text": "What would she do about that, the confounded wretch?",
+            "call_seconds": 0.09562783400178887
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0022",
+        "text": "Later, however, his old discretion asserted itself,",
+        "parts": [
+          {
+            "text": "Later, however, his old discretion asserted itself,",
+            "call_seconds": 0.09626695900806226
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0023",
+        "text": "Something had to be done. A climax was near, and she would not sit idle.",
+        "parts": [
+          {
+            "text": "Something had to be done. A climax was near, and she would not sit idle.",
+            "call_seconds": 0.1002499999885913
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0024",
+        "text": "He knew her well enough to know that when she had decided upon a plan she would follow it up.",
+        "parts": [
+          {
+            "text": "He knew her well enough to know that when she had decided upon a plan she would follow it up.",
+            "call_seconds": 0.10372137499507517
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0025",
+        "text": "He arose from his chair and went and looked out into the street,",
+        "parts": [
+          {
+            "text": "He arose from his chair and went and looked out into the street,",
+            "call_seconds": 0.09707174997311085
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0026",
+        "text": "The long drizzle had begun. Pedestrians had turned up collars and trousers at the bottom.",
+        "parts": [
+          {
+            "text": "The long drizzle had begun. Pedestrians had turned up collars and trousers at the bottom.",
+            "call_seconds": 0.10611520797829144
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0027",
+        "text": "Hurstwood almost exclaimed out loud at the insistency of this thing.",
+        "parts": [
+          {
+            "text": "Hurstwood almost exclaimed out loud at the insistency of this thing.",
+            "call_seconds": 0.0980044580064714
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0028",
+        "text": "He put on his hat and looked around for his umbrella,",
+        "parts": [
+          {
+            "text": "He put on his hat and looked around for his umbrella,",
+            "call_seconds": 0.09512650000397116
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0029",
+        "text": "he would have some arrangement of this thing.",
+        "parts": [
+          {
+            "text": "he would have some arrangement of this thing.",
+            "call_seconds": 0.09432674999698065
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0030",
+        "text": "He began to wish that he had compromised in some way or other, that he had sent the money. Perhaps he could do it up here,",
+        "parts": [
+          {
+            "text": "He began to wish that he had compromised in some way or other, that he had sent the money. Perhaps he could do it up here,",
+            "call_seconds": 0.13339762500254437
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0031",
+        "text": "He would go in and see, anyhow. He would have no row.",
+        "parts": [
+          {
+            "text": "He would go in and see, anyhow. He would have no row.",
+            "call_seconds": 0.09960066698840819
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0032",
+        "text": "By the time he reached his own street he was keenly alive to the difficulties of his situation, and wished over and over that some solution would offer itself, that he could see his way out.",
+        "parts": [
+          {
+            "text": "By the time he reached his own street he was keenly alive to the difficulties of his situation, and wished over and over that some solution would offer itself, that he could see his way out.",
+            "call_seconds": 0.20574779200251214
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0033",
+        "text": "Then he rang the bell no answer.",
+        "parts": [
+          {
+            "text": "Then he rang the bell no answer.",
+            "call_seconds": 0.09836937501677312
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149896-0034",
+        "text": "He rang again, this time harder. Still no answer.",
+        "parts": [
+          {
+            "text": "He rang again, this time harder. Still no answer.",
+            "call_seconds": 0.10360050000599585
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149897-0000",
+        "text": "When Hurstwood got back to his office again, he was in a greater quandary than ever.",
+        "parts": [
+          {
+            "text": "When Hurstwood got back to his office again, he was in a greater quandary than ever.",
+            "call_seconds": 0.10824075000709854
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149897-0001",
+        "text": "He could hardly realize how it had all come about,",
+        "parts": [
+          {
+            "text": "He could hardly realize how it had all come about,",
+            "call_seconds": 0.09771304199239239
+          }
+        ],
+        "word_edits": 1
+      },
+      {
+        "id": "2277-149897-0002",
+        "text": "No letter had come, no word of any kind, and yet here it was late in the evening, and she had agreed to meet him that morning.",
+        "parts": [
+          {
+            "text": "No letter had come, no word of any kind, and yet here it was late in the evening, and she had agreed to meet him that morning.",
+            "call_seconds": 0.14065037498949096
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149897-0003",
+        "text": "He saw that in the excitement of recent events he had not formulated a plan upon that score.",
+        "parts": [
+          {
+            "text": "He saw that in the excitement of recent events he had not formulated a plan upon that score.",
+            "call_seconds": 0.11044404198764823
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149897-0004",
+        "text": "He was getting some vague comfort out of a good cigar, but it was no panacea for the ill which affected him.",
+        "parts": [
+          {
+            "text": "He was getting some vague comfort out of a good cigar, but it was no panacea for the ill which affected him.",
+            "call_seconds": 0.13744429100188427
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149897-0005",
+        "text": "It was with great opposition, after two or three hours of the most urgent mental affirmation and denial, that at last he got an envelope, placed in it the requested amount, and slowly sealed it up.",
+        "parts": [
+          {
+            "text": "It was with great opposition, after two or three hours of the most urgent mental affirmation and denial, that at last he got an envelope, placed in it the requested amount, and slowly sealed it up.",
+            "call_seconds": 0.21132166701136157
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149897-0006",
+        "text": "Then he called Harry, the boy of all work around the place.",
+        "parts": [
+          {
+            "text": "Then he called Harry, the boy of all work around the place.",
+            "call_seconds": 0.10245091599063016
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149897-0007",
+        "text": "You take this to this address, he said, handing him the envelope, and give it to Mrs Hurstwood. Yes, sir, said the boy.",
+        "parts": [
+          {
+            "text": "You take this to this address, he said, handing him the envelope, and give it to Mrs Hurstwood. Yes, sir, said the boy.",
+            "call_seconds": 0.17123820801498368
+          }
+        ],
+        "word_edits": 1
+      },
+      {
+        "id": "2277-149897-0008",
+        "text": "Any answer? I guess not.",
+        "parts": [
+          {
+            "text": "Any answer? I guess not.",
+            "call_seconds": 0.09754008401068859
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149897-0009",
+        "text": "The boy hastened away, and the manager fell to his musings.",
+        "parts": [
+          {
+            "text": "The boy hastened away, and the manager fell to his musings.",
+            "call_seconds": 0.10277045899420045
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149897-0010",
+        "text": "He was beaten for to night, and he might just as well make the best of it.",
+        "parts": [
+          {
+            "text": "He was beaten for to night, and he might just as well make the best of it.",
+            "call_seconds": 0.10374291701009497
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149897-0011",
+        "text": "she would take the envelope and know that she had triumphed.",
+        "parts": [
+          {
+            "text": "she would take the envelope and know that she had triumphed.",
+            "call_seconds": 0.10160841600736603
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149897-0012",
+        "text": "If he only had that letter back, he wouldn't send it.",
+        "parts": [
+          {
+            "text": "If he only had that letter back, he wouldn't send it.",
+            "call_seconds": 0.10082225000951439
+          }
+        ],
+        "word_edits": 0
+      },
+      {
+        "id": "2277-149897-0013",
+        "text": "For relief he arose and joined in the conversation with a few friends who were drinking.",
+        "parts": [
+          {
+            "text": "For relief he arose and joined in the conversation with a few friends who were drinking.",
+            "call_seconds": 0.11284354099188931
+          }
+        ],
+        "word_edits": 1
+      },
+      {
+        "id": "2277-149897-0014",
+        "text": "All the time his thoughts would run out to his home and see the scene being therein enacted.",
+        "parts": [
+          {
+            "text": "All the time his thoughts would run out to his home and see the scene being therein enacted.",
+            "call_seconds": 0.11104625000734814
+          }
+        ],
+        "word_edits": 0
+      }
+    ],
+    "model": "moondream/parakeet-ultra",
+    "model_revision": "510e6f5a1c4619f39c72b083c091476935734e65",
+    "runtime_versions": {
+      "moondream": "2.4.1",
+      "kestrel": "0.8.1",
+      "torch": "2.14.0"
+    },
+    "parent_received_seconds": 13.161450833984418,
+    "word_edits": 6,
+    "wer": 0.0076045627376425855
+  },
+  "process_two_pass_wall_seconds": 14.005879292002646,
+  "process_resources": {
+    "wall_clock_s": 14.0,
+    "user_cpu_s": 15.65,
+    "system_cpu_s": 3.11,
+    "max_rss_mb": 4293.703125
+  },
+  "protocol": "asr-v2",
+  "case": "en-librispeech-50",
+  "engine": "parakeet-ultra",
+  "device": "cpu",
+  "repetition": 3,
+  "audio_seconds": 232.005,
+  "reference_words": 789,
+  "manifest_sha256": "b31eaaa965db01a9190d800f6a6fdcccb1d9d377e91c14bc021803e31b36c6ba"
+}

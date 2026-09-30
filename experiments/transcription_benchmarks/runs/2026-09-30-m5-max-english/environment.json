@@ -1,0 +1,21 @@
+{
+  "started_at": "2026-09-30T12:54:29.481706+00:00",
+  "hardware": "Apple M5 Max",
+  "platform": "macOS-27.0-arm64-arm-64bit",
+  "manifest_sha256": "cc73c1c349d941af8cd6db28ab96c5460351978c47937d4b6f14a221101758f3",
+  "normalization": "lowercase; remove non-ASCII-alphanumeric punctuation; split whitespace",
+  "timing": "One process per configuration, one resident model; one discarded full-corpus warmup then the requested number of measured corpus passes. Call timer includes WAV reading and transcription; MPS synchronization included. Process wall includes initialization, warmup, all passes, teardown. Initialization includes Python imports but Rust model load only; do not compare these as pure model-load times.",
+  "arguments": {
+    "manifest": "/Users/brenorb/code/PROJECTS/fast-transcript/experiments/transcription_benchmarks/datasets/librispeech-validation-clean-50/manifest.json",
+    "prepare": false,
+    "worker": null,
+    "device": "cpu",
+    "repetitions": 3,
+    "photon_python": "/Users/brenorb/code/PROJECTS/fast-transcript/.venv/bin/python",
+    "phonon_python": "/Users/brenorb/code/PROJECTS/fast-transcript/.venv/phonon2/bin/python",
+    "onnx_worker": "/Users/brenorb/code/PROJECTS/fast-transcript/target/release/examples/benchmark_resident_onnx",
+    "onnx_model": "/Users/brenorb/Library/Application Support/fast-transcript/models/parakeet-tdt-0.6b-v3-int8",
+    "out_dir": "/Users/brenorb/code/PROJECTS/fast-transcript/experiments/transcription_benchmarks/runs/2026-09-30-m5-max-english"
+  },
+  "source_commit": "3b892cdff5ded62a85b3f78bd031fe8b0295fc14"
+}

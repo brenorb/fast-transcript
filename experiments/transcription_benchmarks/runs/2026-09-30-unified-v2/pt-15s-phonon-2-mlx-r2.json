@@ -1,0 +1,101 @@
+{
+  "cold": {
+    "phase": "cold",
+    "corpus_seconds": 0.04305433400440961,
+    "utterances": [
+      {
+        "id": "pt-15s",
+        "text": "Olá, nessa aula vou te ensinar como fazer o próprio collage natural em casa e destacar os cinco maiores mitos das receitas que estão divulgados na internet ou nas redes sociais. Para isso eu vou utilizar",
+        "parts": [
+          {
+            "text": "Olá, nessa aula vou te ensinar como fazer o próprio collage natural em casa e destacar os cinco maiores mitos das receitas que estão divulgados na internet ou nas redes sociais. Para isso eu vou utilizar",
+            "decode_seconds_diagnostic": 0.04209291699226014,
+            "audio_seconds": 15.0,
+            "truncated": false,
+            "call_seconds": 0.04305145799298771
+          }
+        ],
+        "word_edits": 5
+      }
+    ],
+    "model": "FermionResearch/Phonon-2",
+    "pin": {
+      "repo": "FermionResearch/Phonon-2",
+      "name": "Phonon-2",
+      "character": "Five-value Parakeet-TDT; the smallest download",
+      "backend": "phonon2-five-value",
+      "filename": "phonon-2.bps.tar.zst",
+      "sha256": "98125795b6dda72f5c6eee9ba33d19815df65dcb18b50a357bf9f73c9935309e",
+      "download_bytes": 163515201,
+      "unpacked_bytes": 177716675,
+      "unpack_dir": "model_phonon2_c4c_int6",
+      "published": true,
+      "staged": true
+    },
+    "runtime_versions": {
+      "fermion-research": "0.2.3",
+      "mlx": "0.32.3",
+      "torch": "2.14.0"
+    },
+    "parent_received_seconds": 6.579407582990825,
+    "word_edits": 5,
+    "wer": 0.13513513513513514
+  },
+  "warm": {
+    "phase": "warm",
+    "corpus_seconds": 0.033516166993649676,
+    "utterances": [
+      {
+        "id": "pt-15s",
+        "text": "Olá, nessa aula vou te ensinar como fazer o próprio collage natural em casa e destacar os cinco maiores mitos das receitas que estão divulgados na internet ou nas redes sociais. Para isso eu vou utilizar",
+        "parts": [
+          {
+            "text": "Olá, nessa aula vou te ensinar como fazer o próprio collage natural em casa e destacar os cinco maiores mitos das receitas que estão divulgados na internet ou nas redes sociais. Para isso eu vou utilizar",
+            "decode_seconds_diagnostic": 0.03291558302589692,
+            "audio_seconds": 15.0,
+            "truncated": false,
+            "call_seconds": 0.03351387497968972
+          }
+        ],
+        "word_edits": 5
+      }
+    ],
+    "model": "FermionResearch/Phonon-2",
+    "pin": {
+      "repo": "FermionResearch/Phonon-2",
+      "name": "Phonon-2",
+      "character": "Five-value Parakeet-TDT; the smallest download",
+      "backend": "phonon2-five-value",
+      "filename": "phonon-2.bps.tar.zst",
+      "sha256": "98125795b6dda72f5c6eee9ba33d19815df65dcb18b50a357bf9f73c9935309e",
+      "download_bytes": 163515201,
+      "unpacked_bytes": 177716675,
+      "unpack_dir": "model_phonon2_c4c_int6",
+      "published": true,
+      "staged": true
+    },
+    "runtime_versions": {
+      "fermion-research": "0.2.3",
+      "mlx": "0.32.3",
+      "torch": "2.14.0"
+    },
+    "parent_received_seconds": 6.612910374999046,
+    "word_edits": 5,
+    "wer": 0.13513513513513514
+  },
+  "process_two_pass_wall_seconds": 6.840606582991313,
+  "process_resources": {
+    "wall_clock_s": 6.83,
+    "user_cpu_s": 6.04,
+    "system_cpu_s": 0.57,
+    "max_rss_mb": 2934.796875
+  },
+  "protocol": "asr-v2",
+  "case": "pt-15s",
+  "engine": "phonon-2",
+  "device": "mlx",
+  "repetition": 2,
+  "audio_seconds": 15.0,
+  "reference_words": 37,
+  "manifest_sha256": "3b2b64d39a1d7daff3b60c602b2cdf2506078bf597c5719d8880cbf0f4c16a75"
+}

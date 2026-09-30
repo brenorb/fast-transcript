@@ -1,0 +1,27 @@
+{
+  "validator": "jiwer 4.0.0",
+  "protocol": "asr-v2",
+  "process_repetitions_checked": 84,
+  "corpus_passes_checked": 168,
+  "utterances_checked": 2226,
+  "audio_partitions_checked": 105,
+  "reference_counts": {
+    "pt-15s": 37,
+    "pt-5min": 988,
+    "en-librispeech-50": 789,
+    "en-ted-ken-robinson": 3106
+  },
+  "checks": [
+    "input/script/binary fingerprints",
+    "original audio hashes",
+    "sample-exact partition reconstruction",
+    "caption/reference equality",
+    "all case/device/repetition combinations present",
+    "per-utterance and corpus WER",
+    "per-part duration and truncation",
+    "cold/warm timing ordering",
+    "timing sums, medians and ranges",
+    "reported transcript stability"
+  ],
+  "validator_sha256": "a3334ce8db43b70a28d8947883dcff9a34936bf4f47abcb65274aa3d5018b8a7"
+}

@@ -1,0 +1,61 @@
+{
+  "cold": {
+    "corpus_seconds": 0.321362,
+    "phase": "cold",
+    "runtime": "transcribe-rs 0.3.8 int8",
+    "utterances": [
+      {
+        "id": "pt-15s",
+        "parts": [
+          {
+            "audio_seconds": 15.0,
+            "call_seconds": 0.321358334,
+            "text": "Olá, nessa aula eu vou te ensinar como fazer o próprio colágeno natural em casa e destacar os 5 maiores mitos das receitas que são divulgadas na internet ou nas redes sociais. Para isso, eu vou utilizar"
+          }
+        ],
+        "text": "Olá, nessa aula eu vou te ensinar como fazer o próprio colágeno natural em casa e destacar os 5 maiores mitos das receitas que são divulgadas na internet ou nas redes sociais. Para isso, eu vou utilizar",
+        "word_edits": 0
+      }
+    ],
+    "parent_received_seconds": 0.7924720419978257,
+    "word_edits": 0,
+    "wer": 0.0
+  },
+  "warm": {
+    "corpus_seconds": 0.339794916,
+    "phase": "warm",
+    "runtime": "transcribe-rs 0.3.8 int8",
+    "utterances": [
+      {
+        "id": "pt-15s",
+        "parts": [
+          {
+            "audio_seconds": 15.0,
+            "call_seconds": 0.339791083,
+            "text": "Olá, nessa aula eu vou te ensinar como fazer o próprio colágeno natural em casa e destacar os 5 maiores mitos das receitas que são divulgadas na internet ou nas redes sociais. Para isso, eu vou utilizar"
+          }
+        ],
+        "text": "Olá, nessa aula eu vou te ensinar como fazer o próprio colágeno natural em casa e destacar os 5 maiores mitos das receitas que são divulgadas na internet ou nas redes sociais. Para isso, eu vou utilizar",
+        "word_edits": 0
+      }
+    ],
+    "parent_received_seconds": 1.13224487498519,
+    "word_edits": 0,
+    "wer": 0.0
+  },
+  "process_two_pass_wall_seconds": 1.1621132919972297,
+  "process_resources": {
+    "wall_clock_s": 1.15,
+    "user_cpu_s": 3.12,
+    "system_cpu_s": 0.54,
+    "max_rss_mb": 1927.8125
+  },
+  "protocol": "asr-v2",
+  "case": "pt-15s",
+  "engine": "onnx",
+  "device": "cpu",
+  "repetition": 1,
+  "audio_seconds": 15.0,
+  "reference_words": 37,
+  "manifest_sha256": "3b2b64d39a1d7daff3b60c602b2cdf2506078bf597c5719d8880cbf0f4c16a75"
+}

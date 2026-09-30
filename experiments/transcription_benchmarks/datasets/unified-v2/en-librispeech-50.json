@@ -1,0 +1,712 @@
+{
+  "protocol": "asr-v2",
+  "case": "en-librispeech-50",
+  "language": "en",
+  "reference_type": "LibriSpeech human dataset references",
+  "normalization": "lowercase; remove Unicode punctuation; preserve accents and numerals; collapse whitespace",
+  "partition": "Contiguous PCM; choose lowest 200 ms energy boundary between 25–30 s; final remainder <=31 s; no overlap, no dropped samples; identical parts for all engines.",
+  "reference_words": 789,
+  "audio_seconds": 232.005,
+  "utterances": [
+    {
+      "id": "2277-149896-0000",
+      "text": "HE WAS IN A FEVERED STATE OF MIND OWING TO THE BLIGHT HIS WIFE'S ACTION THREATENED TO CAST UPON HIS ENTIRE FUTURE",
+      "audio_seconds": 6.59,
+      "source_wav_sha256": "edf01562668e4ca4ee0db5fbe84771a97093e03e6c5602779f0d747fc35d228b",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149896-0000/000.wav",
+          "start_sample": 0,
+          "end_sample": 105440,
+          "sha256": "20e10e583b4918e05cea91316f7bde65a345d2756e64abc7f7ee133e2a0547f5"
+        }
+      ]
+    },
+    {
+      "id": "2277-149896-0001",
+      "text": "HE WOULD HAVE TO PAY HER THE MONEY WHICH SHE WOULD NOW REGULARLY DEMAND OR THERE WOULD BE TROUBLE IT DID NOT MATTER WHAT HE DID",
+      "audio_seconds": 7.145,
+      "source_wav_sha256": "eca11f1856d5f9b7c8f24f69185e276386ba10f2fb59683df9b54abfda8ce338",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149896-0001/000.wav",
+          "start_sample": 0,
+          "end_sample": 114320,
+          "sha256": "2015beb0e883fac46113c4295bf26852dd4edf4db4f03992f7786162dacfbccf"
+        }
+      ]
+    },
+    {
+      "id": "2277-149896-0002",
+      "text": "HURSTWOOD WALKED THE FLOOR MENTALLY ARRANGING THE CHIEF POINTS OF HIS SITUATION",
+      "audio_seconds": 4.835,
+      "source_wav_sha256": "7a1c9fbd93d5d5acc99932dbe743e95009214daa48651f8e8eb0bc864029b0e4",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149896-0002/000.wav",
+          "start_sample": 0,
+          "end_sample": 77360,
+          "sha256": "3e79d139f899ba281721ce9ed9a716c9c4b6491e7d88f45dad849ee74c7e0a29"
+        }
+      ]
+    },
+    {
+      "id": "2277-149896-0003",
+      "text": "HE ALSO THOUGHT OF HIS MANAGERIAL POSITION",
+      "audio_seconds": 2.84,
+      "source_wav_sha256": "b26df78de7e2761d52dfbbb0116662856b97329145aa09cf95e47229b4372de6",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149896-0003/000.wav",
+          "start_sample": 0,
+          "end_sample": 45440,
+          "sha256": "08743768593471a329e747aa8a301f215747c140d15c0a7438b56e4b90ecc7e8"
+        }
+      ]
+    },
+    {
+      "id": "2277-149896-0004",
+      "text": "HOW WOULD THE PAPERS TALK ABOUT IT",
+      "audio_seconds": 1.955,
+      "source_wav_sha256": "1bc8f880c7db0491719ea20befdaf410309005185af3462c8c8b40c2046b3130",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149896-0004/000.wav",
+          "start_sample": 0,
+          "end_sample": 31280,
+          "sha256": "32cba910e144ceba8155d8d82a591f20c307446708bf617a4fdfe4c3db98c6f0"
+        }
+      ]
+    },
+    {
+      "id": "2277-149896-0005",
+      "text": "MANY LITTLE WRINKLES GATHERED BETWEEN HIS EYES AS HE CONTEMPLATED THIS AND HIS BROW MOISTENED",
+      "audio_seconds": 5.6,
+      "source_wav_sha256": "ff51d3f7cb20114c7972f7e9fe4ec6bf0d9d5d7cdef7d356bb6cf240d8c78da5",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149896-0005/000.wav",
+          "start_sample": 0,
+          "end_sample": 89600,
+          "sha256": "47e0e8e77a762f5c2216157b3b3846cc99b56f08164249f2064bb68e35ad214a"
+        }
+      ]
+    },
+    {
+      "id": "2277-149896-0006",
+      "text": "HE COULD ARRANGE THAT SATISFACTORILY FOR CARRIE WOULD BE GLAD TO WAIT IF NECESSARY",
+      "audio_seconds": 4.97,
+      "source_wav_sha256": "dcf7cee900f4b5b075255eaba7fa4ec176b6c841791ad4531aeadfc7da2ad368",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149896-0006/000.wav",
+          "start_sample": 0,
+          "end_sample": 79520,
+          "sha256": "8392c120cc8267e70483867fff042e6c3eff389189af6e406815333fb14f4341"
+        }
+      ]
+    },
+    {
+      "id": "2277-149896-0007",
+      "text": "HE WOULD SEE HOW THINGS TURNED OUT TO MORROW AND THEN HE WOULD TALK TO HER THEY WERE GOING TO MEET AS USUAL",
+      "audio_seconds": 5.375,
+      "source_wav_sha256": "78c4b2226dc037cf313b9fda396d58c50cf911421737578080eb9fd7edde146a",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149896-0007/000.wav",
+          "start_sample": 0,
+          "end_sample": 86000,
+          "sha256": "218eb7bd8010a7f5c5511f004bbbd3563208282adc5c3e9dc80cbe8cc1db117c"
+        }
+      ]
+    },
+    {
+      "id": "2277-149896-0008",
+      "text": "FOR SOME REASON HE FELT AS IF SOMETHING MIGHT COME THAT WAY AND WAS RELIEVED WHEN ALL THE ENVELOPES HAD BEEN SCANNED AND NOTHING SUSPICIOUS NOTICED",
+      "audio_seconds": 6.94,
+      "source_wav_sha256": "01aa1c5f13f42cca9b72866026eca3d84160609cb676898e98bc2bc986a6107b",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149896-0008/000.wav",
+          "start_sample": 0,
+          "end_sample": 111040,
+          "sha256": "d30daf95ae2d05287ba9dfaf752731c7567f52e71330a0ecc0989b906b7fce88"
+        }
+      ]
+    },
+    {
+      "id": "2277-149896-0009",
+      "text": "WHILE THE DANGER HAD NOT LESSENED IT HAD NOT AS YET MATERIALISED AND WITH HIM NO NEWS WAS GOOD NEWS",
+      "audio_seconds": 5.815,
+      "source_wav_sha256": "fd1e9e5ea9c49974ca1e5d8d6c697f0d8826822c58b0c48a02d74911b4106c83",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149896-0009/000.wav",
+          "start_sample": 0,
+          "end_sample": 93040,
+          "sha256": "ef711c9cd4c6d53e27ec84eea9d52140f62da697618844f05be186e9c7908779"
+        }
+      ]
+    },
+    {
+      "id": "2277-149896-0010",
+      "text": "SO LITTLE DID HE CONSIDER DROUET THAT IT NEVER ONCE OCCURRED TO HIM TO WORRY ABOUT HIS FINDING OUT",
+      "audio_seconds": 5.275,
+      "source_wav_sha256": "6bb289728541427c3e035b2be4bca9651e6d0ead8021910df801d5d4f8ff166d",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149896-0010/000.wav",
+          "start_sample": 0,
+          "end_sample": 84400,
+          "sha256": "2a6388792108d0c325cc517858c1cd83ec0be423ef75fee9bf282c77b4e81b6f"
+        }
+      ]
+    },
+    {
+      "id": "2277-149896-0011",
+      "text": "HE GREW RESTLESS AS HE RUMINATED AND THEN DECIDED THAT PERHAPS IT WAS NOTHING",
+      "audio_seconds": 4.465,
+      "source_wav_sha256": "665ba5d979b96ee56d14d8bc5e2c635cdc02151a6f9a2494657908f562138457",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149896-0011/000.wav",
+          "start_sample": 0,
+          "end_sample": 71440,
+          "sha256": "c02185f805231ac9be3f65a053c57559190811b67df88ce71a21ab4200645532"
+        }
+      ]
+    },
+    {
+      "id": "2277-149896-0012",
+      "text": "SHE HAD NOT BEEN ABLE TO GET AWAY THIS MORNING",
+      "audio_seconds": 2.495,
+      "source_wav_sha256": "569a2a1b0db5a9361666cff1bd887f0d78ed00707707bd08541c14b80d6838db",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149896-0012/000.wav",
+          "start_sample": 0,
+          "end_sample": 39920,
+          "sha256": "112f35ff9a302231e3849d65161baac1d5999b1e91e6b9886ff4a2deb9738b4c"
+        }
+      ]
+    },
+    {
+      "id": "2277-149896-0013",
+      "text": "HE WOULD GET ONE TO DAY IT WOULD PROBABLY BE ON HIS DESK WHEN HE GOT BACK HE WOULD LOOK FOR IT AT ONCE",
+      "audio_seconds": 6.09,
+      "source_wav_sha256": "63cbcdfffae7adb26d4934e11310654bb6a5d66adb23103f4828bb996c51cca4",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149896-0013/000.wav",
+          "start_sample": 0,
+          "end_sample": 97440,
+          "sha256": "1ca263a1e66bd08497824ed8afd168e87cf7cf93de17602cc3b183b1034d2ad6"
+        }
+      ]
+    },
+    {
+      "id": "2277-149896-0014",
+      "text": "AFTER A TIME HE GAVE UP WAITING AND DREARILY HEADED FOR THE MADISON CAR",
+      "audio_seconds": 4.07,
+      "source_wav_sha256": "2617d226aff07c5b69931a16eb3a4835c710414494a57f807a873e83e652bfd5",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149896-0014/000.wav",
+          "start_sample": 0,
+          "end_sample": 65120,
+          "sha256": "444084d4bc112178076aa3e14aed1a016c39a4ea042013d95c262a2e560ecf79"
+        }
+      ]
+    },
+    {
+      "id": "2277-149896-0015",
+      "text": "HE WENT IN AND EXAMINED HIS LETTERS BUT THERE WAS NOTHING FROM CARRIE",
+      "audio_seconds": 3.675,
+      "source_wav_sha256": "dbaa579fdca072d43e2a1b23c59f3995c4bbae192e59c4921dce8d70baaabb1f",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149896-0015/000.wav",
+          "start_sample": 0,
+          "end_sample": 58800,
+          "sha256": "156e0129ea77d6ed77d9080f909b5fbc550420c6b934de2fa82161b072620f70"
+        }
+      ]
+    },
+    {
+      "id": "2277-149896-0016",
+      "text": "FORTUNATELY THERE WAS NOTHING FROM HIS WIFE EITHER",
+      "audio_seconds": 2.785,
+      "source_wav_sha256": "9978f96e2c647ce4501f93344f2b116a6d5010159404bfe7962a924cdbecbd3b",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149896-0016/000.wav",
+          "start_sample": 0,
+          "end_sample": 44560,
+          "sha256": "f2a3c42abc0cba7314ad9fde398de26aa131da20042af51b1ae890702ed010d2"
+        }
+      ]
+    },
+    {
+      "id": "2277-149896-0017",
+      "text": "AT ONE THIRTY HE WENT TO RECTOR'S FOR LUNCH AND WHEN HE RETURNED A MESSENGER WAS WAITING FOR HIM",
+      "audio_seconds": 4.985,
+      "source_wav_sha256": "3808558a28e07d3ed2d92269a5a9a3a6428d14ffc76e95ee86b37c7bf67f1470",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149896-0017/000.wav",
+          "start_sample": 0,
+          "end_sample": 79760,
+          "sha256": "e25779df29d75a2413e70429f611486f8e3e1fd15f3c8cf367c70a13d6b0b9c9"
+        }
+      ]
+    },
+    {
+      "id": "2277-149896-0018",
+      "text": "HIS FIRST IMPULSE WAS TO WRITE BUT FOUR WORDS IN REPLY GO TO THE DEVIL",
+      "audio_seconds": 4.545,
+      "source_wav_sha256": "94059fe42899e781b38558f697370ed716c8863e1172077b97aac0f99f1871ab",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149896-0018/000.wav",
+          "start_sample": 0,
+          "end_sample": 72720,
+          "sha256": "4560d5a147585aa1ffb879e2a320b0d18392ae8aeb9eb7f58a4396661f17fcdc"
+        }
+      ]
+    },
+    {
+      "id": "2277-149896-0019",
+      "text": "BUT HE COMPROMISED BY TELLING THE BOY THAT THERE WOULD BE NO REPLY",
+      "audio_seconds": 3.56,
+      "source_wav_sha256": "26e0b5bf9d5a58f319fb5a10f05c10f7acbc2ccaf617bbf038e13a20705c208c",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149896-0019/000.wav",
+          "start_sample": 0,
+          "end_sample": 56960,
+          "sha256": "28fb0714972242de713fc07482ef0387d484fa29328313a477ecc6126fe2819d"
+        }
+      ]
+    },
+    {
+      "id": "2277-149896-0020",
+      "text": "THEN HE SAT DOWN IN HIS CHAIR AND GAZED WITHOUT SEEING CONTEMPLATING THE RESULT OF HIS WORK",
+      "audio_seconds": 5.285,
+      "source_wav_sha256": "cc0261e292b1e432c83555a83b74c5c2576c503ab684434804494969fbdea769",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149896-0020/000.wav",
+          "start_sample": 0,
+          "end_sample": 84560,
+          "sha256": "85981dbeff50652de0ea5f416ff78f7058d679fba876c7768ec203cca5550cfd"
+        }
+      ]
+    },
+    {
+      "id": "2277-149896-0021",
+      "text": "WHAT WOULD SHE DO ABOUT THAT THE CONFOUNDED WRETCH",
+      "audio_seconds": 3.37,
+      "source_wav_sha256": "04f68209dc1bded9de438da704062fa6627742d1d75cdcd1b0c0d2f61eecb0ea",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149896-0021/000.wav",
+          "start_sample": 0,
+          "end_sample": 53920,
+          "sha256": "cb65f1b87f3fd6d4cc48629ebb080bd2c017a25d2aa7ee8bf77090abe5b3008b"
+        }
+      ]
+    },
+    {
+      "id": "2277-149896-0022",
+      "text": "LATER HOWEVER HIS OLD DISCRETION ASSERTED ITSELF",
+      "audio_seconds": 3.38,
+      "source_wav_sha256": "1a9273cd80f1287e96496a988320d81d95d305e29975e484e9fe1f2ac24f2290",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149896-0022/000.wav",
+          "start_sample": 0,
+          "end_sample": 54080,
+          "sha256": "79f21825d8f7bfcf78e8f25cf9ecf0e4ac907eb3d1012fca3b3a1ff8535613a3"
+        }
+      ]
+    },
+    {
+      "id": "2277-149896-0023",
+      "text": "SOMETHING HAD TO BE DONE A CLIMAX WAS NEAR AND SHE WOULD NOT SIT IDLE",
+      "audio_seconds": 3.89,
+      "source_wav_sha256": "53c1a35e7d07fc78d87a068d7c3516ba3da3808c8c43e8b5bd6d7b451f82ab4d",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149896-0023/000.wav",
+          "start_sample": 0,
+          "end_sample": 62240,
+          "sha256": "7d36fca0768e7f1761dd29070f26ffee350bbb4e33aa86a784c1b808f48a7522"
+        }
+      ]
+    },
+    {
+      "id": "2277-149896-0024",
+      "text": "HE KNEW HER WELL ENOUGH TO KNOW THAT WHEN SHE HAD DECIDED UPON A PLAN SHE WOULD FOLLOW IT UP",
+      "audio_seconds": 4.5,
+      "source_wav_sha256": "d602c2600bb48db9d75f707606831dd84b590e260d8ea55c013f8dc615996ef8",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149896-0024/000.wav",
+          "start_sample": 0,
+          "end_sample": 72000,
+          "sha256": "b10622d1e2fb0a1281e89e23edec8150ee7abed93818e6e4310e18ad89ab3e5b"
+        }
+      ]
+    },
+    {
+      "id": "2277-149896-0025",
+      "text": "HE AROSE FROM HIS CHAIR AND WENT AND LOOKED OUT INTO THE STREET",
+      "audio_seconds": 3.4,
+      "source_wav_sha256": "70fa56bdfb47a590e32f4fdde37dc4ead43a72eecb8c2fd7b0ecbff497633064",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149896-0025/000.wav",
+          "start_sample": 0,
+          "end_sample": 54400,
+          "sha256": "2f8d11f6f9b4c4548cd83d5ff3824f64663bb1f4755699e63463ac1d625a9127"
+        }
+      ]
+    },
+    {
+      "id": "2277-149896-0026",
+      "text": "THE LONG DRIZZLE HAD BEGUN PEDESTRIANS HAD TURNED UP COLLARS AND TROUSERS AT THE BOTTOM",
+      "audio_seconds": 4.92,
+      "source_wav_sha256": "8231f9ec1b79bef07f3f2bbd5548c7ab8fff79a1e0bb774eab08507104be2381",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149896-0026/000.wav",
+          "start_sample": 0,
+          "end_sample": 78720,
+          "sha256": "662d77f12266740ea1ff9105eabbf6b910e04e1fa97ebcb0b92d0604d7bbe253"
+        }
+      ]
+    },
+    {
+      "id": "2277-149896-0027",
+      "text": "HURSTWOOD ALMOST EXCLAIMED OUT LOUD AT THE INSISTENCY OF THIS THING",
+      "audio_seconds": 3.595,
+      "source_wav_sha256": "ec390eb3d274d2629a7c178fb23582540974e5668931bcaf79132f60221d3d1e",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149896-0027/000.wav",
+          "start_sample": 0,
+          "end_sample": 57520,
+          "sha256": "a6e5accbca495e6834856257559bb68b443324a5eb857d3767e276278baf196b"
+        }
+      ]
+    },
+    {
+      "id": "2277-149896-0028",
+      "text": "HE PUT ON HIS HAT AND LOOKED AROUND FOR HIS UMBRELLA",
+      "audio_seconds": 2.9,
+      "source_wav_sha256": "e1dd96cf06c5ece651193a0d307f490b761f8445a22b9f1775087db54c91f023",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149896-0028/000.wav",
+          "start_sample": 0,
+          "end_sample": 46400,
+          "sha256": "1a38ae4a1f330cb77d9f939a3821c6b4b4242f5f64dce5eb58d4b467c4977262"
+        }
+      ]
+    },
+    {
+      "id": "2277-149896-0029",
+      "text": "HE WOULD HAVE SOME ARRANGEMENT OF THIS THING",
+      "audio_seconds": 2.6,
+      "source_wav_sha256": "48a331a8c85c96e0975f0613c62e36c6cccb5504eda41bec5bbe3fd87d9c3280",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149896-0029/000.wav",
+          "start_sample": 0,
+          "end_sample": 41600,
+          "sha256": "30f42526bee023f0aad41830715bd921f0431f4fdcbf0c0c9aeeec68cd77b2b3"
+        }
+      ]
+    },
+    {
+      "id": "2277-149896-0030",
+      "text": "HE BEGAN TO WISH THAT HE HAD COMPROMISED IN SOME WAY OR OTHER THAT HE HAD SENT THE MONEY PERHAPS HE COULD DO IT UP HERE",
+      "audio_seconds": 6.3,
+      "source_wav_sha256": "686c27dae89575484f7289cd674c66d858e50dd2f7cd9bbadd719abc9fb10788",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149896-0030/000.wav",
+          "start_sample": 0,
+          "end_sample": 100800,
+          "sha256": "1fabe3e74945d9babaf592c826d750da3797268ebb88712ded391878f567b6b8"
+        }
+      ]
+    },
+    {
+      "id": "2277-149896-0031",
+      "text": "HE WOULD GO IN AND SEE ANYHOW HE WOULD HAVE NO ROW",
+      "audio_seconds": 3.61,
+      "source_wav_sha256": "91d7977caab547be7185193177d661745386fdef3ad979fe5d7ce1fb32d8b97d",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149896-0031/000.wav",
+          "start_sample": 0,
+          "end_sample": 57760,
+          "sha256": "f4ff533564208e16a6548fcad0df62d2f6e3bd00762af631c9189aa8d9ad3ce0"
+        }
+      ]
+    },
+    {
+      "id": "2277-149896-0032",
+      "text": "BY THE TIME HE REACHED HIS OWN STREET HE WAS KEENLY ALIVE TO THE DIFFICULTIES OF HIS SITUATION AND WISHED OVER AND OVER THAT SOME SOLUTION WOULD OFFER ITSELF THAT HE COULD SEE HIS WAY OUT",
+      "audio_seconds": 10.77,
+      "source_wav_sha256": "3ea2eeb7c87d463328fb1fc5c55306e003061526d7e9fb783e328e0bd25ce04c",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149896-0032/000.wav",
+          "start_sample": 0,
+          "end_sample": 172320,
+          "sha256": "fd1ef8864b5fdf0f75cc7d33ec93266709843447183f5883e98dda8686110821"
+        }
+      ]
+    },
+    {
+      "id": "2277-149896-0033",
+      "text": "THEN HE RANG THE BELL NO ANSWER",
+      "audio_seconds": 2.845,
+      "source_wav_sha256": "ef4d0aa05abc4ba4f4b3ec98a21dec99da7a3cf1c37e4c1c6c40401eb7d57c2a",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149896-0033/000.wav",
+          "start_sample": 0,
+          "end_sample": 45520,
+          "sha256": "daab1fe8a2ae184eb83dc21982fba7e0c535c205304f39098f5ef39595d5b94b"
+        }
+      ]
+    },
+    {
+      "id": "2277-149896-0034",
+      "text": "HE RANG AGAIN THIS TIME HARDER STILL NO ANSWER",
+      "audio_seconds": 4.005,
+      "source_wav_sha256": "f0d5365e941c05f01754dcd5f370446c759b02e04287454ef133530283dfa370",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149896-0034/000.wav",
+          "start_sample": 0,
+          "end_sample": 64080,
+          "sha256": "8c89d56631d5460963f47dbf22045e9366611a7eb17e1f837d1f0d6c661ff13f"
+        }
+      ]
+    },
+    {
+      "id": "2277-149897-0000",
+      "text": "WHEN HURSTWOOD GOT BACK TO HIS OFFICE AGAIN HE WAS IN A GREATER QUANDARY THAN EVER",
+      "audio_seconds": 4.395,
+      "source_wav_sha256": "88fa1abe4a294c611fe05cc8f008391af582ac91a949d3eeb081506e4ecd05fc",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149897-0000/000.wav",
+          "start_sample": 0,
+          "end_sample": 70320,
+          "sha256": "b968dd34cecd67f274e2656b1d456d172677c5b6d5dee97cce9d926b465f195a"
+        }
+      ]
+    },
+    {
+      "id": "2277-149897-0001",
+      "text": "HE COULD HARDLY REALISE HOW IT HAD ALL COME ABOUT",
+      "audio_seconds": 2.755,
+      "source_wav_sha256": "a36e2091ec9953677c462dc5f8527befb7fb0d03dc38e70e884bed8215daac36",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149897-0001/000.wav",
+          "start_sample": 0,
+          "end_sample": 44080,
+          "sha256": "a447be02c9f7d9a270e686a111c381e6e7d65715474e0c47840c4011e2939ead"
+        }
+      ]
+    },
+    {
+      "id": "2277-149897-0002",
+      "text": "NO LETTER HAD COME NO WORD OF ANY KIND AND YET HERE IT WAS LATE IN THE EVENING AND SHE HAD AGREED TO MEET HIM THAT MORNING",
+      "audio_seconds": 6.54,
+      "source_wav_sha256": "e720a215d0a4a849bf0cfa2a2feefc22fc392e45e8052b3a4c2bba1bfda5d9a5",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149897-0002/000.wav",
+          "start_sample": 0,
+          "end_sample": 104640,
+          "sha256": "8a65accdb4015c8003c654f27c278bef4f71768af509544af3169a2d03efd813"
+        }
+      ]
+    },
+    {
+      "id": "2277-149897-0003",
+      "text": "HE SAW THAT IN THE EXCITEMENT OF RECENT EVENTS HE HAD NOT FORMULATED A PLAN UPON THAT SCORE",
+      "audio_seconds": 4.84,
+      "source_wav_sha256": "1b83651a0d70a81d9abdd404c4a7f5652acda7077cf01f4ce7fdda9c83941896",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149897-0003/000.wav",
+          "start_sample": 0,
+          "end_sample": 77440,
+          "sha256": "e6c665f57c69f4e52c5bfd2c400e7ce3bff7287fbc5f30fe75f438b6304911df"
+        }
+      ]
+    },
+    {
+      "id": "2277-149897-0004",
+      "text": "HE WAS GETTING SOME VAGUE COMFORT OUT OF A GOOD CIGAR BUT IT WAS NO PANACEA FOR THE ILL WHICH AFFECTED HIM",
+      "audio_seconds": 5.735,
+      "source_wav_sha256": "a56e9bd0a01dad0f86ffa694ce04a91c09cfbde312101b958ae88e2f4f3bcbd1",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149897-0004/000.wav",
+          "start_sample": 0,
+          "end_sample": 91760,
+          "sha256": "69ab82717925d9a69195519aa787a83340b7d672ee71a34c4f2754faee0c841b"
+        }
+      ]
+    },
+    {
+      "id": "2277-149897-0005",
+      "text": "IT WAS WITH GREAT OPPOSITION AFTER TWO OR THREE HOURS OF THE MOST URGENT MENTAL AFFIRMATION AND DENIAL THAT AT LAST HE GOT AN ENVELOPE PLACED IN IT THE REQUESTED AMOUNT AND SLOWLY SEALED IT UP",
+      "audio_seconds": 11.465,
+      "source_wav_sha256": "37770ec0bd844ea75b3a67b3a812b743ab37271043b98d9940cfd340f0365333",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149897-0005/000.wav",
+          "start_sample": 0,
+          "end_sample": 183440,
+          "sha256": "b43e888092696da9cf2856d0d5f1c146938b96765d52d11ddf7cd247046392f1"
+        }
+      ]
+    },
+    {
+      "id": "2277-149897-0006",
+      "text": "THEN HE CALLED HARRY THE BOY OF ALL WORK AROUND THE PLACE",
+      "audio_seconds": 3.385,
+      "source_wav_sha256": "5d52efb44fbc330a67ebbb3f19832bf3cfbedcada7c6e1221e85e96b4c5bbde1",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149897-0006/000.wav",
+          "start_sample": 0,
+          "end_sample": 54160,
+          "sha256": "9f84dc1f8d76f49de1bb0527609126e82ee904c97fca8050a82b7ac57608bb3e"
+        }
+      ]
+    },
+    {
+      "id": "2277-149897-0007",
+      "text": "YOU TAKE THIS TO THIS ADDRESS HE SAID HANDING HIM THE ENVELOPE AND GIVE IT TO MISSUS HURSTWOOD YES SIR SAID THE BOY",
+      "audio_seconds": 7.855,
+      "source_wav_sha256": "35012b8d2cadb74031218065868e37b622759ee52dff0bef063eb273bf6d9e34",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149897-0007/000.wav",
+          "start_sample": 0,
+          "end_sample": 125680,
+          "sha256": "a0f4ce7fc87c059762daedb43420a9763dd992949271666cca1eff2240dabcc3"
+        }
+      ]
+    },
+    {
+      "id": "2277-149897-0008",
+      "text": "ANY ANSWER I GUESS NOT",
+      "audio_seconds": 2.88,
+      "source_wav_sha256": "b4e7a57bf87a431d674d80c734444e60652e142e98c16256bfd80a359c415501",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149897-0008/000.wav",
+          "start_sample": 0,
+          "end_sample": 46080,
+          "sha256": "354d25cdf602b1ec124108eaaec46330837aa429f111748a02c9c035a0a78080"
+        }
+      ]
+    },
+    {
+      "id": "2277-149897-0009",
+      "text": "THE BOY HASTENED AWAY AND THE MANAGER FELL TO HIS MUSINGS",
+      "audio_seconds": 3.725,
+      "source_wav_sha256": "4c92e7d09dfc78907c6c37f8ab8fcf3208dc18481cb10392d50f2896b1affc5b",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149897-0009/000.wav",
+          "start_sample": 0,
+          "end_sample": 59600,
+          "sha256": "bd1782e754e78be1e4dd2f733ad986a39af3b427d673c87a380d7f2d81c3cf83"
+        }
+      ]
+    },
+    {
+      "id": "2277-149897-0010",
+      "text": "HE WAS BEATEN FOR TO NIGHT AND HE MIGHT JUST AS WELL MAKE THE BEST OF IT",
+      "audio_seconds": 3.625,
+      "source_wav_sha256": "73f0da643545969e3e32cc0f38d0be15e7fe041b07e790bc06c53cc9e04f7952",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149897-0010/000.wav",
+          "start_sample": 0,
+          "end_sample": 58000,
+          "sha256": "74d7f744bea28e7a75c7f0e64c3a24dbf7ec6e65906f2989f3802e8df551f269"
+        }
+      ]
+    },
+    {
+      "id": "2277-149897-0011",
+      "text": "SHE WOULD TAKE THE ENVELOPE AND KNOW THAT SHE HAD TRIUMPHED",
+      "audio_seconds": 3.3,
+      "source_wav_sha256": "7afe61e35b4fefb3527e2b5393561afde36abcff20fb4da541646d2f3fd25fbe",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149897-0011/000.wav",
+          "start_sample": 0,
+          "end_sample": 52800,
+          "sha256": "6a4a4ea1d0bfbe58603ef938fff0f16ab3eec14789e48d7f51c639276cea55db"
+        }
+      ]
+    },
+    {
+      "id": "2277-149897-0012",
+      "text": "IF HE ONLY HAD THAT LETTER BACK HE WOULDN'T SEND IT",
+      "audio_seconds": 3.09,
+      "source_wav_sha256": "0025b6c09b4c14f4d16bf7ab8ef6f2dbdcfa8fdb1c568a8af35bef9ac5fd9f9a",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149897-0012/000.wav",
+          "start_sample": 0,
+          "end_sample": 49440,
+          "sha256": "b1f9f42a9a4d4525ec0c9499cfaec18ce390ce0274c305714282854d0979f29b"
+        }
+      ]
+    },
+    {
+      "id": "2277-149897-0013",
+      "text": "FOR RELIEF HE AROSE AND JOINED IN CONVERSATION WITH A FEW FRIENDS WHO WERE DRINKING",
+      "audio_seconds": 4.415,
+      "source_wav_sha256": "34584adb41e725a9bd195a7e7f17adf35c5ddeb86d4234529e208dd1b5d7276f",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149897-0013/000.wav",
+          "start_sample": 0,
+          "end_sample": 70640,
+          "sha256": "06e28980f95c543d5f1431095ff4c0661e338e2ab163b43f60d5ac61b45c0c2b"
+        }
+      ]
+    },
+    {
+      "id": "2277-149897-0014",
+      "text": "ALL THE TIME HIS THOUGHTS WOULD RUN OUT TO HIS HOME AND SEE THE SCENE BEING THEREIN ENACTED",
+      "audio_seconds": 4.62,
+      "source_wav_sha256": "4903a4bd89ceec4346ee2961d54b22ace2d785c7b22653ffda020782a524f721",
+      "parts": [
+        {
+          "path": "audio/en-librispeech-50/2277-149897-0014/000.wav",
+          "start_sample": 0,
+          "end_sample": 73920,
+          "sha256": "99367b66ba173d15751288b2f16151ea1349cb9b076d99118de8190df2d72380"
+        }
+      ]
+    }
+  ]
+}

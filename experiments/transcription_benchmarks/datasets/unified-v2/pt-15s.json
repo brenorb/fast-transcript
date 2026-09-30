@@ -1,0 +1,26 @@
+{
+  "protocol": "asr-v2",
+  "case": "pt-15s",
+  "language": "pt",
+  "reference_type": "original human reference",
+  "normalization": "lowercase; remove Unicode punctuation; preserve accents and numerals; collapse whitespace",
+  "partition": "Contiguous PCM; choose lowest 200 ms energy boundary between 25–30 s; final remainder <=31 s; no overlap, no dropped samples; identical parts for all engines.",
+  "reference_words": 37,
+  "audio_seconds": 15.0,
+  "utterances": [
+    {
+      "id": "pt-15s",
+      "text": "Olá, nessa aula eu vou te ensinar como fazer o próprio colágeno natural em casa e destacar os 5 maiores mitos das receitas que são divulgadas na internet ou nas redes sociais. Para isso eu vou utilizar",
+      "audio_seconds": 15.0,
+      "source_wav_sha256": "1c60dacdd6d4e9d430e5f0e93e9e5d0f3eb20611ce2535588897e9db3bdfef95",
+      "parts": [
+        {
+          "path": "audio/pt-15s/pt-15s/000.wav",
+          "start_sample": 0,
+          "end_sample": 240000,
+          "sha256": "ddd0300728b83a89026e9deaa3abe177b34da1fcfbdd5600b026842660518d8e"
+        }
+      ]
+    }
+  ]
+}
