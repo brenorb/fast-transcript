@@ -213,30 +213,29 @@ fn extract_model_package(model_dir: &Path, package_path: &Path) -> Result<()> {
     fs::create_dir_all(destination_root)
         .with_context(|| format!("failed to create {}", destination_root.display()))?;
 
+    let staging_dir = tempfile::tempdir_in(destination_root).with_context(|| {
+        format!(
+            "failed to create a staging directory in {}",
+            destination_root.display()
+        )
+    })?;
     eprintln!(
-        "extracting {} into {}",
-        package_path.display(),
-        destination_root.display()
+        "extracting {} into temporary model staging directory",
+        package_path.display()
     );
     let archive_file = File::open(package_path)
         .with_context(|| format!("failed to open {}", package_path.display()))?;
     let decoder = GzDecoder::new(archive_file);
     let mut archive = Archive::new(decoder);
     archive
-        .unpack(destination_root)
+        .unpack(staging_dir.path())
         .with_context(|| format!("failed to unpack {}", package_path.display()))?;
-    remove_appledouble_files(destination_root)?;
+    remove_appledouble_files(staging_dir.path())?;
 
-    let extracted_default_dir = destination_root.join(crate::DEFAULT_MODEL_BASENAME);
-    if extracted_default_dir != model_dir && has_required_model_files(&extracted_default_dir) {
+    let extracted_default_dir = staging_dir.path().join(crate::DEFAULT_MODEL_BASENAME);
+    if has_required_model_files(&extracted_default_dir) {
         if model_dir.exists() {
             install_required_model_files(&extracted_default_dir, model_dir)?;
-            fs::remove_dir_all(&extracted_default_dir).with_context(|| {
-                format!(
-                    "failed to clean extracted model dir {}",
-                    extracted_default_dir.display()
-                )
-            })?;
         } else {
             fs::rename(&extracted_default_dir, model_dir).with_context(|| {
                 format!(
@@ -387,5 +386,41 @@ mod tests {
             assert_eq!(contents, format!("fresh:{file_name}"));
         }
         assert!(!dir.path().join(crate::DEFAULT_MODEL_BASENAME).exists());
+    }
+
+    #[test]
+    fn ensuring_selected_bundle_preserves_other_model_directories() {
+        let dir = tempdir().unwrap();
+        let models = dir.path().join("models");
+        let default_model = models.join(crate::DEFAULT_MODEL_BASENAME);
+        let selected_model = models.join("parakeet-fr");
+        let package_path = dir.path().join("cache").join("selected.tar.gz");
+        fs::create_dir_all(&default_model).unwrap();
+        for file_name in crate::REQUIRED_MODEL_FILES {
+            fs::write(
+                default_model.join(file_name),
+                format!("default:{file_name}"),
+            )
+            .unwrap();
+        }
+        write_model_package(&package_path, "selected");
+
+        ensure_model_dir(
+            &selected_model,
+            &package_path,
+            "https://example.test/selected.tar.gz",
+        )
+        .unwrap();
+
+        for file_name in crate::REQUIRED_MODEL_FILES {
+            assert_eq!(
+                fs::read_to_string(default_model.join(file_name)).unwrap(),
+                format!("default:{file_name}")
+            );
+            assert_eq!(
+                fs::read_to_string(selected_model.join(file_name)).unwrap(),
+                format!("selected:{file_name}")
+            );
+        }
     }
 }
