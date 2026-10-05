@@ -1,5 +1,4 @@
 use anyhow::{bail, Context, Result};
-use directories::ProjectDirs;
 use std::env;
 use std::path::PathBuf;
 
@@ -7,9 +6,8 @@ use crate::diarization::{
     fluidaudio_binary_status, missing_diarization_notice, DiarizationBackend, DiarizationRequest,
     FluidaudioBinaryStatus,
 };
-use crate::types::{
-    CliArgs, ModelConfig, OutputFormat, SpeakersFormat, SubtitleFormat, TextFormat,
-};
+use crate::model::{default_model_dir, default_model_package, ModelConfig};
+use crate::types::{CliArgs, OutputFormat, SpeakersFormat, SubtitleFormat, TextFormat};
 
 const DEFAULT_LSEEND_THRESHOLD: f64 = 0.3;
 
@@ -146,84 +144,6 @@ pub(crate) fn usage() -> String {
 
 pub(crate) fn version_string() -> String {
     format!("fscript {}", env!("CARGO_PKG_VERSION"))
-}
-
-fn default_app_data_dir() -> PathBuf {
-    if let Some(project_dirs) = ProjectDirs::from("", "", "fast-transcript") {
-        return project_dirs.data_local_dir().to_path_buf();
-    }
-
-    env::var_os("HOME")
-        .map(PathBuf::from)
-        .map(|home| home.join(".local").join("share").join("fast-transcript"))
-        .unwrap_or_else(|| PathBuf::from(crate::DEFAULT_DATA_DIR_FALLBACK))
-}
-
-fn default_app_cache_dir() -> PathBuf {
-    if let Some(project_dirs) = ProjectDirs::from("", "", "fast-transcript") {
-        return project_dirs.cache_dir().to_path_buf();
-    }
-
-    env::var_os("HOME")
-        .map(PathBuf::from)
-        .map(|home| home.join(".cache").join("fast-transcript"))
-        .unwrap_or_else(|| PathBuf::from(crate::DEFAULT_CACHE_DIR_FALLBACK))
-}
-
-pub(crate) fn default_model_dir() -> PathBuf {
-    env::var_os("FSCRIPT_MODEL_DIR")
-        .map(PathBuf::from)
-        .unwrap_or_else(|| {
-            default_app_data_dir()
-                .join(crate::DEFAULT_MODEL_SUBDIR)
-                .join(crate::DEFAULT_MODEL_BASENAME)
-        })
-}
-
-pub(crate) fn default_model_package() -> PathBuf {
-    env::var_os("FSCRIPT_MODEL_PACKAGE")
-        .map(PathBuf::from)
-        .unwrap_or_else(|| default_app_cache_dir().join(crate::DEFAULT_MODEL_PACKAGE_NAME))
-}
-
-fn model_cache_paths(model_url: &str) -> (PathBuf, PathBuf) {
-    let location = model_url.split(['?', '#']).next().unwrap_or(model_url);
-    let filename = location.rsplit('/').next().unwrap_or_default();
-    let stem = filename
-        .strip_suffix(".tar.gz")
-        .or_else(|| filename.strip_suffix(".tgz"))
-        .unwrap_or(filename);
-    let slug = stem
-        .chars()
-        .filter_map(|character| {
-            if character.is_ascii_alphanumeric() {
-                Some(character.to_ascii_lowercase())
-            } else if character == '-' || character == '_' {
-                Some('-')
-            } else {
-                None
-            }
-        })
-        .take(48)
-        .collect::<String>();
-    let slug = if slug.is_empty() { "model" } else { &slug };
-    let hash = model_url
-        .bytes()
-        .fold(0xcbf29ce484222325_u64, |hash, byte| {
-            (hash ^ u64::from(byte)).wrapping_mul(0x100000001b3)
-        });
-    let model_id = format!("{slug}-{hash:016x}");
-
-    (
-        default_app_data_dir()
-            .join(crate::DEFAULT_MODEL_SUBDIR)
-            .join(&model_id),
-        default_app_cache_dir().join(format!("{model_id}.tar.gz")),
-    )
-}
-
-fn default_model_url() -> String {
-    env::var("FSCRIPT_MODEL_URL").unwrap_or_else(|_| crate::DEFAULT_MODEL_URL.to_string())
 }
 
 fn parse_diarization_model_value(value: &str) -> Result<DiarizationBackend> {
@@ -778,19 +698,12 @@ fn parse_args_with_diarization_status(
         (Some(requested_chunk_seconds), overlap)
     };
 
-    let model_url = model_url_override.unwrap_or_else(default_model_url);
-    let (model_directory, model_package) = if model_url == crate::DEFAULT_MODEL_URL {
-        (default_model_dir(), default_model_package())
-    } else {
-        model_cache_paths(&model_url)
-    };
-
     Ok(CliArgs {
-        model: ModelConfig {
-            directory: model_dir_override.unwrap_or(model_directory),
-            package: model_package_override.unwrap_or(model_package),
-            url: model_url,
-        },
+        model: ModelConfig::resolve(
+            model_url_override,
+            model_dir_override,
+            model_package_override,
+        ),
         input,
         output_path,
         output_to_stdout,
@@ -810,13 +723,11 @@ fn parse_args_with_diarization_status(
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        default_model_dir, default_model_package, parse_args,
-        parse_args_with_diarization_availability, usage, version_string,
-    };
+    use super::{parse_args, parse_args_with_diarization_availability, usage, version_string};
     use crate::diarization::{
         missing_diarization_notice, DiarizationBackend, DiarizationRequest, FluidaudioBinaryStatus,
     };
+    use crate::model::{default_model_dir, default_model_package};
     use crate::types::{OutputFormat, SpeakersFormat, SubtitleFormat, TextFormat};
     use std::path::Path;
     use std::path::PathBuf;

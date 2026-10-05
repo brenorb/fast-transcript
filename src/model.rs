@@ -1,12 +1,120 @@
 use anyhow::{bail, Context, Result};
+use directories::ProjectDirs;
 use flate2::read::GzDecoder;
 use reqwest::blocking::Client;
+use std::env;
 use std::fs;
 use std::fs::File;
 use std::io;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 use tar::Archive;
+
+#[derive(Debug)]
+pub(crate) struct ModelConfig {
+    pub(crate) directory: PathBuf,
+    pub(crate) package: PathBuf,
+    pub(crate) url: String,
+}
+
+impl ModelConfig {
+    pub(crate) fn resolve(
+        url: Option<String>,
+        directory: Option<PathBuf>,
+        package: Option<PathBuf>,
+    ) -> Self {
+        let url = url.unwrap_or_else(default_model_url);
+        let (default_directory, default_package) = if url == crate::DEFAULT_MODEL_URL {
+            (default_model_dir(), default_model_package())
+        } else {
+            model_cache_paths(&url)
+        };
+
+        Self {
+            directory: directory.unwrap_or(default_directory),
+            package: package.unwrap_or(default_package),
+            url,
+        }
+    }
+}
+
+fn default_app_data_dir() -> PathBuf {
+    if let Some(project_dirs) = ProjectDirs::from("", "", "fast-transcript") {
+        return project_dirs.data_local_dir().to_path_buf();
+    }
+
+    env::var_os("HOME")
+        .map(PathBuf::from)
+        .map(|home| home.join(".local").join("share").join("fast-transcript"))
+        .unwrap_or_else(|| PathBuf::from(crate::DEFAULT_DATA_DIR_FALLBACK))
+}
+
+fn default_app_cache_dir() -> PathBuf {
+    if let Some(project_dirs) = ProjectDirs::from("", "", "fast-transcript") {
+        return project_dirs.cache_dir().to_path_buf();
+    }
+
+    env::var_os("HOME")
+        .map(PathBuf::from)
+        .map(|home| home.join(".cache").join("fast-transcript"))
+        .unwrap_or_else(|| PathBuf::from(crate::DEFAULT_CACHE_DIR_FALLBACK))
+}
+
+pub(crate) fn default_model_dir() -> PathBuf {
+    env::var_os("FSCRIPT_MODEL_DIR")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| {
+            default_app_data_dir()
+                .join(crate::DEFAULT_MODEL_SUBDIR)
+                .join(crate::DEFAULT_MODEL_BASENAME)
+        })
+}
+
+pub(crate) fn default_model_package() -> PathBuf {
+    env::var_os("FSCRIPT_MODEL_PACKAGE")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| default_app_cache_dir().join(crate::DEFAULT_MODEL_PACKAGE_NAME))
+}
+
+fn model_cache_paths(model_url: &str) -> (PathBuf, PathBuf) {
+    let location = model_url.split(['?', '#']).next().unwrap_or(model_url);
+    let filename = location.rsplit('/').next().unwrap_or_default();
+    let stem = filename
+        .strip_suffix(".tar.gz")
+        .or_else(|| filename.strip_suffix(".tgz"))
+        .unwrap_or(filename);
+    let slug = stem
+        .chars()
+        .filter_map(|character| {
+            if character.is_ascii_alphanumeric() {
+                Some(character.to_ascii_lowercase())
+            } else if character == '-' || character == '_' {
+                Some('-')
+            } else {
+                None
+            }
+        })
+        .take(48)
+        .collect::<String>();
+    let slug = if slug.is_empty() { "model" } else { &slug };
+    let hash = model_url
+        .bytes()
+        .fold(0xcbf29ce484222325_u64, |hash, byte| {
+            (hash ^ u64::from(byte)).wrapping_mul(0x100000001b3)
+        });
+    let model_id = format!("{slug}-{hash:016x}");
+
+    (
+        default_app_data_dir()
+            .join(crate::DEFAULT_MODEL_SUBDIR)
+            .join(&model_id),
+        default_app_cache_dir().join(format!("{model_id}.tar.gz")),
+    )
+}
+
+fn default_model_url() -> String {
+    env::var("FSCRIPT_MODEL_URL").unwrap_or_else(|_| crate::DEFAULT_MODEL_URL.to_string())
+}
 
 pub(crate) fn remove_appledouble_files(root: &Path) -> Result<()> {
     if !root.exists() {
@@ -172,11 +280,46 @@ pub(crate) fn ensure_model_dir(
 
 #[cfg(test)]
 mod tests {
-    use super::{ensure_model_dir, remove_appledouble_files};
+    use super::{ensure_model_dir, remove_appledouble_files, ModelConfig};
     use flate2::{write::GzEncoder, Compression};
     use std::fs::{self, File};
     use tar::Builder;
     use tempfile::tempdir;
+
+    #[test]
+    fn model_config_keeps_explicit_storage_overrides_for_selected_bundle() {
+        let dir = tempdir().unwrap();
+        let model_directory = dir.path().join("model");
+        let package = dir.path().join("cache/model.tar.gz");
+        let url = "https://models.example.test/custom.tar.gz".to_string();
+
+        let config = ModelConfig::resolve(
+            Some(url.clone()),
+            Some(model_directory.clone()),
+            Some(package.clone()),
+        );
+
+        assert_eq!(config.url, url);
+        assert_eq!(config.directory, model_directory);
+        assert_eq!(config.package, package);
+    }
+
+    #[test]
+    fn model_config_assigns_different_cache_paths_to_different_bundle_urls() {
+        let first = ModelConfig::resolve(
+            Some("https://models.example.test/parakeet.tar.gz?revision=1".to_string()),
+            None,
+            None,
+        );
+        let second = ModelConfig::resolve(
+            Some("https://models.example.test/parakeet.tar.gz?revision=2".to_string()),
+            None,
+            None,
+        );
+
+        assert_ne!(first.directory, second.directory);
+        assert_ne!(first.package, second.package);
+    }
 
     fn write_model_package(package_path: &std::path::Path, marker: &str) {
         if let Some(parent) = package_path.parent() {

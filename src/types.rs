@@ -1,4 +1,5 @@
 use crate::diarization::{DiarizationRequest, SpeakerDiarizationMetadata};
+use crate::model::ModelConfig;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tempfile::TempDir;
@@ -16,13 +17,6 @@ pub(crate) struct CliArgs {
     pub(crate) chunk_overlap_seconds: f64,
     pub(crate) diarization_notice: Option<String>,
     pub(crate) diarization: Option<DiarizationRequest>,
-}
-
-#[derive(Debug)]
-pub(crate) struct ModelConfig {
-    pub(crate) directory: PathBuf,
-    pub(crate) package: PathBuf,
-    pub(crate) url: String,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
