@@ -1,3 +1,4 @@
+use crate::model_catalog::{find_model, ModelPreset, ModelRuntime};
 use anyhow::{bail, Context, Result};
 use directories::ProjectDirs;
 use flate2::read::GzDecoder;
@@ -15,9 +16,67 @@ pub(crate) struct ModelConfig {
     pub(crate) directory: PathBuf,
     pub(crate) package: PathBuf,
     pub(crate) url: String,
+    pub(crate) preset: Option<&'static ModelPreset>,
+    pub(crate) device: String,
 }
 
 impl ModelConfig {
+    pub(crate) fn select(
+        selection: Option<String>,
+        directory: Option<PathBuf>,
+        package: Option<PathBuf>,
+        device: String,
+    ) -> Result<Self> {
+        let mut config = match selection {
+            None => Self::resolve(None, directory, package),
+            Some(selection)
+                if selection.starts_with("https://") || selection.starts_with("http://") =>
+            {
+                Self::resolve(Some(selection), directory, package)
+            }
+            Some(selection) => {
+                let preset = find_model(&selection).with_context(|| {
+                    format!(
+                        "unknown model {selection:?}; run fscript --list-models to choose a model"
+                    )
+                })?;
+                if preset.runtime == ModelRuntime::Onnx {
+                    let mut config =
+                        Self::resolve(Some(preset.url.to_string()), directory, package);
+                    config.preset = Some(preset);
+                    config
+                } else {
+                    if package.is_some() {
+                        bail!("--model-package only applies to ONNX bundles; {} downloads its predefined model through its SDK", preset.name);
+                    }
+                    Self {
+                        directory: directory.unwrap_or_default(),
+                        package: PathBuf::new(),
+                        url: preset.url.to_string(),
+                        preset: Some(preset),
+                        device: "auto".to_string(),
+                    }
+                }
+            }
+        };
+        let runtime = config
+            .preset
+            .map_or(ModelRuntime::Onnx, |model| model.runtime);
+        let allowed = match runtime {
+            ModelRuntime::Onnx => &["auto", "cpu"][..],
+            ModelRuntime::Photon => &["auto", "cpu", "mps", "cuda"][..],
+            ModelRuntime::Phonon => &["auto", "cpu", "mlx"][..],
+        };
+        if !allowed.contains(&device.as_str()) {
+            bail!(
+                "device {device:?} is not supported by the selected model; choose {}",
+                allowed.join(", ")
+            );
+        }
+        config.device = device;
+        Ok(config)
+    }
+
     pub(crate) fn resolve(
         url: Option<String>,
         directory: Option<PathBuf>,
@@ -34,6 +93,8 @@ impl ModelConfig {
             directory: directory.unwrap_or(default_directory),
             package: package.unwrap_or(default_package),
             url,
+            preset: None,
+            device: "auto".to_string(),
         }
     }
 }

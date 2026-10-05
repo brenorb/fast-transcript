@@ -33,6 +33,8 @@ jobs:
         run: cargo build --release --locked
       - name: Python wrapper tests
         run: uv run --no-project python -m unittest tests/test_pypi_wrapper.py
+      - name: Model worker protocol tests
+        run: uv run --no-project python -m unittest tests/test_model_worker.py
       - name: Build wheel
         run: uv run --no-project --with build python scripts/build_pypi_wheel.py --out-dir dist-pypi
       - name: Validate release binary and wheel stay in sync

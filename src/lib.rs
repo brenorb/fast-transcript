@@ -1,7 +1,9 @@
 mod audio;
 mod cli;
 mod diarization;
+mod engine;
 mod model;
+mod model_catalog;
 mod output;
 mod progress;
 mod remote;
@@ -57,6 +59,10 @@ pub fn run_from_args(raw_args: Vec<String>) -> Result<()> {
     }
     if raw_args.iter().any(|arg| arg == "--version" || arg == "-V") {
         println!("{}", version_string());
+        return Ok(());
+    }
+    if raw_args.iter().any(|arg| arg == "--list-models") {
+        println!("{}", model_catalog::list_models());
         return Ok(());
     }
 
@@ -169,6 +175,7 @@ fn manual_subtitle_result(input_source: &str, transcript: DirectTranscript) -> B
         }],
         segments: (!transcript.segments.is_empty()).then_some(transcript.segments),
         speaker_diarization: None,
+        model: None,
     }
 }
 

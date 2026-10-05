@@ -106,9 +106,11 @@ pub(crate) fn usage() -> String {
             "Chunk overlap in seconds.",
         ),
         option(
-            "--model URL",
-            "Select a compatible Parakeet model bundle; model files are cached separately.",
+            "--model NAME|URL",
+            "Choose a predefined model name or a custom ONNX bundle URL.",
         ),
+        option("--list-models", "List models and recommendations from our benchmarks."),
+        option("--device auto|cpu|mps|mlx|cuda", "Choose a device; defaults to auto for the selected model."),
         option(
             "--model-dir PATH",
             "Use an existing extracted model directory.",
@@ -136,6 +138,8 @@ pub(crate) fn usage() -> String {
         "  fscript lecture.mp3 notes/".to_string(),
         "  fscript lecture.mp3 --text=plain".to_string(),
         "  fscript lecture.mp3 --text=compact".to_string(),
+        "  fscript lecture.mp3 --model parakeet-ultra".to_string(),
+        "  fscript --list-models".to_string(),
         "  fscript lecture.mp3 --diarize lseend-dihard3".to_string(),
         "  fscript lecture.mp3 -D --json --raw".to_string(),
     ]
@@ -280,6 +284,8 @@ fn parse_args_with_diarization_status(
     let mut model_dir_override = None;
     let mut model_package_override = None;
     let mut model_url_override = None;
+    let mut model_selection_flag = None;
+    let mut model_device = "auto".to_string();
     let mut input = None;
     let mut output_path = None;
     let mut output_to_stdout = false;
@@ -325,6 +331,15 @@ fn parse_args_with_diarization_status(
             "--model" | "--model-url" => {
                 let flag = raw_args[index].as_str();
                 let value = required_non_flag_value(raw_args, index, flag)?;
+                if model_selection_flag.is_some() {
+                    bail!("choose a single model with --model or --model-url");
+                }
+                if flag == "--model-url"
+                    && !(value.starts_with("https://") || value.starts_with("http://"))
+                {
+                    bail!("--model-url requires an http(s) bundle URL; use --model for predefined names");
+                }
+                model_selection_flag = Some(flag);
                 model_url_override = Some(value.to_string());
                 index += 2;
             }
@@ -334,7 +349,24 @@ fn parse_args_with_diarization_status(
                     .map(|(_, value)| value)
                     .filter(|value| !value.is_empty())
                     .with_context(|| format!("missing value for --model\n{}", usage()))?;
+                if model_selection_flag.is_some() {
+                    bail!("choose a single model with --model or --model-url");
+                }
+                if flag.starts_with("--model-url=")
+                    && !(value.starts_with("https://") || value.starts_with("http://"))
+                {
+                    bail!("--model-url requires an http(s) bundle URL; use --model for predefined names");
+                }
+                model_selection_flag = Some(flag);
                 model_url_override = Some(value.to_string());
+                index += 1;
+            }
+            "--device" => {
+                model_device = required_non_flag_value(raw_args, index, "--device")?.to_string();
+                index += 2;
+            }
+            flag if flag.starts_with("--device=") => {
+                model_device = flag.split_once('=').unwrap().1.to_string();
                 index += 1;
             }
             "--model-dir" => {
@@ -699,11 +731,12 @@ fn parse_args_with_diarization_status(
     };
 
     Ok(CliArgs {
-        model: ModelConfig::resolve(
+        model: ModelConfig::select(
             model_url_override,
             model_dir_override,
             model_package_override,
-        ),
+            model_device,
+        )?,
         input,
         output_path,
         output_to_stdout,
@@ -823,6 +856,70 @@ mod tests {
 
         assert_eq!(first.model.directory, second.model.directory);
         assert_eq!(first.model.package, second.model.package);
+    }
+
+    #[test]
+    fn parse_args_accepts_benchmarked_model_names() {
+        for name in [
+            "parakeet-v3-int8",
+            "parakeet-redux",
+            "parakeet-ultra",
+            "phonon-2",
+        ] {
+            let args = vec!["speech.wav".into(), "--model".into(), name.into()];
+            let parsed = parse_args_with_diarization_availability(&args, false).unwrap();
+            assert!(
+                parsed.model.url.starts_with("https://"),
+                "{name} must resolve to its predefined source"
+            );
+        }
+    }
+
+    #[test]
+    fn parse_args_unknown_model_name_has_discovery_hint() {
+        let args = vec!["speech.wav".into(), "--model".into(), "typo-model".into()];
+        let error = parse_args_with_diarization_availability(&args, false).unwrap_err();
+        assert!(error.to_string().contains("unknown model"));
+        assert!(error.to_string().contains("--list-models"));
+    }
+
+    #[test]
+    fn parse_args_preserves_named_aliases_and_rejects_incompatible_model_options() {
+        let args = vec![
+            "speech.wav".into(),
+            "--model=ultra".into(),
+            "--device=cpu".into(),
+        ];
+        let parsed = parse_args_with_diarization_availability(&args, false).unwrap();
+        assert_eq!(parsed.model.preset.unwrap().name, "parakeet-ultra");
+        assert_eq!(parsed.model.device, "cpu");
+
+        for (options, diagnostic) in [
+            (
+                vec![
+                    "--model",
+                    "ultra",
+                    "--model-url",
+                    "https://example.test/model.tar.gz",
+                ],
+                "single model",
+            ),
+            (vec!["--model-url", "ultra"], "http(s)"),
+            (
+                vec!["--model", "ultra", "--model-package", "weights.tar.gz"],
+                "only applies to ONNX",
+            ),
+            (
+                vec!["--model", "phonon-2", "--device", "mps"],
+                "not supported",
+            ),
+            (vec!["--model", "onnx", "--device", "mlx"], "not supported"),
+        ] {
+            let mut args = vec!["speech.wav".to_string()];
+            args.extend(options.into_iter().map(str::to_string));
+            let error = parse_args_with_diarization_availability(&args, false).unwrap_err();
+            assert!(error.to_string().contains(diagnostic), "{error}");
+        }
     }
 
     #[test]

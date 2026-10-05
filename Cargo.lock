@@ -262,6 +262,7 @@ dependencies = [
  "anyhow",
  "directories",
  "flate2",
+ "hound",
  "reqwest",
  "serde",
  "serde_json",

@@ -585,6 +585,7 @@ mod tests {
             chunks: vec![],
             segments: Some(segments),
             speaker_diarization: None,
+            model: None,
         }
     }
 
@@ -918,6 +919,7 @@ mod tests {
             chunks: vec![],
             segments: None,
             speaker_diarization: None,
+            model: None,
         };
 
         assert_eq!(
@@ -949,6 +951,7 @@ mod tests {
             chunks: vec![],
             segments: None,
             speaker_diarization: None,
+            model: None,
         };
 
         for output_format in [
@@ -1071,6 +1074,7 @@ mod tests {
             chunks: vec![],
             segments: None,
             speaker_diarization: None,
+            model: None,
         };
 
         let rendered = render_output(&result, OutputFormat::Json, false).unwrap();

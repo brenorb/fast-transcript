@@ -121,6 +121,18 @@ pub(crate) struct TranscriptSegment {
 }
 
 #[derive(Clone, Serialize)]
+pub(crate) struct ModelMetadata {
+    pub(crate) name: String,
+    pub(crate) source_url: String,
+    pub(crate) runtime: String,
+    pub(crate) device: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) revision: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) artifact_sha256: Option<String>,
+}
+
+#[derive(Clone, Serialize)]
 pub(crate) struct BenchmarkResult {
     pub(crate) input_source: String,
     pub(crate) model_dir: String,
@@ -144,4 +156,6 @@ pub(crate) struct BenchmarkResult {
     pub(crate) segments: Option<Vec<TranscriptSegment>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) speaker_diarization: Option<SpeakerDiarizationMetadata>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) model: Option<ModelMetadata>,
 }

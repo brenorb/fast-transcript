@@ -21,6 +21,8 @@ fscript lecture.mp3 --json
 fscript lecture.mp3 --diarize lseend-dihard3
 fscript lecture.mp3 -D --json --raw
 fscript lecture.mp3 -n 2
+fscript lecture.mp3 --model parakeet-ultra
+fscript --list-models
 ```
 
 `--srt` and `--vtt` subtitle output are experimental.
@@ -254,10 +256,48 @@ fscript https://www.youtube.com/watch?v=QSdh8Gj0mEg
 fscript https://www.youtube.com/watch?v=QSdh8Gj0mEg --local
 ```
 
-Use `--model URL` to switch to another compatible Parakeet ONNX bundle. Each bundle URL gets a
-separate model and package cache, so changing the URL cannot silently reuse the default model.
-`--model-url` remains available as an alias. The bundle must contain the Parakeet TDT int8 files
-expected by this build; use `--model-dir` and `--model-package` when you need to control storage.
+### Choose a model by name
+
+```bash
+fscript --list-models
+fscript lecture.wav --model parakeet-ultra
+fscript lecture.wav --model redux
+fscript lecture.wav --model phonon-2
+fscript lecture.wav --model ultra --device cpu
+fscript lecture.wav --model onnx
+```
+
+Model sources and revisions are predefined. The CLI downloads and caches the selected model;
+you do not need to find a URL. The short aliases `onnx`, `redux`, `ultra`, and `phonon` work too.
+
+| Model name | What our benchmarks support choosing it for |
+| --- | --- |
+| `parakeet-v3-int8` (default) | Native CPU with no Python runtime. Lowest 15-second Portuguese WER (0%) and quickest first result for that clip (0.83s). |
+| `parakeet-redux` | Smallest model cache (171 MiB), with CPU and GPU support. |
+| `parakeet-ultra` | Accuracy choice for our English and reviewed Portuguese lecture cases: MPS WER 9.72% on TED, 0.76% on LibriSpeech, and 4.05% on the lecture. |
+| `phonon-2` | Fastest loaded GPU inference in the measured cases: 331.5x real-time on English TED via MLX. Higher Portuguese lecture WER (15.89%). |
+
+These are the [canonical ASR v2 measurements](experiments/transcription_benchmarks/runs/2026-09-30-unified-v2/REPORT.md)
+on an Apple M5 Max, using SDK workers and shared audio partitions; production CLI timings can differ.
+The reviewed Portuguese lecture reference began as an Ultra draft, and a few recordings do not
+establish a universal ranking. ONNX also had the lowest disagreement with the
+[Portuguese TEDx automatic captions](experiments/transcription_benchmarks/runs/2026-09-30-pt-tedx-yvonne/REPORT.md)
+(20.49%); those captions are not a human accuracy reference.
+
+Redux, Ultra, and Phonon require [`uv`](https://docs.astral.sh/uv/getting-started/installation/).
+On first use, `fscript` uses it to provision Python 3.12 and pinned model SDKs in isolated,
+cached environments. No API key is needed. Model weights are also cached between runs.
+Device selection defaults to `auto`: Photon uses an available CUDA/MPS GPU or CPU, and Phonon
+uses MLX on supported Apple Silicon or CPU. `--device cpu` explicitly selects CPU;
+`--device mps` works with Redux/Ultra and `--device mlx` works with Phonon.
+The ONNX preset supports CPU only in this build. JSON output includes the selected model,
+resolved device, source, and model revision or archive digest.
+
+For custom ONNX models, `--model URL` and `--model-url URL` still accept a compatible Parakeet
+TDT int8 bundle, with a separate cache for each URL. `--model-dir` selects an existing directory
+for the chosen runtime; `--model-package` overrides a cached archive for ONNX only. When
+transcribing a remote URL with text output, add `--local` to force the selected model instead
+of using available manual captions.
 
 Chunking:
 
@@ -310,6 +350,9 @@ Environment overrides:
 - `FSCRIPT_MODEL_PACKAGE`
 - `FSCRIPT_MODEL_URL`
 - `FSCRIPT_DIARIZATION_BINARY`
+- `FSCRIPT_PYTHON_BINARY`: optional interpreter override for Redux/Ultra/Phonon; it must have
+  the pinned SDK versions (`moondream 2.4.1`, `kestrel 0.8.1`, `torch 2.14.0` for Photon;
+  `fermion-research 0.2.3`, `torch 2.14.0` for Phonon). Normally `uv` handles this automatically.
 
 ## Optional diarization
 
