@@ -8,6 +8,7 @@ mod output;
 mod progress;
 mod remote;
 mod transcribe;
+mod transcript;
 mod types;
 
 use anyhow::{Context, Result};
