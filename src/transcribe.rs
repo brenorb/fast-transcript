@@ -1,3 +1,5 @@
+//! Media preparation, model lifecycle, inference, and diarization orchestration.
+
 use anyhow::{Context, Result};
 use std::path::Path;
 use transcribe_rs::audio::read_wav_samples;
