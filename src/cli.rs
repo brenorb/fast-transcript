@@ -7,7 +7,9 @@ use crate::diarization::{
     fluidaudio_binary_status, missing_diarization_notice, DiarizationBackend, DiarizationRequest,
     FluidaudioBinaryStatus,
 };
-use crate::types::{CliArgs, OutputFormat, SpeakersFormat, SubtitleFormat, TextFormat};
+use crate::types::{
+    CliArgs, ModelConfig, OutputFormat, SpeakersFormat, SubtitleFormat, TextFormat,
+};
 
 const DEFAULT_LSEEND_THRESHOLD: f64 = 0.3;
 
@@ -96,7 +98,7 @@ pub(crate) fn usage() -> String {
             "Always download audio and transcribe locally.",
         ),
         String::new(),
-        "Chunking and model overrides:".to_string(),
+        "Chunking and model selection:".to_string(),
         option(
             "--chunk N, --chunk-seconds N",
             "Chunk length in seconds. Use 0 to disable.",
@@ -104,6 +106,10 @@ pub(crate) fn usage() -> String {
         option(
             "--overlap N, --chunk-overlap-seconds N",
             "Chunk overlap in seconds.",
+        ),
+        option(
+            "--model URL",
+            "Select a compatible Parakeet model bundle; model files are cached separately.",
         ),
         option(
             "--model-dir PATH",
@@ -178,6 +184,42 @@ pub(crate) fn default_model_package() -> PathBuf {
     env::var_os("FSCRIPT_MODEL_PACKAGE")
         .map(PathBuf::from)
         .unwrap_or_else(|| default_app_cache_dir().join(crate::DEFAULT_MODEL_PACKAGE_NAME))
+}
+
+fn model_cache_paths(model_url: &str) -> (PathBuf, PathBuf) {
+    let location = model_url.split(['?', '#']).next().unwrap_or(model_url);
+    let filename = location.rsplit('/').next().unwrap_or_default();
+    let stem = filename
+        .strip_suffix(".tar.gz")
+        .or_else(|| filename.strip_suffix(".tgz"))
+        .unwrap_or(filename);
+    let slug = stem
+        .chars()
+        .filter_map(|character| {
+            if character.is_ascii_alphanumeric() {
+                Some(character.to_ascii_lowercase())
+            } else if character == '-' || character == '_' {
+                Some('-')
+            } else {
+                None
+            }
+        })
+        .take(48)
+        .collect::<String>();
+    let slug = if slug.is_empty() { "model" } else { &slug };
+    let hash = model_url
+        .bytes()
+        .fold(0xcbf29ce484222325_u64, |hash, byte| {
+            (hash ^ u64::from(byte)).wrapping_mul(0x100000001b3)
+        });
+    let model_id = format!("{slug}-{hash:016x}");
+
+    (
+        default_app_data_dir()
+            .join(crate::DEFAULT_MODEL_SUBDIR)
+            .join(&model_id),
+        default_app_cache_dir().join(format!("{model_id}.tar.gz")),
+    )
 }
 
 fn default_model_url() -> String {
@@ -315,9 +357,9 @@ fn parse_args_with_diarization_status(
 
     let fluidaudio_available = matches!(fluidaudio_status, FluidaudioBinaryStatus::Available);
 
-    let mut model_dir = default_model_dir();
-    let mut model_package = default_model_package();
-    let mut model_url = default_model_url();
+    let mut model_dir_override = None;
+    let mut model_package_override = None;
+    let mut model_url_override = None;
     let mut input = None;
     let mut output_path = None;
     let mut output_to_stdout = false;
@@ -360,19 +402,29 @@ fn parse_args_with_diarization_status(
                 output_path = Some(PathBuf::from(value));
                 index += 1;
             }
+            "--model" | "--model-url" => {
+                let flag = raw_args[index].as_str();
+                let value = required_non_flag_value(raw_args, index, flag)?;
+                model_url_override = Some(value.to_string());
+                index += 2;
+            }
+            flag if flag.starts_with("--model=") || flag.starts_with("--model-url=") => {
+                let value = flag
+                    .split_once('=')
+                    .map(|(_, value)| value)
+                    .filter(|value| !value.is_empty())
+                    .with_context(|| format!("missing value for --model\n{}", usage()))?;
+                model_url_override = Some(value.to_string());
+                index += 1;
+            }
             "--model-dir" => {
                 let value = required_non_flag_value(raw_args, index, "--model-dir")?;
-                model_dir = PathBuf::from(value);
+                model_dir_override = Some(PathBuf::from(value));
                 index += 2;
             }
             "--model-package" => {
                 let value = required_non_flag_value(raw_args, index, "--model-package")?;
-                model_package = PathBuf::from(value);
-                index += 2;
-            }
-            "--model-url" => {
-                let value = required_non_flag_value(raw_args, index, "--model-url")?;
-                model_url = value.to_string();
+                model_package_override = Some(PathBuf::from(value));
                 index += 2;
             }
             "--stdout" => {
@@ -726,10 +778,19 @@ fn parse_args_with_diarization_status(
         (Some(requested_chunk_seconds), overlap)
     };
 
+    let model_url = model_url_override.unwrap_or_else(default_model_url);
+    let (model_directory, model_package) = if model_url == crate::DEFAULT_MODEL_URL {
+        (default_model_dir(), default_model_package())
+    } else {
+        model_cache_paths(&model_url)
+    };
+
     Ok(CliArgs {
-        model_dir,
-        model_package,
-        model_url,
+        model: ModelConfig {
+            directory: model_dir_override.unwrap_or(model_directory),
+            package: model_package_override.unwrap_or(model_package),
+            url: model_url,
+        },
         input,
         output_path,
         output_to_stdout,
@@ -813,13 +874,44 @@ mod tests {
         );
         assert_eq!(parsed.diarization_notice, None);
         assert!(path_ends_with(
-            &parsed.model_dir,
+            &parsed.model.directory,
             &["models", crate::DEFAULT_MODEL_BASENAME]
         ));
         assert!(path_ends_with(
-            &parsed.model_package,
+            &parsed.model.package,
             &[crate::DEFAULT_MODEL_PACKAGE_NAME]
         ));
+    }
+
+    #[test]
+    fn parse_args_selects_model_bundle_with_one_option() {
+        let args = vec![
+            "audio.mp3".to_string(),
+            "--model".to_string(),
+            "https://models.example.test/parakeet-fr.tar.gz?download=1".to_string(),
+        ];
+        let parsed = parse_args_with_diarization_availability(&args, false).unwrap();
+
+        assert_eq!(
+            parsed.model.url,
+            "https://models.example.test/parakeet-fr.tar.gz?download=1"
+        );
+        assert_ne!(parsed.model.directory, default_model_dir());
+        assert_ne!(parsed.model.package, default_model_package());
+    }
+
+    #[test]
+    fn selecting_same_model_bundle_uses_stable_cache_paths() {
+        let args = vec![
+            "audio.mp3".to_string(),
+            "--model-url".to_string(),
+            "https://models.example.test/parakeet-fr.tar.gz".to_string(),
+        ];
+        let first = parse_args_with_diarization_availability(&args, false).unwrap();
+        let second = parse_args_with_diarization_availability(&args, false).unwrap();
+
+        assert_eq!(first.model.directory, second.model.directory);
+        assert_eq!(first.model.package, second.model.package);
     }
 
     #[test]
@@ -898,7 +990,7 @@ mod tests {
         ];
         let parsed = parse_args(&args).unwrap();
         assert_eq!(parsed.output_path, Some(PathBuf::from("out.json")));
-        assert_eq!(parsed.model_dir, PathBuf::from("custom-model"));
+        assert_eq!(parsed.model.directory, PathBuf::from("custom-model"));
         assert_eq!(parsed.chunk_seconds, Some(60.0));
         assert_eq!(parsed.chunk_overlap_seconds, 1.5);
     }

@@ -32,10 +32,6 @@ fn probe_audio_with(ffprobe_program: &str, path: &Path) -> Result<FfprobeStream>
         .with_context(|| format!("no audio stream found in {}", path.display()))
 }
 
-fn probe_audio(path: &Path) -> Result<FfprobeStream> {
-    probe_audio_with("ffprobe", path)
-}
-
 pub(crate) fn is_supported_audio(stream: &FfprobeStream) -> bool {
     let sample_rate_ok = stream.sample_rate.as_deref() == Some("16000");
     let channels_ok = stream.channels == Some(1);

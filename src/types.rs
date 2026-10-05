@@ -5,9 +5,7 @@ use tempfile::TempDir;
 
 #[derive(Debug)]
 pub(crate) struct CliArgs {
-    pub(crate) model_dir: PathBuf,
-    pub(crate) model_package: PathBuf,
-    pub(crate) model_url: String,
+    pub(crate) model: ModelConfig,
     pub(crate) input: String,
     pub(crate) output_path: Option<PathBuf>,
     pub(crate) output_to_stdout: bool,
@@ -18,6 +16,13 @@ pub(crate) struct CliArgs {
     pub(crate) chunk_overlap_seconds: f64,
     pub(crate) diarization_notice: Option<String>,
     pub(crate) diarization: Option<DiarizationRequest>,
+}
+
+#[derive(Debug)]
+pub(crate) struct ModelConfig {
+    pub(crate) directory: PathBuf,
+    pub(crate) package: PathBuf,
+    pub(crate) url: String,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

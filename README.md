@@ -249,9 +249,15 @@ fscript lecture.wav --chunk 0
 fscript lecture.wav --model-dir ./models/parakeet/custom-copy
 fscript lecture.wav --model-package ./models/parakeet-v3-int8.tar.gz
 fscript lecture.wav --model-url https://example.com/parakeet-v3-int8.tar.gz
+fscript lecture.wav --model https://example.com/another-parakeet-bundle.tar.gz
 fscript https://www.youtube.com/watch?v=QSdh8Gj0mEg
 fscript https://www.youtube.com/watch?v=QSdh8Gj0mEg --local
 ```
+
+Use `--model URL` to switch to another compatible Parakeet ONNX bundle. Each bundle URL gets a
+separate model and package cache, so changing the URL cannot silently reuse the default model.
+`--model-url` remains available as an alias. The bundle must contain the Parakeet TDT int8 files
+expected by this build; use `--model-dir` and `--model-package` when you need to control storage.
 
 Chunking:
 

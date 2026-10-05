@@ -256,7 +256,7 @@ pub(crate) fn transcribe_audio_input(
     audio_path: &Path,
     transcript_source: &str,
 ) -> Result<BenchmarkResult> {
-    ensure_model_dir(&args.model_dir, &args.model_package, &args.model_url)?;
+    ensure_model_dir(&args.model.directory, &args.model.package, &args.model.url)?;
     let prepared_audio = normalize_audio(audio_path)?;
 
     let samples = read_wav_samples(&prepared_audio.wav_path).with_context(|| {
@@ -270,7 +270,7 @@ pub(crate) fn transcribe_audio_input(
     let (text, chunks, transcript_segments, load_seconds, transcribe_seconds) = {
         let load_start = Instant::now();
         eprintln!("loading model...");
-        let mut model = ParakeetModel::load(&args.model_dir, &Quantization::Int8)
+        let mut model = ParakeetModel::load(&args.model.directory, &Quantization::Int8)
             .context("failed to load Parakeet model")?;
         let load_seconds = load_start.elapsed().as_secs_f64();
 
@@ -334,7 +334,7 @@ pub(crate) fn transcribe_audio_input(
         derived_benchmark_speeds(audio_seconds, total_inside_seconds);
     Ok(BenchmarkResult {
         input_source: input_source.to_string(),
-        model_dir: args.model_dir.display().to_string(),
+        model_dir: args.model.directory.display().to_string(),
         audio_path: audio_path.display().to_string(),
         prepared_audio_path: prepared_audio.wav_path.display().to_string(),
         used_ffmpeg_normalization: prepared_audio.normalized,
