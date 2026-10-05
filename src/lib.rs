@@ -2,6 +2,7 @@ mod audio;
 mod cli;
 mod diarization;
 mod engine;
+mod inference;
 mod model;
 mod model_catalog;
 mod output;
