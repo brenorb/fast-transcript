@@ -10,6 +10,7 @@ mod model_catalog;
 mod output;
 mod progress;
 mod remote;
+mod settings;
 mod transcribe;
 mod transcript;
 mod types;

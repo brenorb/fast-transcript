@@ -109,6 +109,9 @@ pub(crate) fn usage() -> String {
             "--model NAME|URL",
             "Choose a predefined model name or a custom ONNX bundle URL.",
         ),
+        option("--set-default-model NAME", "Save the default model for future runs."),
+        option("--get-default-model", "Show the saved default model."),
+        option("--reset-default-model", "Clear the saved model preference."),
         option("--list-models", "List models and recommendations from our benchmarks."),
         option("--device auto|cpu|mps|mlx|cuda", "Choose a device; defaults to auto for the selected model."),
         option(
@@ -130,6 +133,7 @@ pub(crate) fn usage() -> String {
         ),
         option("Cleaning", "On."),
         option("Chunking", "--chunk 120 with --overlap 2."),
+        option("Model", "Saved preference, otherwise parakeet-v3-int8."),
         option("Model dir", &display_help_path(&default_model_dir)),
         option("Model package", &display_help_path(&default_model_package)),
         String::new(),
@@ -255,7 +259,18 @@ fn required_non_flag_value<'a>(
 }
 
 pub(crate) fn parse_args(raw_args: &[String]) -> Result<CliArgs> {
-    parse_args_with_diarization_status(raw_args, fluidaudio_binary_status())
+    parse_args_with_default_model(raw_args, || Ok(None))
+}
+
+pub(crate) fn parse_args_with_default_model(
+    raw_args: &[String],
+    default_model: impl FnOnce() -> Result<Option<String>>,
+) -> Result<CliArgs> {
+    parse_args_with_diarization_status_and_default(
+        raw_args,
+        fluidaudio_binary_status(),
+        default_model,
+    )
 }
 
 #[cfg(test)]
@@ -271,9 +286,18 @@ fn parse_args_with_diarization_availability(
     parse_args_with_diarization_status(raw_args, status)
 }
 
+#[cfg(test)]
 fn parse_args_with_diarization_status(
     raw_args: &[String],
     fluidaudio_status: FluidaudioBinaryStatus,
+) -> Result<CliArgs> {
+    parse_args_with_diarization_status_and_default(raw_args, fluidaudio_status, || Ok(None))
+}
+
+fn parse_args_with_diarization_status_and_default(
+    raw_args: &[String],
+    fluidaudio_status: FluidaudioBinaryStatus,
+    default_model: impl FnOnce() -> Result<Option<String>>,
 ) -> Result<CliArgs> {
     if raw_args.is_empty() {
         bail!("{}", usage());
@@ -732,7 +756,10 @@ fn parse_args_with_diarization_status(
 
     Ok(CliArgs {
         model: ModelConfig::select(
-            model_url_override,
+            match model_url_override {
+                Some(selection) => Some(selection),
+                None => default_model()?,
+            },
             model_dir_override,
             model_package_override,
             model_device,
@@ -764,6 +791,29 @@ mod tests {
     use crate::types::{OutputFormat, SpeakersFormat, SubtitleFormat, TextFormat};
     use std::path::Path;
     use std::path::PathBuf;
+
+    #[test]
+    fn saved_default_is_used_and_explicit_selection_skips_loading_settings() {
+        let parsed = super::parse_args_with_default_model(
+            &["audio.wav".into(), "--text=plain".into()],
+            || Ok(Some("ultra".into())),
+        )
+        .unwrap();
+        assert_eq!(parsed.model.preset.unwrap().name, "parakeet-ultra");
+        for flag in ["--model", "--model-url"] {
+            let selection = if flag == "--model" {
+                "onnx"
+            } else {
+                crate::DEFAULT_MODEL_URL
+            };
+            let parsed = super::parse_args_with_default_model(
+                &["audio.wav".into(), flag.into(), selection.into()],
+                || anyhow::bail!("settings must not be read for explicit selection"),
+            )
+            .unwrap();
+            assert_eq!(parsed.model.url, crate::DEFAULT_MODEL_URL);
+        }
+    }
 
     fn path_ends_with(path: &Path, suffix: &[&str]) -> bool {
         let mut current = path;

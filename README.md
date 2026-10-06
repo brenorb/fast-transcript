@@ -258,6 +258,24 @@ fscript https://www.youtube.com/watch?v=QSdh8Gj0mEg --local
 
 ### Choose a model by name
 
+Set a model once for future runs:
+
+```bash
+fscript --set-default-model ultra
+fscript lecture.wav                       # uses Ultra
+fscript lecture.wav --model onnx          # override for this run
+fscript --get-default-model               # parakeet-ultra
+fscript --reset-default-model             # restore the built-in default
+```
+
+The preference persists across shells and applies to scripts too. It is saved in
+`default-model.json` in the platform's fast-transcript configuration directory
+(`~/Library/Application Support/fast-transcript` on macOS). Model selection precedence
+is explicit `--model` / `--model-url`, then `FSCRIPT_MODEL_URL`, then the saved preference,
+then the built-in ONNX default. Setting a default accepts predefined model names and aliases;
+it does not download or load a model. Settings commands run without an input file.
+
+
 ```bash
 fscript --list-models
 fscript lecture.wav --model parakeet-ultra
@@ -345,6 +363,8 @@ Remote default filenames:
 - otherwise it falls back to a sanitized version of the URL itself
 
 Environment overrides:
+
+- `FSCRIPT_CONFIG_FILE`: override the default-model settings file location.
 
 - `FSCRIPT_MODEL_DIR`
 - `FSCRIPT_MODEL_PACKAGE`

@@ -1,6 +1,6 @@
 //! Application routing for local media, remote subtitles, and rendered output.
 
-use crate::cli::{parse_args, usage, version_string};
+use crate::cli::{parse_args_with_default_model, usage, version_string};
 use crate::delivery::{default_output_path_for_input, OutputDestination};
 use crate::output::render_output;
 use crate::remote::{
@@ -27,7 +27,11 @@ pub(crate) fn run(raw_args: Vec<String>) -> Result<()> {
         return Ok(());
     }
 
-    let args = parse_args(&raw_args)?;
+    if let Some(command) = crate::settings::parse_settings_command(&raw_args)? {
+        return crate::settings::run_settings_command(command);
+    }
+
+    let args = parse_args_with_default_model(&raw_args, crate::settings::default_model_selection)?;
     if let Some(notice) = &args.diarization_notice {
         eprintln!("{notice}");
     }

@@ -35,6 +35,8 @@ jobs:
         run: uv run --no-project python -m unittest tests/test_pypi_wrapper.py
       - name: Model worker protocol tests
         run: uv run --no-project python -m unittest tests/test_model_worker.py
+      - name: Persistent model preference CLI tests
+        run: uv run --no-project python -m unittest tests/test_default_model_cli.py
       - name: Build wheel
         run: uv run --no-project --with build python scripts/build_pypi_wheel.py --out-dir dist-pypi
       - name: Validate release binary and wheel stay in sync

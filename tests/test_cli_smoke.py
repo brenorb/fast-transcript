@@ -129,6 +129,7 @@ class CliSmokeTests(unittest.TestCase):
         cwd: Path | None = None,
     ) -> subprocess.CompletedProcess[str]:
         cli_env = os.environ.copy()
+        cli_env["FSCRIPT_CONFIG_FILE"] = str(self.shared_root / "default-model.json")
         if env is not None:
             cli_env.update(env)
         return subprocess.run(
