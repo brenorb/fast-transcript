@@ -56,7 +56,8 @@ fn handle_remote_input(args: &CliArgs, input_source: &InputSource, url: &str) ->
         info.title.as_deref().or(info.id.as_deref()),
     )?;
 
-    if !args.force_local_for_remote && args.diarization.is_none() {
+    if !args.force_local_for_remote && args.diarization.is_none() && !args.time_range.is_selected()
+    {
         match download_manual_remote_transcript(url, &info) {
             Ok(Some(transcript)) => {
                 let result = manual_subtitle_result(url, transcript);
