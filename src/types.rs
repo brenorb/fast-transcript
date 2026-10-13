@@ -13,6 +13,7 @@ pub(crate) struct CliArgs {
     pub(crate) output_format: OutputFormat,
     pub(crate) clean_output: bool,
     pub(crate) force_local_for_remote: bool,
+    pub(crate) time_range: crate::time_range::TimeRange,
     pub(crate) chunk_seconds: Option<f64>,
     pub(crate) chunk_overlap_seconds: f64,
     pub(crate) diarization_notice: Option<String>,

@@ -7,6 +7,7 @@ use crate::diarization::{
     FluidaudioBinaryStatus,
 };
 use crate::model::{default_model_dir, default_model_package, ModelConfig};
+use crate::time_range::{parse_media_time, TimeRange};
 use crate::types::{CliArgs, OutputFormat, SpeakersFormat, SubtitleFormat, TextFormat};
 
 const DEFAULT_LSEEND_THRESHOLD: f64 = 0.3;
@@ -89,6 +90,11 @@ pub(crate) fn usage() -> String {
             "--backend coreml|lseend-dihard3|none",
             "Legacy alias for older scripts.",
         ),
+        String::new(),
+        "Time range:".to_string(),
+        option("--start TIME", "Start at seconds, MM:SS, or HH:MM:SS; defaults to 0."),
+        option("--end TIME", "Stop at this original-media time; defaults to EOF."),
+        "    Output timestamps remain relative to the original media.".to_string(),
         String::new(),
         "Remote input:".to_string(),
         option(
@@ -319,6 +325,7 @@ fn parse_args_with_diarization_status_and_default(
     let mut clean_output = true;
     let mut clean_flag = None;
     let mut force_local_for_remote = false;
+    let mut time_range = TimeRange::default();
     let mut chunk_seconds_override = None;
     let mut chunk_overlap_seconds_override = None;
     let mut diarization_backend = None;
@@ -330,6 +337,27 @@ fn parse_args_with_diarization_status_and_default(
 
     while index < raw_args.len() {
         match raw_args[index].as_str() {
+            "--start" | "--end" => {
+                let flag = raw_args[index].as_str();
+                let value = required_non_flag_value(raw_args, index, flag)?;
+                let seconds = parse_media_time(value, flag)?;
+                if flag == "--start" {
+                    time_range.start = Some(seconds);
+                } else {
+                    time_range.end = Some(seconds);
+                }
+                index += 2;
+            }
+            flag if flag.starts_with("--start=") || flag.starts_with("--end=") => {
+                let (name, value) = flag.split_once('=').unwrap();
+                let seconds = parse_media_time(value, name)?;
+                if name == "--start" {
+                    time_range.start = Some(seconds);
+                } else {
+                    time_range.end = Some(seconds);
+                }
+                index += 1;
+            }
             "--output" | "-o" => {
                 let value = required_non_flag_value(raw_args, index, "--output")?;
                 if output_to_stdout {
@@ -684,6 +712,7 @@ fn parse_args_with_diarization_status_and_default(
         }
     }
 
+    time_range.validate()?;
     let input = input.with_context(|| format!("missing input path\n{}", usage()))?;
     let output_path = if output_to_stdout { None } else { output_path };
     let diarization_notice = if matches!(output_format, OutputFormat::Text(_)) {
@@ -770,6 +799,7 @@ fn parse_args_with_diarization_status_and_default(
         output_format,
         clean_output,
         force_local_for_remote,
+        time_range,
         chunk_seconds,
         chunk_overlap_seconds,
         diarization_notice,
@@ -791,6 +821,56 @@ mod tests {
     use crate::types::{OutputFormat, SpeakersFormat, SubtitleFormat, TextFormat};
     use std::path::Path;
     use std::path::PathBuf;
+
+    #[test]
+    fn parse_args_accepts_time_range_options() {
+        for flags in [
+            vec!["--start", "00:10:00.5", "--end", "1500"],
+            vec!["--start=600.5", "--end=00:25:00"],
+            vec!["--end", "90.5"],
+            vec!["--start", "01:30"],
+        ] {
+            let mut args = vec!["lecture.mp4".to_string()];
+            args.extend(flags.into_iter().map(str::to_string));
+            parse_args(&args).unwrap();
+        }
+    }
+
+    #[test]
+    fn parsed_time_range_keeps_defaults_and_exact_seconds() {
+        let parse = |flags: &[&str]| {
+            let mut args = vec!["lecture.mp4".to_string()];
+            args.extend(flags.iter().map(|value| value.to_string()));
+            parse_args(&args).unwrap().time_range
+        };
+        assert!(!parse(&[]).is_selected());
+        let range = parse(&["--start=00:10:00.5", "--end=1500"]);
+        assert_eq!(range.start, Some(600.5));
+        assert_eq!(range.end, Some(1500.0));
+        assert_eq!(parse(&["--end=90"]).start_seconds(), 0.0);
+        assert_eq!(parse(&["--start=90"]).end, None);
+    }
+
+    #[test]
+    fn parse_args_rejects_invalid_time_ranges() {
+        for flags in [
+            vec!["--start=-1"],
+            vec!["--start=NaN"],
+            vec!["--end=inf"],
+            vec!["--start", "00:60:00"],
+            vec!["--start", "1:00:60"],
+            vec!["--start", "1::2"],
+            vec!["--end=0"],
+            vec!["--start=10", "--end=10"],
+            vec!["--start=11", "--end=10"],
+            vec!["--start"],
+            vec!["--end="],
+        ] {
+            let mut args = vec!["lecture.mp4".to_string()];
+            args.extend(flags.into_iter().map(str::to_string));
+            assert!(parse_args(&args).is_err(), "accepted {args:?}");
+        }
+    }
 
     #[test]
     fn saved_default_is_used_and_explicit_selection_skips_loading_settings() {
