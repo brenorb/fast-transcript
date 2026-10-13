@@ -68,7 +68,7 @@ pub(crate) fn usage() -> String {
         ),
         option("-o, --output PATH", "Explicit output path."),
         option("--stdout, -", "Write transcript contents to stdout."),
-        option("--raw", "Disable repeated-word cleanup for this run."),
+        option("--raw", "Disable repeated-word cleanup; segment timing may overlap."),
         option("-c, --clean", "Force cleaned output for this run."),
         String::new(),
         "Diarization:".to_string(),
@@ -103,7 +103,7 @@ pub(crate) fn usage() -> String {
         ),
         option(
             "--overlap N, --chunk-overlap-seconds N",
-            "Chunk overlap in seconds.",
+            "Chunk overlap in seconds; JSON segment intervals may overlap.",
         ),
         option(
             "--model NAME|URL",
