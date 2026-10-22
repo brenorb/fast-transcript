@@ -234,3 +234,22 @@ fn quiet_preserves_warnings_and_worker_failure_details() {
     );
     assert!(output.stdout.is_empty());
 }
+
+#[test]
+fn quiet_protocol_failures_retain_the_workers_diagnostics() {
+    let ready =
+        r#"printf '%s\n' '{"ready":true,"device":"cpu","model_dir":"fixture","load_seconds":0.1}'"#;
+    for script in [
+        "printf '%s\\n' 'not json'".to_string(),
+        "printf '%s\\n' '{\"ready\":true}'".to_string(),
+        "printf '%s\\n' '{\"ready\":false,\"device\":\"cpu\",\"model_dir\":\"fixture\",\"load_seconds\":0.1}'".to_string(),
+        format!("{ready}\nIFS= read -r line\nprintf '%s\\n' '{{}}'"),
+    ] {
+        let fixture = Fixture::new();
+        fixture.script("python", &format!("printf '%s\\n' 'worker failure details' >&2\n{script}"));
+        let output = fixture.run(&[fixture.audio.to_str().unwrap(), "--text=plain", "--quiet"], &[]);
+        assert!(!output.status.success());
+        assert!(text(&output.stderr).contains("worker failure details"), "{}", text(&output.stderr));
+        assert!(output.stdout.is_empty());
+    }
+}
