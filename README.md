@@ -203,6 +203,8 @@ man ./fscript.1
 
 The checked-in `docs/fscript.1` is generated with
 `python3 scripts/generate_man_page.py`; CI checks that it matches the manual.
+The [CLI conventions review](docs/cli-guidelines.md) records the applicable
+guidelines, tested behavior, and intentional interface choices.
 
 
 ```bash
