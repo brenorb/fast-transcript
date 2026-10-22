@@ -11,7 +11,7 @@ use crate::transcribe::transcribe_audio_input;
 use crate::types::{BenchmarkChunk, BenchmarkResult, CliArgs, InputSource};
 use anyhow::{Context, Result};
 use std::env;
-use std::io;
+use std::io::{self, IsTerminal};
 
 pub(crate) fn run(raw_args: Vec<String>) -> Result<()> {
     if raw_args.is_empty() {
@@ -52,6 +52,14 @@ pub(crate) fn run(raw_args: Vec<String>) -> Result<()> {
     let input_source = infer_input_source(&args.input);
 
     match &input_source {
+        InputSource::Stdin => {
+            let stdin = io::stdin();
+            let media = crate::input::spool_stdin(&mut stdin.lock(), stdin.is_terminal())?;
+            let destination = output_destination_for_args(&args, &input_source, None)?;
+            let result = transcribe_audio_input(&args, "-", media.path(), "stdin-local-model")?;
+            emit_result(&args, &result, destination)
+        }
+
         InputSource::RemoteUrl(url) => handle_remote_input(&args, &input_source, url),
         InputSource::LocalPath(path) => {
             let destination = output_destination_for_args(&args, &input_source, None)?;
@@ -105,7 +113,9 @@ fn output_destination_for_args(
     input_source: &InputSource,
     title_hint: Option<&str>,
 ) -> Result<OutputDestination> {
-    if args.output_to_stdout {
+    if args.output_to_stdout
+        || (matches!(input_source, InputSource::Stdin) && args.output_path.is_none())
+    {
         return Ok(OutputDestination::Stdout);
     }
     let current_dir = env::current_dir().context("failed to resolve current working directory")?;

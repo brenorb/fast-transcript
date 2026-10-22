@@ -73,6 +73,7 @@ pub(crate) fn default_output_path_for_input(
     output_format: OutputFormat,
 ) -> PathBuf {
     match source {
+        InputSource::Stdin => PathBuf::from(transcript_filename("stdin", output_format)),
         InputSource::LocalPath(path) => default_output_path(path, output_format),
         InputSource::RemoteUrl(url) => {
             let stem = video_title

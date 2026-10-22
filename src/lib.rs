@@ -5,6 +5,7 @@ mod delivery;
 mod diarization;
 mod engine;
 mod inference;
+mod input;
 mod model;
 mod model_catalog;
 mod output;

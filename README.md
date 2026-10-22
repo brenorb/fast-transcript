@@ -215,6 +215,22 @@ fscript --version
 
 `<media-or-url>` can be a local audio file, a local video file, or a supported remote media URL.
 
+Use `-` as the input to read piped media. Stdin input defaults to transcript contents on
+stdout, so you can compose a pipeline directly:
+
+```bash
+cat lecture.wav | fscript - --text=plain
+cat lecture.mp3 | fscript - --no-diarization --json | jq .text
+cat lecture.mp3 | fscript - notes/ --text=plain
+fscript lecture.mp3 --text=plain --output -
+```
+
+Piped media is spooled to a temporary file for seekable decoding and diarization,
+then removed when the command finishes. Empty stdin and interactive terminal input
+return an error with a pipeline example. An explicit file destination overrides the
+stdout default; directory destinations use `stdin` as the filename stem.
+
+
 When `fscript` writes the transcript to a file, it keeps progress and human-readable status on `stderr` and prints only the final absolute transcript path on `stdout`.
 That makes it easy to compose in shell scripts:
 

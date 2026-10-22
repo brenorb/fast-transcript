@@ -47,6 +47,7 @@ pub(crate) fn usage() -> String {
         "Examples:".to_string(),
         "  fscript lecture.mp3".to_string(),
         "  fscript lecture.mp3 notes/".to_string(),
+        "  cat lecture.wav | fscript - --text=plain".to_string(),
         "  fscript lecture.mp3 --text=plain --stdout".to_string(),
         "  fscript lecture.mp3 --model parakeet-ultra".to_string(),
         "  fscript lecture.mp3 --diarize lseend-dihard3".to_string(),
@@ -79,7 +80,7 @@ pub(crate) fn usage() -> String {
             "[destination]",
             "Output file, output directory, or `-` / `--stdout`.",
         ),
-        option("-o, --output PATH", "Explicit output path."),
+        option("-o, --output PATH", "Explicit output path; - writes to stdout."),
         option("--stdout, -", "Write transcript contents to stdout."),
         option("--raw", "Disable repeated-word cleanup for this run."),
         option("-c, --clean", "Force cleaned output for this run."),
@@ -102,6 +103,9 @@ pub(crate) fn usage() -> String {
             "--backend coreml|lseend-dihard3|none",
             "Legacy alias for older scripts.",
         ),
+        String::new(),
+        "Input:".to_string(),
+        option("- (as input)", "Read piped media; defaults to transcript stdout."),
         String::new(),
         "Remote input:".to_string(),
         option(
@@ -465,8 +469,9 @@ fn parse_args_with_diarization_status_and_default(
     if positional_path.is_some() && !explicit_paths.is_empty() {
         bail!("cannot use both positional output path and --output for output path; choose one and remove the other");
     }
-    let output_to_stdout =
-        matches.get_flag("stdout") || positional_path.is_some_and(|path| path == "-");
+    let output_to_stdout = matches.get_flag("stdout")
+        || positional_path.is_some_and(|path| path == "-")
+        || explicit_paths.last().is_some_and(|path| path == "-");
     let output_path = explicit_paths
         .last()
         .or(positional_path)
