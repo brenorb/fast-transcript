@@ -18,15 +18,25 @@ pub(crate) fn run(raw_args: Vec<String>) -> Result<()> {
         println!("{}", crate::cli::introduction());
         return Ok(());
     }
-    if raw_args == ["help"] || raw_args.iter().any(|arg| arg == "--help" || arg == "-h") {
+    if raw_args == ["help"]
+        || raw_args
+            .iter()
+            .take_while(|arg| *arg != "--")
+            .any(|arg| arg == "--help" || arg == "-h")
+    {
         println!("{}", usage());
         return Ok(());
     }
-    if raw_args.iter().any(|arg| arg == "--version" || arg == "-V") {
+    if raw_args
+        .iter()
+        .take_while(|arg| *arg != "--")
+        .any(|arg| arg == "--version" || arg == "-V")
+    {
         println!("{}", version_string());
         return Ok(());
     }
-    if raw_args.iter().any(|arg| arg == "--list-models") {
+    let matches = crate::cli::parse_command(&raw_args)?;
+    if matches.get_flag("list-models") {
         println!("{}", crate::model_catalog::list_models());
         return Ok(());
     }

@@ -1,4 +1,5 @@
 use anyhow::{bail, Context, Result};
+use clap::{Arg, ArgAction, ArgMatches, Command};
 use std::env;
 use std::path::PathBuf;
 
@@ -201,70 +202,198 @@ fn set_explicit_diarization_backend(
     Ok(())
 }
 
-fn ensure_single_output_format(
-    selected_output_flag: &mut Option<&'static str>,
-    flag_name: &'static str,
-) -> Result<()> {
-    if let Some(previous) = *selected_output_flag {
-        if previous != flag_name {
-            bail!(
-                "output format flags are mutually exclusive; received both {previous} and {flag_name}"
-            );
+// Optional values accept the existing spaced syntax, while a following input path
+// stays positional. Clap handles tokenization, `--`, aliases, and spelling hints.
+pub(crate) fn command() -> Command {
+    let mut command = Command::new("fscript")
+        .disable_help_flag(true)
+        .disable_version_flag(true)
+        .color(clap::ColorChoice::Never)
+        .args_override_self(true)
+        .arg(Arg::new("input").value_name("MEDIA_OR_URL"))
+        .arg(Arg::new("destination").value_name("DESTINATION"));
+    for (name, short) in [
+        ("stdout", None),
+        ("json", None),
+        ("srt", None),
+        ("vtt", None),
+        ("raw", None),
+        ("clean", Some('c')),
+        ("no-diarization", Some('D')),
+        ("local", Some('l')),
+        ("help", Some('h')),
+        ("version", Some('V')),
+        ("list-models", None),
+        ("get-default-model", None),
+        ("reset-default-model", None),
+    ] {
+        let mut arg = Arg::new(name).long(name).action(ArgAction::SetTrue);
+        if let Some(short) = short {
+            arg = arg.short(short);
         }
-    } else {
-        *selected_output_flag = Some(flag_name);
+        if name == "local" {
+            arg = arg.alias("prefer-local-for-remote");
+        }
+        command = command.arg(arg);
     }
-    Ok(())
+    for (name, short) in [
+        ("output", Some('o')),
+        ("model", None),
+        ("model-url", None),
+        ("model-dir", None),
+        ("model-package", None),
+        ("device", None),
+        ("backend", None),
+        ("num-speakers", Some('n')),
+        ("threshold", Some('t')),
+        ("chunk", None),
+        ("overlap", None),
+        ("set-default-model", None),
+    ] {
+        let mut arg = Arg::new(name)
+            .long(name)
+            .action(ArgAction::Append)
+            .num_args(1);
+        if let Some(short) = short {
+            arg = arg.short(short);
+        }
+        if name == "chunk" {
+            arg = arg.alias("chunk-seconds");
+        }
+        if name == "overlap" {
+            arg = arg.alias("chunk-overlap-seconds");
+        }
+        if ["chunk", "overlap", "threshold"].contains(&name) {
+            arg = arg.allow_negative_numbers(true);
+        }
+        command = command.arg(arg);
+    }
+    for (name, default) in [
+        ("text", "timestamps"),
+        ("speakers", "timestamps"),
+        ("diarize", "coreml"),
+    ] {
+        let mut arg = Arg::new(name)
+            .long(name)
+            .num_args(0..=1)
+            .require_equals(true)
+            .default_missing_value(default)
+            .action(ArgAction::Append);
+        if name == "diarize" {
+            arg = arg.short('d');
+        }
+        command = command.arg(arg);
+    }
+    command
 }
 
-fn ensure_single_output_path_source(
-    selected_output_path_source: &mut Option<&'static str>,
-    source_name: &'static str,
-) -> Result<()> {
-    if let Some(previous) = *selected_output_path_source {
-        bail!(
-            "cannot use both {previous} and {source_name} for output path; choose one and remove the other"
-        );
+fn optional_values(flag: &str) -> Option<(&'static str, &'static [&'static str])> {
+    match flag {
+        "--text" => Some(("--text", &["plain", "compact", "timestamps"])),
+        "--speakers" => Some(("--speakers", &["plain", "timestamps"])),
+        "--diarize" | "-d" => Some(("--diarize", &["coreml", "lseend-dihard3", "none"])),
+        _ => None,
     }
-    *selected_output_path_source = Some(source_name);
-    Ok(())
 }
 
-fn reject_ambiguous_optional_flag_value(
-    raw_args: &[String],
-    index: usize,
-    input_already_set: bool,
-    flag_name: &str,
-    expected_values: &str,
-) -> Result<()> {
-    if !input_already_set {
-        return Ok(());
+pub(crate) fn parse_command(raw_args: &[String]) -> Result<ArgMatches> {
+    let mut normalized = Vec::with_capacity(raw_args.len() + 1);
+    normalized.push("fscript".to_string());
+    let mut index = 0;
+    while index < raw_args.len() {
+        let token = &raw_args[index];
+        if token == "--" {
+            normalized.extend_from_slice(&raw_args[index..]);
+            break;
+        }
+        if let (Some((flag, values)), Some(next)) =
+            (optional_values(token), raw_args.get(index + 1))
+        {
+            if values.contains(&next.as_str()) {
+                normalized.push(format!("{flag}={next}"));
+                index += 2;
+                continue;
+            }
+        }
+        normalized.push(token.clone());
+        index += 1;
     }
-
-    let Some(value) = raw_args.get(index + 1) else {
-        return Ok(());
-    };
-    if value.starts_with('-') {
-        return Ok(());
+    let matches = command()
+        .try_get_matches_from(normalized)
+        .map_err(|error| {
+            use clap::error::{ContextKind, ErrorKind};
+            let invalid = error
+                .get(ContextKind::InvalidArg)
+                .map(ToString::to_string)
+                .unwrap_or_default();
+            let message = match error.kind() {
+                ErrorKind::UnknownArgument => format!(
+                    "unknown argument {invalid:?}\n{}",
+                    error
+                        .to_string()
+                        .split_once('\n')
+                        .map_or("", |(_, detail)| detail)
+                ),
+                ErrorKind::InvalidValue
+                    if error
+                        .get(ContextKind::InvalidValue)
+                        .is_some_and(|v| v.to_string().is_empty()) =>
+                {
+                    format!(
+                        "missing value for {}; run fscript --help for options",
+                        invalid.split_whitespace().next().unwrap_or(&invalid)
+                    )
+                }
+                _ => error.to_string(),
+            };
+            anyhow::anyhow!(message)
+        })?;
+    if let Some(input) = matches.get_one::<String>("input") {
+        let input_index = raw_args
+            .iter()
+            .position(|token| token == input)
+            .unwrap_or(usize::MAX);
+        for (index, pair) in raw_args
+            .windows(2)
+            .enumerate()
+            .take_while(|(_, pair)| pair[0] != "--")
+        {
+            if let Some((flag, values)) = optional_values(&pair[0]) {
+                if index > input_index
+                    && !pair[1].starts_with('-')
+                    && !values.contains(&pair[1].as_str())
+                {
+                    bail!("invalid {flag} value {:?}; expected {}. If you meant an output path, pass it before {flag} or use --output.", pair[1], match flag { "--text" => "plain, compact, or timestamps", "--speakers" => "plain or timestamps", _ => "coreml or lseend-dihard3" });
+                }
+            }
+        }
     }
-
-    bail!(
-        "invalid {flag_name} value {value:?}; expected {expected_values}. If you meant an output path, pass it before {flag_name} or use --output."
-    );
+    Ok(matches)
 }
 
-fn required_non_flag_value<'a>(
-    raw_args: &'a [String],
-    index: usize,
-    flag_name: &str,
-) -> Result<&'a str> {
-    let value = raw_args
-        .get(index + 1)
-        .with_context(|| format!("missing value for {flag_name}\n{}", usage()))?;
-    if value.starts_with('-') {
-        bail!("missing value for {flag_name}\n{}", usage());
-    }
-    Ok(value)
+fn values(matches: &ArgMatches, name: &str) -> Vec<String> {
+    matches
+        .get_many::<String>(name)
+        .map(|values| values.cloned().collect())
+        .unwrap_or_default()
+}
+
+fn last_value(matches: &ArgMatches, name: &str) -> Option<String> {
+    values(matches, name).pop()
+}
+
+fn number(matches: &ArgMatches, name: &str) -> Result<Option<f64>> {
+    last_value(matches, name)
+        .map(|value| {
+            let parsed: f64 = value
+                .parse()
+                .with_context(|| format!("invalid --{name} value {value:?}; expected a number"))?;
+            if !parsed.is_finite() {
+                bail!("--{name} must be finite");
+            }
+            Ok(parsed)
+        })
+        .transpose()
 }
 
 pub(crate) fn parse_args(raw_args: &[String]) -> Result<CliArgs> {
@@ -308,393 +437,131 @@ fn parse_args_with_diarization_status_and_default(
     fluidaudio_status: FluidaudioBinaryStatus,
     default_model: impl FnOnce() -> Result<Option<String>>,
 ) -> Result<CliArgs> {
-    if raw_args.is_empty() {
-        bail!("{}", usage());
-    }
-
+    let matches = parse_command(raw_args)?;
     let fluidaudio_available = matches!(fluidaudio_status, FluidaudioBinaryStatus::Available);
-
-    let mut model_dir_override = None;
-    let mut model_package_override = None;
-    let mut model_url_override = None;
-    let mut model_selection_flag = None;
-    let mut model_device = "auto".to_string();
-    let mut input = None;
-    let mut output_path = None;
-    let mut output_to_stdout = false;
-    let mut output_path_source = None;
-    let mut output_format = OutputFormat::Speakers(SpeakersFormat::Timestamped);
-    let mut selected_output_flag = None;
-    let mut clean_output = true;
-    let mut clean_flag = None;
-    let mut force_local_for_remote = false;
-    let mut chunk_seconds_override = None;
-    let mut chunk_overlap_seconds_override = None;
+    let input = matches
+        .get_one::<String>("input")
+        .cloned()
+        .context("missing input path; run fscript --help for examples")?;
+    let model_dir_override = last_value(&matches, "model-dir").map(PathBuf::from);
+    let model_package_override = last_value(&matches, "model-package").map(PathBuf::from);
+    let models = values(&matches, "model");
+    let urls = values(&matches, "model-url");
+    if models.len() + urls.len() > 1 {
+        bail!("choose a single model with --model or --model-url");
+    }
+    if let Some(url) = urls.last() {
+        if !(url.starts_with("https://") || url.starts_with("http://")) {
+            bail!("--model-url requires an http(s) bundle URL; use --model for predefined names");
+        }
+    }
+    let model_url_override = models.into_iter().chain(urls).next();
+    let model_device = last_value(&matches, "device").unwrap_or_else(|| "auto".to_string());
+    let explicit_paths = values(&matches, "output");
+    let positional_path = matches.get_one::<String>("destination");
+    if explicit_paths.len() > 1 {
+        bail!("choose a single --output path");
+    }
+    if positional_path.is_some() && !explicit_paths.is_empty() {
+        bail!("cannot use both positional output path and --output for output path; choose one and remove the other");
+    }
+    let output_to_stdout =
+        matches.get_flag("stdout") || positional_path.is_some_and(|path| path == "-");
+    let output_path = explicit_paths
+        .last()
+        .or(positional_path)
+        .filter(|path| path.as_str() != "-")
+        .map(PathBuf::from);
+    if output_to_stdout && output_path.is_some() {
+        bail!("cannot use both --stdout and an explicit output path; remove one");
+    }
+    let formats = ["text", "speakers", "json", "srt", "vtt"]
+        .into_iter()
+        .filter(|name| {
+            matches.contains_id(name)
+                && match *name {
+                    "json" | "srt" | "vtt" => matches.get_flag(name),
+                    _ => true,
+                }
+        })
+        .collect::<Vec<_>>();
+    if formats.len() > 1 {
+        bail!("output format flags are mutually exclusive; choose one");
+    }
+    let output_format = match formats.first().copied() {
+        Some("text") => OutputFormat::Text(
+            TextFormat::from_cli_value(&last_value(&matches, "text").unwrap())
+                .context("invalid --text value; expected plain, compact, or timestamps")?,
+        ),
+        Some("speakers") => OutputFormat::Speakers(
+            SpeakersFormat::from_cli_value(&last_value(&matches, "speakers").unwrap())
+                .context("invalid --speakers value; expected plain or timestamps")?,
+        ),
+        Some("json") => OutputFormat::Json,
+        Some("srt") => OutputFormat::Subtitle(SubtitleFormat::Srt),
+        Some("vtt") => OutputFormat::Subtitle(SubtitleFormat::Vtt),
+        _ => OutputFormat::Speakers(SpeakersFormat::Timestamped),
+    };
+    if matches.get_flag("raw") && matches.get_flag("clean") {
+        bail!("cannot use both --raw and --clean; remove one");
+    }
+    let clean_output = !matches.get_flag("raw");
+    let force_local_for_remote = matches.get_flag("local");
+    let chunk_seconds_override = number(&matches, "chunk")?;
+    let chunk_overlap_seconds_override = number(&matches, "overlap")?;
+    for (flag, value) in [
+        ("chunk", chunk_seconds_override),
+        ("overlap", chunk_overlap_seconds_override),
+    ] {
+        if value.is_some_and(|n| n < 0.0) {
+            bail!("--{flag} must be >= 0");
+        }
+    }
     let mut diarization_backend = None;
     let mut diarization_backend_explicit = false;
     let mut diarization_selection_source = None;
-    let mut diarization_num_speakers = None;
-    let mut diarization_threshold = None;
-    let mut index = 0usize;
-
-    while index < raw_args.len() {
-        match raw_args[index].as_str() {
-            "--output" | "-o" => {
-                let value = required_non_flag_value(raw_args, index, "--output")?;
-                if output_to_stdout {
-                    bail!("cannot use both --output and --stdout; remove one");
-                }
-                ensure_single_output_path_source(&mut output_path_source, "--output")?;
-                output_path = Some(PathBuf::from(value));
-                index += 2;
-            }
-            flag if flag.starts_with("--output=") => {
-                let value = flag
-                    .split_once('=')
-                    .map(|(_, value)| value)
-                    .filter(|value| !value.is_empty())
-                    .with_context(|| format!("missing value for --output\n{}", usage()))?;
-                if output_to_stdout {
-                    bail!("cannot use both --output and --stdout; remove one");
-                }
-                ensure_single_output_path_source(&mut output_path_source, "--output")?;
-                output_path = Some(PathBuf::from(value));
-                index += 1;
-            }
-            "--model" | "--model-url" => {
-                let flag = raw_args[index].as_str();
-                let value = required_non_flag_value(raw_args, index, flag)?;
-                if model_selection_flag.is_some() {
-                    bail!("choose a single model with --model or --model-url");
-                }
-                if flag == "--model-url"
-                    && !(value.starts_with("https://") || value.starts_with("http://"))
-                {
-                    bail!("--model-url requires an http(s) bundle URL; use --model for predefined names");
-                }
-                model_selection_flag = Some(flag);
-                model_url_override = Some(value.to_string());
-                index += 2;
-            }
-            flag if flag.starts_with("--model=") || flag.starts_with("--model-url=") => {
-                let value = flag
-                    .split_once('=')
-                    .map(|(_, value)| value)
-                    .filter(|value| !value.is_empty())
-                    .with_context(|| format!("missing value for --model\n{}", usage()))?;
-                if model_selection_flag.is_some() {
-                    bail!("choose a single model with --model or --model-url");
-                }
-                if flag.starts_with("--model-url=")
-                    && !(value.starts_with("https://") || value.starts_with("http://"))
-                {
-                    bail!("--model-url requires an http(s) bundle URL; use --model for predefined names");
-                }
-                model_selection_flag = Some(flag);
-                model_url_override = Some(value.to_string());
-                index += 1;
-            }
-            "--device" => {
-                model_device = required_non_flag_value(raw_args, index, "--device")?.to_string();
-                index += 2;
-            }
-            flag if flag.starts_with("--device=") => {
-                model_device = flag.split_once('=').unwrap().1.to_string();
-                index += 1;
-            }
-            "--model-dir" => {
-                let value = required_non_flag_value(raw_args, index, "--model-dir")?;
-                model_dir_override = Some(PathBuf::from(value));
-                index += 2;
-            }
-            "--model-package" => {
-                let value = required_non_flag_value(raw_args, index, "--model-package")?;
-                model_package_override = Some(PathBuf::from(value));
-                index += 2;
-            }
-            "--stdout" => {
-                if output_path.is_some() {
-                    bail!("cannot use both --stdout and an explicit output path; remove one");
-                }
-                output_to_stdout = true;
-                index += 1;
-            }
-            "--json" => {
-                ensure_single_output_format(&mut selected_output_flag, "--json")?;
-                output_format = OutputFormat::Json;
-                index += 1;
-            }
-            "--raw" => {
-                if clean_flag == Some("--clean") {
-                    bail!("cannot use both --raw and --clean; remove one");
-                }
-                clean_flag = Some("--raw");
-                clean_output = false;
-                index += 1;
-            }
-            "-c" | "--clean" => {
-                if clean_flag == Some("--raw") {
-                    bail!("cannot use both --raw and --clean; remove one");
-                }
-                clean_flag = Some("--clean");
-                clean_output = true;
-                index += 1;
-            }
-            "--speakers" => {
-                ensure_single_output_format(&mut selected_output_flag, "--speakers")?;
-                output_format = OutputFormat::Speakers(SpeakersFormat::Timestamped);
-                if let Some(value) = raw_args.get(index + 1) {
-                    if let Some(speakers_format) = SpeakersFormat::from_cli_value(value) {
-                        output_format = OutputFormat::Speakers(speakers_format);
-                        index += 2;
-                        continue;
-                    }
-                }
-                reject_ambiguous_optional_flag_value(
-                    raw_args,
-                    index,
-                    input.is_some(),
-                    "--speakers",
-                    "plain or timestamps",
-                )?;
-                index += 1;
-            }
-            flag if flag.starts_with("--speakers=") => {
-                ensure_single_output_format(&mut selected_output_flag, "--speakers")?;
-                let value = flag
-                    .split_once('=')
-                    .map(|(_, value)| value)
-                    .with_context(|| format!("missing value for --speakers\n{}", usage()))?;
-                let speakers_format = SpeakersFormat::from_cli_value(value).with_context(|| {
-                    format!("invalid --speakers value {value:?}; expected plain or timestamps")
-                })?;
-                output_format = OutputFormat::Speakers(speakers_format);
-                index += 1;
-            }
-            "--text" => {
-                ensure_single_output_format(&mut selected_output_flag, "--text")?;
-                output_format = OutputFormat::Text(TextFormat::Timestamped);
-                if let Some(value) = raw_args.get(index + 1) {
-                    if let Some(text_format) = TextFormat::from_cli_value(value) {
-                        output_format = OutputFormat::Text(text_format);
-                        index += 2;
-                        continue;
-                    }
-                }
-                reject_ambiguous_optional_flag_value(
-                    raw_args,
-                    index,
-                    input.is_some(),
-                    "--text",
-                    "plain, compact, or timestamps",
-                )?;
-                index += 1;
-            }
-            flag if flag.starts_with("--text=") => {
-                ensure_single_output_format(&mut selected_output_flag, "--text")?;
-                let value = flag
-                    .split_once('=')
-                    .map(|(_, value)| value)
-                    .with_context(|| format!("missing value for --text\n{}", usage()))?;
-                let text_format = TextFormat::from_cli_value(value).with_context(|| {
-                    format!(
-                        "invalid --text value {value:?}; expected plain, compact, or timestamps"
-                    )
-                })?;
-                output_format = OutputFormat::Text(text_format);
-                index += 1;
-            }
-            "--srt" => {
-                ensure_single_output_format(&mut selected_output_flag, "--srt")?;
-                output_format = OutputFormat::Subtitle(SubtitleFormat::Srt);
-                index += 1;
-            }
-            "--vtt" => {
-                ensure_single_output_format(&mut selected_output_flag, "--vtt")?;
-                output_format = OutputFormat::Subtitle(SubtitleFormat::Vtt);
-                index += 1;
-            }
-            "--local" | "-l" | "--prefer-local-for-remote" => {
-                force_local_for_remote = true;
-                index += 1;
-            }
-            "--backend" => {
-                let value = raw_args
-                    .get(index + 1)
-                    .with_context(|| format!("missing value for --backend\n{}", usage()))?;
-                set_explicit_diarization_backend(
-                    &mut diarization_backend,
-                    &mut diarization_backend_explicit,
-                    &mut diarization_selection_source,
-                    "--backend",
-                    parse_backend_value(value)?,
-                )?;
-                index += 2;
-            }
-            flag if flag.starts_with("--backend=") => {
-                let value = flag
-                    .split_once('=')
-                    .map(|(_, value)| value)
-                    .with_context(|| format!("missing value for --backend\n{}", usage()))?;
-                set_explicit_diarization_backend(
-                    &mut diarization_backend,
-                    &mut diarization_backend_explicit,
-                    &mut diarization_selection_source,
-                    "--backend",
-                    parse_backend_value(value)?,
-                )?;
-                index += 1;
-            }
-            "-d" | "--diarize" => {
-                let mut requested_backend = Some(DiarizationBackend::Coreml);
-                if let Some(value) = raw_args.get(index + 1) {
-                    if value == "none" {
-                        bail!("use --no-diarization or -D instead of `--diarize none`");
-                    }
-                    if let Ok(parsed_backend) = parse_diarization_model_value(value) {
-                        requested_backend = Some(parsed_backend);
-                        set_explicit_diarization_backend(
-                            &mut diarization_backend,
-                            &mut diarization_backend_explicit,
-                            &mut diarization_selection_source,
-                            "--diarize",
-                            requested_backend,
-                        )?;
-                        index += 2;
-                        continue;
-                    }
-                }
-                reject_ambiguous_optional_flag_value(
-                    raw_args,
-                    index,
-                    input.is_some(),
-                    "--diarize",
-                    "coreml or lseend-dihard3",
-                )?;
-                set_explicit_diarization_backend(
-                    &mut diarization_backend,
-                    &mut diarization_backend_explicit,
-                    &mut diarization_selection_source,
-                    "--diarize",
-                    requested_backend,
-                )?;
-                index += 1;
-            }
-            flag if flag.starts_with("--diarize=") => {
-                let value = flag
-                    .split_once('=')
-                    .map(|(_, value)| value)
-                    .with_context(|| format!("missing value for --diarize\n{}", usage()))?;
-                if value == "none" {
-                    bail!("use --no-diarization or -D instead of `--diarize none`");
-                }
-                set_explicit_diarization_backend(
-                    &mut diarization_backend,
-                    &mut diarization_backend_explicit,
-                    &mut diarization_selection_source,
-                    "--diarize",
-                    Some(parse_diarization_model_value(value)?),
-                )?;
-                index += 1;
-            }
-            "-D" | "--no-diarization" => {
-                set_explicit_diarization_backend(
-                    &mut diarization_backend,
-                    &mut diarization_backend_explicit,
-                    &mut diarization_selection_source,
-                    "--no-diarization",
-                    None,
-                )?;
-                index += 1;
-            }
-            "--num-speakers" | "-n" => {
-                let value = raw_args
-                    .get(index + 1)
-                    .with_context(|| format!("missing value for --num-speakers\n{}", usage()))?;
-                let parsed = value.parse::<usize>().with_context(|| {
-                    format!("invalid --num-speakers value {value:?}\n{}", usage())
-                })?;
-                if parsed == 0 {
-                    bail!("--num-speakers must be >= 1");
-                }
-                diarization_num_speakers = Some(parsed);
-                index += 2;
-            }
-            "-t" | "--threshold" => {
-                let value = raw_args
-                    .get(index + 1)
-                    .with_context(|| format!("missing value for --threshold\n{}", usage()))?;
-                let parsed = value
-                    .parse::<f64>()
-                    .with_context(|| format!("invalid --threshold value {value:?}\n{}", usage()))?;
-                diarization_threshold = Some(parsed);
-                index += 2;
-            }
-            "--chunk" | "--chunk-seconds" => {
-                let value = raw_args
-                    .get(index + 1)
-                    .with_context(|| format!("missing value for --chunk\n{}", usage()))?;
-                let parsed = value
-                    .parse::<f64>()
-                    .with_context(|| format!("invalid --chunk value {value:?}\n{}", usage()))?;
-                if parsed < 0.0 {
-                    bail!("--chunk must be >= 0");
-                }
-                chunk_seconds_override = Some(parsed);
-                index += 2;
-            }
-            "--overlap" | "--chunk-overlap-seconds" => {
-                let value = raw_args
-                    .get(index + 1)
-                    .with_context(|| format!("missing value for --overlap\n{}", usage()))?;
-                let parsed = value
-                    .parse::<f64>()
-                    .with_context(|| format!("invalid --overlap value {value:?}\n{}", usage()))?;
-                if parsed < 0.0 {
-                    bail!("--overlap must be >= 0");
-                }
-                chunk_overlap_seconds_override = Some(parsed);
-                index += 2;
-            }
-            flag if flag.starts_with("--") => bail!("unknown argument {flag:?}\n{}", usage()),
-            flag if flag.starts_with('-') && flag != "-" => {
-                bail!(
-                    "unknown argument {flag:?}; if you meant a path starting with `-`, prefix it with `./`\n{}",
-                    usage()
-                )
-            }
-            value => {
-                if input.is_none() {
-                    input = Some(value.to_string());
-                } else if !output_to_stdout && output_path.is_none() {
-                    if value == "-" {
-                        if output_path.is_some() {
-                            bail!(
-                                "cannot use both --stdout and an explicit output path; remove one"
-                            );
-                        }
-                        output_to_stdout = true;
-                    } else {
-                        ensure_single_output_path_source(
-                            &mut output_path_source,
-                            "positional output path",
-                        )?;
-                        output_path = Some(PathBuf::from(value));
-                    }
-                } else if output_path_source == Some("--output") {
-                    bail!(
-                        "cannot use both positional output path and --output for output path; choose one and remove the other"
-                    );
-                } else {
-                    bail!("unexpected positional argument {value:?}\n{}", usage());
-                }
-                index += 1;
-            }
-        }
+    for backend in values(&matches, "backend") {
+        set_explicit_diarization_backend(
+            &mut diarization_backend,
+            &mut diarization_backend_explicit,
+            &mut diarization_selection_source,
+            "--backend",
+            parse_backend_value(&backend)?,
+        )?;
     }
-
-    let input = input.with_context(|| format!("missing input path\n{}", usage()))?;
-    let output_path = if output_to_stdout { None } else { output_path };
+    for backend in values(&matches, "diarize") {
+        if backend == "none" {
+            bail!("use --no-diarization or -D instead of `--diarize none`");
+        }
+        set_explicit_diarization_backend(
+            &mut diarization_backend,
+            &mut diarization_backend_explicit,
+            &mut diarization_selection_source,
+            "--diarize",
+            Some(parse_diarization_model_value(&backend)?),
+        )?;
+    }
+    if matches.get_flag("no-diarization") {
+        set_explicit_diarization_backend(
+            &mut diarization_backend,
+            &mut diarization_backend_explicit,
+            &mut diarization_selection_source,
+            "--no-diarization",
+            None,
+        )?;
+    }
+    let mut diarization_num_speakers = last_value(&matches, "num-speakers")
+        .map(|value| {
+            let count = value.parse::<usize>().with_context(|| {
+                format!("invalid --num-speakers value {value:?}; expected an integer")
+            })?;
+            if count == 0 {
+                bail!("--num-speakers must be >= 1");
+            }
+            Ok(count)
+        })
+        .transpose()?;
+    let mut diarization_threshold = number(&matches, "threshold")?;
     let diarization_notice = if matches!(output_format, OutputFormat::Text(_)) {
         let ignored_diarization_flags = diarization_backend.is_some()
             || diarization_num_speakers.is_some()

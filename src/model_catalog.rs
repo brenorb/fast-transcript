@@ -64,6 +64,19 @@ pub(crate) fn find_model(name: &str) -> Option<&'static ModelPreset> {
     MODELS.iter().find(|model| model.name == name)
 }
 
+pub(crate) fn unknown_model_message(name: &str) -> String {
+    let suggestion = MODELS
+        .iter()
+        .map(|model| model.name)
+        .chain(["default", "onnx", "redux", "ultra", "phonon"])
+        .map(|candidate| (strsim::levenshtein(name, candidate), candidate))
+        .filter(|(distance, _)| *distance <= 2)
+        .min_by_key(|(distance, _)| *distance)
+        .map(|(_, candidate)| format!(" Did you mean {candidate}?"))
+        .unwrap_or_default();
+    format!("unknown model {name:?}.{suggestion} Run fscript --list-models to choose a model")
+}
+
 pub(crate) fn list_models() -> String {
     let mut lines = vec!["Models: fscript <audio> --model NAME".to_string()];
     for model in &MODELS {

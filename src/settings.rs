@@ -97,9 +97,7 @@ impl DefaultModelStore {
 fn canonical_model(name: &str) -> Result<String> {
     find_model(name)
         .map(|preset| preset.name.to_string())
-        .with_context(|| {
-            format!("unknown model {name:?}; run fscript --list-models to choose a model")
-        })
+        .with_context(|| crate::model_catalog::unknown_model_message(name))
 }
 
 pub(crate) fn default_model_selection() -> Result<Option<String>> {
