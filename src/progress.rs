@@ -1,3 +1,4 @@
+use std::ffi::OsStr;
 use std::io::{self, IsTerminal, Write};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
@@ -31,6 +32,10 @@ fn render_noninteractive_done(total: usize) -> String {
     format!("done transcribing {total} chunks")
 }
 
+fn animated_progress(terminal: bool, quiet: bool, term: Option<&OsStr>) -> bool {
+    terminal && !quiet && term != Some(OsStr::new("dumb"))
+}
+
 pub(crate) struct ChunkProgressReporter {
     total_chunks: usize,
     current_chunk: Arc<AtomicUsize>,
@@ -42,7 +47,11 @@ impl ChunkProgressReporter {
     pub(crate) fn start(total_chunks: usize) -> Self {
         Self::start_with_terminal(
             total_chunks,
-            io::stderr().is_terminal() && !crate::diagnostics::quiet(),
+            animated_progress(
+                io::stderr().is_terminal(),
+                crate::diagnostics::quiet(),
+                std::env::var_os("TERM").as_deref(),
+            ),
         )
     }
 
@@ -104,16 +113,26 @@ impl ChunkProgressReporter {
         }
     }
 
-    pub(crate) fn finish(self) {
+    pub(crate) fn finish(mut self) {
         self.current_chunk
             .store(self.total_chunks.max(1), Ordering::Relaxed);
         self.stop.store(true, Ordering::Relaxed);
 
-        if let Some(handle) = self.handle {
+        if let Some(handle) = self.handle.take() {
             let _ = handle.join();
             eprintln!("\r{}", render_chunk_progress_done(self.total_chunks));
         } else {
             eprintln!("{}", render_noninteractive_done(self.total_chunks));
+        }
+    }
+}
+
+impl Drop for ChunkProgressReporter {
+    fn drop(&mut self) {
+        self.stop.store(true, Ordering::Relaxed);
+        if let Some(handle) = self.handle.take() {
+            let _ = handle.join();
+            eprintln!();
         }
     }
 }
@@ -158,5 +177,27 @@ mod tests {
         assert!(reporter.handle.is_some());
         reporter.set_current_chunk(2);
         reporter.finish();
+    }
+    #[test]
+    fn dropping_an_unfinished_reporter_stops_its_worker() {
+        use std::sync::atomic::Ordering;
+        let reporter = ChunkProgressReporter::start_with_terminal(2, true);
+        let stopped = std::sync::Arc::clone(&reporter.stop);
+        drop(reporter);
+        assert!(
+            stopped.load(Ordering::Relaxed),
+            "failed jobs must stop their spinner"
+        );
+    }
+
+    #[test]
+    fn dumb_terminals_and_redirected_or_quiet_streams_use_plain_progress() {
+        use super::animated_progress;
+        use std::ffi::OsStr;
+        assert!(!animated_progress(true, false, Some(OsStr::new("dumb"))));
+        assert!(!animated_progress(false, false, Some(OsStr::new("xterm"))));
+        assert!(!animated_progress(true, true, Some(OsStr::new("xterm"))));
+        assert!(animated_progress(true, false, Some(OsStr::new("xterm"))));
+        assert!(animated_progress(true, false, None));
     }
 }

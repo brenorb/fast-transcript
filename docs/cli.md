@@ -19,7 +19,9 @@ fscript --reset-default-model
 ## Description
 
 With a local file or URL, fscript writes a transcript file and prints its absolute
-path to stdout. Progress, warnings, and completion notices go to stderr.
+path to stdout. Progress, warnings, and completion notices go to stderr. Animated progress
+requires an interactive stderr and is disabled with `TERM=dumb`; redirected
+streams use plain lines. A failed operation stops its progress worker.
 The default is speaker-aware text with timestamps, repetition cleanup, 120-second
 chunks, and two seconds of overlap. The built-in model is parakeet-v3-int8.
 A saved model preference or explicit override can select another model.
@@ -54,7 +56,9 @@ that file on completion or an ordinary error. Empty stdin or a terminal is rejec
 with a pipeline example. An explicit output file overrides the stdout default;
 a directory destination uses `stdin` as the filename stem.
 
-Use `--` before paths that begin with a hyphen. To read a file named help, use
+Use `--` before paths that begin with a hyphen. Local filenames are passed as
+absolute paths to ffprobe, ffmpeg, and the diarization helper so those programs
+do not reinterpret them as options. To read a file named help, use
 `fscript ./help`. Bare `fscript help` displays help.
 
 ## Options
@@ -125,13 +129,20 @@ on macOS, ~/Library/Application Support/fast-transcript; on Linux,
 Default local filenames are INPUT.speakers.txt, INPUT.transcript.txt,
 INPUT.transcript.json, INPUT.srt, or INPUT.vtt, according to the selected format.
 For remote media, filenames use a sanitized title or URL stem in the current
-directory. Existing output files are replaced; choose another destination to
-retain earlier results.
+directory. Existing output files are replaced only after the complete transcript
+is staged and synced in the destination directory. A failed write leaves the
+earlier transcript intact. Existing file permissions and symlink destinations are preserved, including
+links whose target file must be created. Saving an existing file still requires
+write access to that file. Read-only files, special files, and symlink loops are
+rejected; choose a writable regular file or stdout instead. New transcript files are private to the
+current user on Unix. Choose another destination to retain earlier results.
 
 File output prints only the final absolute path to stdout. Stdout mode prints
 only the selected transcript representation. JSON is formatted and can be piped
 to jq when stdout is selected. Use `--json --stdout` for local files, or `- --json`
-for piped media. Quiet mode does not remove requested data from stdout.
+for piped media. Quiet mode does not remove requested data from stdout. A consumer that closes
+its input early, such as `head`, ends stdout delivery successfully without a
+panic or a broken-pipe diagnostic. Other output failures remain errors.
 
 ## Troubleshooting
 
@@ -154,14 +165,17 @@ then use the same storage paths. `--model-dir PATH` selects existing model files
 Quiet-mode worker failures retain their last diagnostic messages.
 
 Press Ctrl-C to interrupt. Temporary media and normal output are not a resume
-checkpoint; interrupted output writes can leave incomplete files. Correct the
-problem and rerun the command.
+checkpoint. An interrupted save leaves the previous transcript intact; abrupt
+termination can leave a hidden `.fscript-output-*` staging file beside it. Remove
+that staging file and rerun the command.
 
 ## Exit status
 
 Zero indicates success, including help, manual, and version queries. Nonzero
 indicates an argument, configuration, dependency, input, transcription, or output
 failure. Scripts should check the exit status before using the result path.
+Ordinary failures report their causes concisely on stderr, including when
+`RUST_BACKTRACE` is set; backtraces are reserved for unexpected Rust panics.
 
 ## See also
 

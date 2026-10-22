@@ -2,9 +2,20 @@
 
 use crate::types::{InputSource, OutputFormat, SubtitleFormat};
 use anyhow::{Context, Result};
+use std::fmt;
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
+
+/// A consumer such as `head` can finish before us; that is a successful pipe.
+/// Keep this policy on stdout only: a dead model-worker pipe is still a failure.
+pub(crate) fn write_stdout(writer: &mut impl Write, contents: fmt::Arguments<'_>) -> Result<()> {
+    match writer.write_fmt(contents) {
+        Ok(()) => Ok(()),
+        Err(error) if error.kind() == std::io::ErrorKind::BrokenPipe => Ok(()),
+        Err(error) => Err(error).context("failed to write output to stdout"),
+    }
+}
 
 pub(crate) enum OutputDestination {
     Stdout,
@@ -32,9 +43,7 @@ impl OutputDestination {
         stderr: &mut impl Write,
     ) -> Result<()> {
         match self {
-            Self::Stdout => {
-                writeln!(stdout, "{contents}").context("failed to write transcript to stdout")
-            }
+            Self::Stdout => write_stdout(stdout, format_args!("{contents}\n")),
             Self::File(path) => {
                 let absolute_path = write_output_file(contents, path)?;
                 emit_file_output_completion(stdout, stderr, &absolute_path, status_message)
@@ -124,15 +133,111 @@ fn has_trailing_path_separator(path: &Path) -> bool {
 }
 
 fn write_output_file(contents: &str, output_path: &Path) -> Result<PathBuf> {
-    if let Some(parent) = output_path.parent() {
-        if !parent.as_os_str().is_empty() {
-            fs::create_dir_all(parent)
-                .with_context(|| format!("failed to create {}", parent.display()))?;
+    replace_output_file(output_path, |file| writeln!(file, "{contents}"))
+}
+
+fn resolve_output_symlink(output_path: &Path) -> Result<PathBuf> {
+    let mut target = output_path.to_path_buf();
+    for _ in 0..40 {
+        match fs::symlink_metadata(&target) {
+            Ok(metadata) if metadata.file_type().is_symlink() => {
+                let link = fs::read_link(&target).with_context(|| {
+                    format!("failed to read output symlink {}", target.display())
+                })?;
+                target = if link.is_absolute() {
+                    link
+                } else {
+                    target.parent().unwrap_or_else(|| Path::new(".")).join(link)
+                };
+            }
+            Ok(_) => return Ok(target),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(target),
+            Err(error) => {
+                return Err(error)
+                    .with_context(|| format!("failed to inspect output {}", target.display()))
+            }
         }
     }
-    fs::write(output_path, format!("{contents}\n"))
+    anyhow::bail!(
+        "too many output symlinks for {}; choose another destination",
+        output_path.display()
+    )
+}
+
+// Stage beside the destination so rename commits a complete transcript on the
+// same filesystem. Failed writes leave earlier transcripts untouched.
+fn replace_output_file(
+    output_path: &Path,
+    write: impl FnOnce(&mut fs::File) -> std::io::Result<()>,
+) -> Result<PathBuf> {
+    let target = resolve_output_symlink(output_path)?;
+    let parent = target
+        .parent()
+        .filter(|path| !path.as_os_str().is_empty())
+        .unwrap_or_else(|| Path::new("."));
+    fs::create_dir_all(parent).with_context(|| format!("failed to create {}", parent.display()))?;
+    let previous_permissions = match fs::metadata(&target) {
+        Ok(metadata) => {
+            if metadata.permissions().readonly() {
+                anyhow::bail!(
+                    "output {} is read-only; choose another destination",
+                    output_path.display()
+                );
+            }
+            if !metadata.is_file() {
+                anyhow::bail!(
+                    "output {} is not a regular file; choose another destination",
+                    output_path.display()
+                );
+            }
+            // Rename permission comes from the directory; verify the file's
+            // own owner/group/ACL access without truncating its existing data.
+            fs::OpenOptions::new()
+                .write(true)
+                .open(&target)
+                .with_context(|| {
+                    format!(
+                        "cannot write output {}; choose another destination",
+                        output_path.display()
+                    )
+                })?;
+            Some(metadata.permissions())
+        }
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
+        Err(error) => {
+            return Err(error)
+                .with_context(|| format!("failed to inspect {}", output_path.display()))
+        }
+    };
+    let mut staged = tempfile::Builder::new()
+        .prefix(".fscript-output-")
+        .tempfile_in(parent)
+        .with_context(|| format!("failed to stage output in {}", parent.display()))?;
+    write(staged.as_file_mut())
         .with_context(|| format!("failed to write {}", output_path.display()))?;
-    fs::canonicalize(output_path).with_context(|| {
+    staged
+        .as_file_mut()
+        .flush()
+        .with_context(|| format!("failed to flush {}", output_path.display()))?;
+    staged
+        .as_file()
+        .sync_all()
+        .with_context(|| format!("failed to sync {}", output_path.display()))?;
+    if let Some(permissions) = previous_permissions {
+        staged
+            .as_file()
+            .set_permissions(permissions)
+            .with_context(|| {
+                format!(
+                    "failed to preserve permissions for {}",
+                    output_path.display()
+                )
+            })?;
+    }
+    staged
+        .persist(&target)
+        .with_context(|| format!("failed to replace {}", output_path.display()))?;
+    fs::canonicalize(&target).with_context(|| {
         format!(
             "failed to resolve absolute path for {}",
             output_path.display()
@@ -146,8 +251,7 @@ fn emit_file_output_completion(
     output_path: &Path,
     status_message: &str,
 ) -> Result<()> {
-    writeln!(stdout, "{}", output_path.display())
-        .context("failed to write final output path to stdout")?;
+    write_stdout(stdout, format_args!("{}\n", output_path.display()))?;
     writeln!(stderr, "{status_message}").context("failed to write status message to stderr")?;
     Ok(())
 }
@@ -337,8 +441,32 @@ mod tests {
 
 #[cfg(test)]
 mod boundary_tests {
-    use super::OutputDestination;
+    use super::{write_stdout, OutputDestination};
     use std::path::Path;
+
+    #[test]
+    fn stdout_ignores_only_broken_pipe_errors() {
+        struct BrokenWriter(std::io::ErrorKind);
+        impl std::io::Write for BrokenWriter {
+            fn write(&mut self, _: &[u8]) -> std::io::Result<usize> {
+                Err(std::io::Error::from(self.0))
+            }
+            fn flush(&mut self) -> std::io::Result<()> {
+                Ok(())
+            }
+        }
+        assert!(write_stdout(
+            &mut BrokenWriter(std::io::ErrorKind::BrokenPipe),
+            format_args!("result")
+        )
+        .is_ok());
+        let error = write_stdout(
+            &mut BrokenWriter(std::io::ErrorKind::WriteZero),
+            format_args!("result"),
+        )
+        .unwrap_err();
+        assert!(format!("{error:#}").contains("stdout"));
+    }
 
     #[test]
     fn stdout_delivery_writes_only_contents_and_propagates_stream_errors() {
@@ -400,5 +528,101 @@ mod boundary_tests {
         assert!(stdout.is_empty());
         assert!(stderr.is_empty());
         assert_eq!(std::fs::read_to_string(blocker).unwrap(), "existing file");
+    }
+}
+
+#[cfg(unix)]
+#[cfg(test)]
+mod atomic_output_tests {
+    use super::{replace_output_file, write_output_file};
+
+    #[test]
+    fn transcript_replacement_preserves_the_previous_inode_until_commit() {
+        let directory = tempfile::tempdir().unwrap();
+        let output = directory.path().join("transcript.txt");
+        let backup = directory.path().join("previous.txt");
+        std::fs::write(&output, "previous transcript\n").unwrap();
+        std::fs::hard_link(&output, &backup).unwrap();
+
+        write_output_file("new transcript", &output).unwrap();
+
+        assert_eq!(std::fs::read_to_string(output).unwrap(), "new transcript\n");
+        assert_eq!(
+            std::fs::read_to_string(backup).unwrap(),
+            "previous transcript\n"
+        );
+    }
+
+    #[test]
+    fn failed_staging_preserves_existing_transcript_and_cleans_up() {
+        use std::io::{self, Write};
+        let directory = tempfile::tempdir().unwrap();
+        let output = directory.path().join("transcript.txt");
+        std::fs::write(&output, "previous transcript\n").unwrap();
+        let error = replace_output_file(&output, |file| {
+            file.write_all(b"partial transcript")?;
+            Err(io::Error::other("simulated disk full"))
+        })
+        .unwrap_err();
+        assert!(format!("{error:#}").contains("simulated disk full"));
+        drop(error);
+        assert_eq!(
+            std::fs::read_to_string(&output).unwrap(),
+            "previous transcript\n"
+        );
+        assert_eq!(std::fs::read_dir(directory.path()).unwrap().count(), 1);
+    }
+
+    #[test]
+    fn transcript_replacement_keeps_symlinks_and_target_permissions() {
+        use std::os::unix::fs::{symlink, PermissionsExt};
+        let directory = tempfile::tempdir().unwrap();
+        let output = directory.path().join("transcript.txt");
+        let target = directory.path().join("target.txt");
+        std::fs::write(&target, "previous transcript\n").unwrap();
+        std::fs::set_permissions(&target, std::fs::Permissions::from_mode(0o640)).unwrap();
+        symlink("target.txt", &output).unwrap();
+
+        write_output_file("new transcript", &output).unwrap();
+
+        assert!(output.is_symlink());
+        assert_eq!(
+            std::fs::read_to_string(&target).unwrap(),
+            "new transcript\n"
+        );
+        assert_eq!(
+            std::fs::metadata(target).unwrap().permissions().mode() & 0o777,
+            0o640
+        );
+    }
+    #[test]
+    fn transcript_replacement_follows_a_dangling_relative_symlink() {
+        use std::os::unix::fs::symlink;
+        let directory = tempfile::tempdir().unwrap();
+        let output = directory.path().join("transcript.txt");
+        let target = directory.path().join("nested/new.txt");
+        symlink("nested/new.txt", &output).unwrap();
+        write_output_file("new transcript", &output).unwrap();
+        assert!(output.is_symlink());
+        assert_eq!(std::fs::read_to_string(target).unwrap(), "new transcript\n");
+    }
+
+    #[test]
+    fn transcript_replacement_respects_owner_write_permission() {
+        use std::os::unix::fs::PermissionsExt;
+        let directory = tempfile::tempdir().unwrap();
+        let output = directory.path().join("transcript.txt");
+        std::fs::write(&output, "previous transcript\n").unwrap();
+        // Unix owner permissions apply even when the group has write access.
+        std::fs::set_permissions(&output, std::fs::Permissions::from_mode(0o460)).unwrap();
+        assert!(std::fs::OpenOptions::new()
+            .write(true)
+            .open(&output)
+            .is_err());
+        assert!(write_output_file("new transcript", &output).is_err());
+        assert_eq!(
+            std::fs::read_to_string(output).unwrap(),
+            "previous transcript\n"
+        );
     }
 }

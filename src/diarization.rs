@@ -194,6 +194,9 @@ impl<R: CommandRunner> SpeakerDiarizer for FluidAudioDiarizer<R> {
         audio_path: &Path,
         request: &DiarizationRequest,
     ) -> Result<DiarizationResult> {
+        // Child parsers must receive a path, even when the filename begins with '-'.
+        let audio_path = std::path::absolute(audio_path)
+            .with_context(|| format!("failed to resolve audio path {}", audio_path.display()))?;
         let tempdir = tempdir().context("failed to create temp dir for diarization output")?;
         let output_path = tempdir.path().join("diarization.json");
         let mut args = match request.backend {
