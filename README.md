@@ -19,7 +19,7 @@ fscript lecture.mp3 --srt
 fscript lecture.mp3 --vtt
 fscript lecture.mp3 --json
 fscript lecture.mp3 --diarize lseend-dihard3
-fscript lecture.mp3 -D --json --raw
+fscript lecture.mp3 --no-diarization --json --raw
 fscript lecture.mp3 -n 2
 fscript lecture.mp3 --model parakeet-ultra
 fscript --list-models
@@ -208,7 +208,7 @@ fscript <media-or-url> --json
 fscript <media-or-url> --srt
 fscript <media-or-url> --vtt
 fscript <media-or-url> --diarize lseend-dihard3
-fscript <media-or-url> -D --json --raw
+fscript <media-or-url> --no-diarization --json --raw
 fscript <media-or-url> -n 2
 fscript --version
 ```
@@ -244,7 +244,7 @@ fscript lecture.wav --json
 fscript lecture.wav --srt
 fscript lecture.wav --vtt
 fscript lecture.wav --diarize lseend-dihard3
-fscript lecture.wav -D --json --raw
+fscript lecture.wav --no-diarization --json --raw
 fscript lecture.wav -n 2
 fscript lecture.wav --chunk 180 --overlap 3
 fscript lecture.wav --chunk 0
@@ -388,9 +388,11 @@ By default, it:
 
 Modes:
 
-- `-d` / `--diarize`: enable diarization explicitly with the default `coreml` model
-- `-d coreml` / `--diarize coreml`: `FluidInference/speaker-diarization-coreml` path via `fluidaudiocli process --mode offline`
-- `-d lseend-dihard3` / `--diarize lseend-dihard3`: alternate `FluidInference/ls-eend-coreml` DIHARD III path via `fluidaudiocli lseend --variant dihard3`
+Prefer the descriptive `--diarize` flag. The existing `-d` alias remains supported for compatibility; it does not mean debug.
+
+- `--diarize`: enable diarization explicitly with the default `coreml` model
+- `--diarize coreml`: `FluidInference/speaker-diarization-coreml` path via `fluidaudiocli process --mode offline`
+- `--diarize lseend-dihard3`: alternate `FluidInference/ls-eend-coreml` DIHARD III path via `fluidaudiocli lseend --variant dihard3`
   - defaults to `--threshold 0.3`
 - `-D` / `--no-diarization`: skip diarization entirely
 - `--backend=coreml|lseend-dihard3|none`: legacy alias kept for backwards compatibility

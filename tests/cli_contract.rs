@@ -106,3 +106,12 @@ fn nonfinite_chunk_options_fail_before_processing_audio() {
         assert!(error.contains("must be finite"), "{error}");
     }
 }
+
+#[test]
+fn diarization_help_prefers_long_flags_and_explains_legacy_alias() {
+    let output = run(&["--help"]);
+    let help = stdout(&output);
+    assert!(help.contains("  --diarize [coreml|lseend-dihard3]"));
+    assert!(help.contains("Legacy alias: -d."));
+    assert!(!help.contains("-d, --diarize"));
+}

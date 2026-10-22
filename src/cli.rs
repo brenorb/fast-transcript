@@ -86,8 +86,8 @@ pub(crate) fn usage() -> String {
         String::new(),
         "Diarization:".to_string(),
         option(
-            "-d, --diarize [coreml|lseend-dihard3]",
-            "Enable diarization, optionally choosing the model.",
+            "--diarize [coreml|lseend-dihard3]",
+            "Enable diarization. Legacy alias: -d.",
         ),
         option("-D, --no-diarization", "Disable diarization entirely."),
         option(
@@ -878,7 +878,7 @@ mod tests {
         assert!(help.contains("Defaults summary:\n"));
         assert!(help.contains("Examples:\n"));
         assert!(help.contains("--speakers[=plain|timestamps]"));
-        assert!(help.contains("-d, --diarize [coreml|lseend-dihard3]"));
+        assert!(help.contains("--diarize [coreml|lseend-dihard3]"));
         assert!(help.contains("-D, --no-diarization"));
         assert!(!help.contains("/Users/"));
     }
