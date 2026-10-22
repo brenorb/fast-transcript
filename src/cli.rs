@@ -11,6 +11,10 @@ use crate::types::{CliArgs, OutputFormat, SpeakersFormat, SubtitleFormat, TextFo
 
 const DEFAULT_LSEEND_THRESHOLD: f64 = 0.3;
 
+pub(crate) fn introduction() -> &'static str {
+    "fscript — transcribe local audio/video and remote media URLs.\n\nUsage:\n  fscript <media-or-url> [destination] [options]\n\nExamples:\n  fscript lecture.mp3\n  fscript lecture.mp3 --text=plain --stdout\n\nRun fscript --help for all options and defaults."
+}
+
 pub(crate) fn usage() -> String {
     fn option(name: &str, description: &str) -> String {
         format!("  {name:<44} {description}")
@@ -38,6 +42,14 @@ pub(crate) fn usage() -> String {
     [
         "Usage:".to_string(),
         "  fscript <media-or-url> [destination] [options]".to_string(),
+        String::new(),
+        "Examples:".to_string(),
+        "  fscript lecture.mp3".to_string(),
+        "  fscript lecture.mp3 notes/".to_string(),
+        "  fscript lecture.mp3 --text=plain --stdout".to_string(),
+        "  fscript lecture.mp3 --model parakeet-ultra".to_string(),
+        "  fscript lecture.mp3 --diarize lseend-dihard3".to_string(),
+        "  fscript lecture.mp3 -D --json --raw".to_string(),
         String::new(),
         "Default:".to_string(),
         "  fscript <media-or-url>".to_string(),
@@ -137,15 +149,12 @@ pub(crate) fn usage() -> String {
         option("Model dir", &display_help_path(&default_model_dir)),
         option("Model package", &display_help_path(&default_model_package)),
         String::new(),
-        "Examples:".to_string(),
-        "  fscript lecture.mp3".to_string(),
-        "  fscript lecture.mp3 notes/".to_string(),
-        "  fscript lecture.mp3 --text=plain".to_string(),
-        "  fscript lecture.mp3 --text=compact".to_string(),
-        "  fscript lecture.mp3 --model parakeet-ultra".to_string(),
-        "  fscript --list-models".to_string(),
-        "  fscript lecture.mp3 --diarize lseend-dihard3".to_string(),
-        "  fscript lecture.mp3 -D --json --raw".to_string(),
+        "Help:".to_string(),
+        option("-h, --help; help", "Show full help."),
+        option("-V, --version", "Show the installed version."),
+        String::new(),
+        "Documentation: https://github.com/brenorb/fast-transcript#readme".to_string(),
+        "Report issues: https://github.com/brenorb/fast-transcript/issues".to_string(),
     ]
     .join("\n")
 }

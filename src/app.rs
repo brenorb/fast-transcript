@@ -14,7 +14,11 @@ use std::env;
 use std::io;
 
 pub(crate) fn run(raw_args: Vec<String>) -> Result<()> {
-    if raw_args.iter().any(|arg| arg == "--help" || arg == "-h") {
+    if raw_args.is_empty() {
+        println!("{}", crate::cli::introduction());
+        return Ok(());
+    }
+    if raw_args == ["help"] || raw_args.iter().any(|arg| arg == "--help" || arg == "-h") {
         println!("{}", usage());
         return Ok(());
     }
