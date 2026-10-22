@@ -330,7 +330,7 @@ pub fn maybe_diarize_segments(
     let diarization = match diarizer.diarize(audio_path, request) {
         Ok(diarization) => diarization,
         Err(err) if should_skip_diarization_error(&err.to_string()) => {
-            eprintln!("speaker diarization skipped: {}", err);
+            std::eprintln!("speaker diarization skipped: {}", err);
             return Ok((transcript_segments, None));
         }
         Err(err) => return Err(err),

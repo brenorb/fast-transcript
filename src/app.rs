@@ -36,6 +36,7 @@ pub(crate) fn run(raw_args: Vec<String>) -> Result<()> {
         return Ok(());
     }
     let matches = crate::cli::parse_command(&raw_args)?;
+    let _verbosity = crate::diagnostics::Scope::enter(matches.get_flag("quiet"));
     if matches.get_flag("list-models") {
         println!("{}", crate::model_catalog::list_models());
         return Ok(());
@@ -47,7 +48,7 @@ pub(crate) fn run(raw_args: Vec<String>) -> Result<()> {
 
     let args = parse_args_with_default_model(&raw_args, crate::settings::default_model_selection)?;
     if let Some(notice) = &args.diarization_notice {
-        eprintln!("{notice}");
+        std::eprintln!("{notice}");
     }
     let input_source = infer_input_source(&args.input);
 
@@ -91,7 +92,7 @@ fn handle_remote_input(args: &CliArgs, input_source: &InputSource, url: &str) ->
             }
             Ok(None) => {}
             Err(error) => {
-                eprintln!(
+                std::eprintln!(
                     "warning: manual subtitle download failed; falling back to remote audio download: {error}"
                 );
             }
@@ -184,6 +185,6 @@ fn emit_result_with_status(
         &output,
         status_message,
         &mut io::stdout(),
-        &mut io::stderr(),
+        &mut crate::diagnostics::StatusWriter,
     )
 }

@@ -232,6 +232,12 @@ stdout default; directory destinations use `stdin` as the filename stem.
 
 
 When `fscript` writes the transcript to a file, it keeps progress and human-readable status on `stderr` and prints only the final absolute transcript path on `stdout`.
+Use `-q` / `--quiet` to suppress progress, completion messages, and successful
+model-worker diagnostics. Transcript contents, result paths, model queries, warnings,
+and errors remain visible. SDK installers may still report dependency diagnostics
+during first setup. Settings commands also accept `--quiet`; saving or resetting a
+preference reports its confirmation on stderr.
+
 That makes it easy to compose in shell scripts:
 
 ```bash

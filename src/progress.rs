@@ -40,7 +40,10 @@ pub(crate) struct ChunkProgressReporter {
 
 impl ChunkProgressReporter {
     pub(crate) fn start(total_chunks: usize) -> Self {
-        Self::start_with_terminal(total_chunks, io::stderr().is_terminal())
+        Self::start_with_terminal(
+            total_chunks,
+            io::stderr().is_terminal() && !crate::diagnostics::quiet(),
+        )
     }
 
     fn start_with_terminal(total_chunks: usize, stderr_is_terminal: bool) -> Self {

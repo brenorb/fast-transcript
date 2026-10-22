@@ -115,6 +115,12 @@ pub(crate) enum SettingsCommand {
 }
 
 pub(crate) fn parse_settings_command(args: &[String]) -> Result<Option<SettingsCommand>> {
+    let filtered = args
+        .iter()
+        .filter(|arg| !matches!(arg.as_str(), "--quiet" | "-q"))
+        .cloned()
+        .collect::<Vec<_>>();
+    let args = filtered.as_slice();
     let is_settings_flag = |arg: &str| {
         matches!(
             arg,
@@ -139,7 +145,7 @@ pub(crate) fn parse_settings_command(args: &[String]) -> Result<Option<SettingsC
 pub(crate) fn run_settings_command(command: SettingsCommand) -> Result<()> {
     let store = DefaultModelStore::configured();
     match command {
-        SettingsCommand::Set(model) => println!("Default model: {}", store.save(&model)?),
+        SettingsCommand::Set(model) => eprintln!("Default model: {}", store.save(&model)?),
         SettingsCommand::Get => println!(
             "{}",
             store
@@ -148,7 +154,7 @@ pub(crate) fn run_settings_command(command: SettingsCommand) -> Result<()> {
         ),
         SettingsCommand::Reset => {
             store.reset()?;
-            println!("Saved default model reset.");
+            eprintln!("Saved default model reset.");
         }
     }
     Ok(())

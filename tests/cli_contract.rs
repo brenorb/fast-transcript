@@ -115,3 +115,28 @@ fn diarization_help_prefers_long_flags_and_explains_legacy_alias() {
     assert!(help.contains("Legacy alias: -d."));
     assert!(!help.contains("-d, --diarize"));
 }
+
+#[test]
+fn quiet_settings_commands_preserve_data_and_suppress_confirmations() {
+    for args in [
+        &["--quiet", "--set-default-model", "ultra"][..],
+        &["--reset-default-model", "-q"],
+    ] {
+        let output = run(args);
+        assert!(output.status.success(), "{output:?}");
+        assert!(output.stdout.is_empty());
+        assert!(output.stderr.is_empty());
+    }
+    let output = run(&["--get-default-model", "--quiet"]);
+    assert!(output.status.success(), "{output:?}");
+    assert_eq!(stdout(&output).trim(), "parakeet-v3-int8");
+    assert!(output.stderr.is_empty());
+}
+
+#[test]
+fn settings_confirmations_are_status_messages_on_stderr() {
+    let output = run(&["--set-default-model", "ultra"]);
+    assert!(output.status.success(), "{output:?}");
+    assert!(output.stdout.is_empty());
+    assert!(String::from_utf8_lossy(&output.stderr).contains("Default model: parakeet-ultra"));
+}

@@ -146,3 +146,91 @@ fn empty_stdin_fails_with_a_pipeline_example() {
     assert!(!error.contains("loading model"));
     assert!(output.stdout.is_empty());
 }
+
+#[test]
+fn quiet_suppresses_progress_and_worker_chatter_without_changing_transcripts() {
+    for flag in ["--quiet", "-q"] {
+        let fixture = Fixture::new();
+        let normal = fixture.run(
+            &[fixture.audio.to_str().unwrap(), "--text=plain", "--stdout"],
+            &[],
+        );
+        assert!(normal.status.success(), "{}", text(&normal.stderr));
+        assert!(text(&normal.stderr).contains("loading model"));
+        fixture.script(
+            "python",
+            r#"printf '%s\n' 'SDK debug chatter' >&2
+printf '%s\n' '{"ready":true,"device":"cpu","model_dir":"fixture","load_seconds":0.1}'
+while IFS= read -r line; do
+  printf '%s\n' '{"text":"Pipe works.","segments":[{"start":0,"end":1,"text":"Pipe works."}]}'
+done"#,
+        );
+        let quiet = fixture.run(
+            &[
+                fixture.audio.to_str().unwrap(),
+                "--text=plain",
+                "--stdout",
+                flag,
+            ],
+            &[],
+        );
+        assert!(quiet.status.success(), "{}", text(&quiet.stderr));
+        assert_eq!(quiet.stdout, normal.stdout);
+        assert!(quiet.stderr.is_empty(), "{}", text(&quiet.stderr));
+    }
+}
+
+#[test]
+fn quiet_file_output_still_prints_the_result_path() {
+    let fixture = Fixture::new();
+    let output = fixture.run(
+        &[
+            fixture.audio.to_str().unwrap(),
+            "out.txt",
+            "--text=plain",
+            "--quiet",
+        ],
+        &[],
+    );
+    assert!(output.status.success(), "{}", text(&output.stderr));
+    assert_eq!(
+        text(&output.stdout).trim(),
+        fs::canonicalize(fixture.root.path().join("out.txt"))
+            .unwrap()
+            .to_str()
+            .unwrap()
+    );
+    assert!(output.stderr.is_empty(), "{}", text(&output.stderr));
+}
+
+#[test]
+fn quiet_preserves_warnings_and_worker_failure_details() {
+    let fixture = Fixture::new();
+    let output = fixture.run(
+        &[
+            fixture.audio.to_str().unwrap(),
+            "--json",
+            "--stdout",
+            "--quiet",
+        ],
+        &[],
+    );
+    assert!(output.status.success(), "{}", text(&output.stderr));
+    assert!(text(&output.stderr).contains("speaker diarization disabled"));
+    assert!(!text(&output.stderr).contains("loading model"));
+    fixture.script(
+        "python",
+        "printf '%s\\n' 'backend failed: unavailable device' >&2\nexit 1",
+    );
+    let output = fixture.run(
+        &[fixture.audio.to_str().unwrap(), "--text=plain", "--quiet"],
+        &[],
+    );
+    assert!(!output.status.success());
+    assert!(
+        text(&output.stderr).contains("backend failed: unavailable device"),
+        "{}",
+        text(&output.stderr)
+    );
+    assert!(output.stdout.is_empty());
+}

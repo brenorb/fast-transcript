@@ -1,3 +1,5 @@
+#[macro_use]
+mod diagnostics;
 mod app;
 mod audio;
 mod cli;
