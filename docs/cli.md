@@ -125,8 +125,12 @@ on macOS, ~/Library/Application Support/fast-transcript; on Linux,
 Default local filenames are INPUT.speakers.txt, INPUT.transcript.txt,
 INPUT.transcript.json, INPUT.srt, or INPUT.vtt, according to the selected format.
 For remote media, filenames use a sanitized title or URL stem in the current
-directory. Existing output files are replaced; choose another destination to
-retain earlier results.
+directory. Existing output files are replaced only after the complete transcript
+is staged and synced in the destination directory. A failed write leaves the
+earlier transcript intact. Existing file permissions and resolved symlink targets
+are preserved. Read-only files, special files, and dangling symlinks are rejected;
+choose a regular file or stdout instead. New transcript files are private to the
+current user. Choose another destination to retain earlier results.
 
 File output prints only the final absolute path to stdout. Stdout mode prints
 only the selected transcript representation. JSON is formatted and can be piped
@@ -154,8 +158,9 @@ then use the same storage paths. `--model-dir PATH` selects existing model files
 Quiet-mode worker failures retain their last diagnostic messages.
 
 Press Ctrl-C to interrupt. Temporary media and normal output are not a resume
-checkpoint; interrupted output writes can leave incomplete files. Correct the
-problem and rerun the command.
+checkpoint. An interrupted save leaves the previous transcript intact; abrupt
+termination can leave a hidden `.fscript-output-*` staging file beside it. Remove
+that staging file and rerun the command.
 
 ## Exit status
 

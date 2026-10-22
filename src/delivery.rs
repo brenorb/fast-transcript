@@ -124,15 +124,78 @@ fn has_trailing_path_separator(path: &Path) -> bool {
 }
 
 fn write_output_file(contents: &str, output_path: &Path) -> Result<PathBuf> {
-    if let Some(parent) = output_path.parent() {
-        if !parent.as_os_str().is_empty() {
-            fs::create_dir_all(parent)
-                .with_context(|| format!("failed to create {}", parent.display()))?;
+    replace_output_file(output_path, |file| writeln!(file, "{contents}"))
+}
+
+// Stage beside the destination so rename commits a complete transcript on the
+// same filesystem. Failed writes leave earlier transcripts untouched.
+fn replace_output_file(
+    output_path: &Path,
+    write: impl FnOnce(&mut fs::File) -> std::io::Result<()>,
+) -> Result<PathBuf> {
+    let target = if output_path.is_symlink() {
+        fs::canonicalize(output_path).with_context(|| {
+            format!("failed to resolve output symlink {}", output_path.display())
+        })?
+    } else {
+        output_path.to_path_buf()
+    };
+    let parent = target
+        .parent()
+        .filter(|path| !path.as_os_str().is_empty())
+        .unwrap_or_else(|| Path::new("."));
+    fs::create_dir_all(parent).with_context(|| format!("failed to create {}", parent.display()))?;
+    let previous_permissions = match fs::metadata(&target) {
+        Ok(metadata) => {
+            if metadata.permissions().readonly() {
+                anyhow::bail!(
+                    "output {} is read-only; choose another destination",
+                    output_path.display()
+                );
+            }
+            if !metadata.is_file() {
+                anyhow::bail!(
+                    "output {} is not a regular file; choose another destination",
+                    output_path.display()
+                );
+            }
+            Some(metadata.permissions())
         }
-    }
-    fs::write(output_path, format!("{contents}\n"))
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
+        Err(error) => {
+            return Err(error)
+                .with_context(|| format!("failed to inspect {}", output_path.display()))
+        }
+    };
+    let mut staged = tempfile::Builder::new()
+        .prefix(".fscript-output-")
+        .tempfile_in(parent)
+        .with_context(|| format!("failed to stage output in {}", parent.display()))?;
+    write(staged.as_file_mut())
         .with_context(|| format!("failed to write {}", output_path.display()))?;
-    fs::canonicalize(output_path).with_context(|| {
+    staged
+        .as_file_mut()
+        .flush()
+        .with_context(|| format!("failed to flush {}", output_path.display()))?;
+    staged
+        .as_file()
+        .sync_all()
+        .with_context(|| format!("failed to sync {}", output_path.display()))?;
+    if let Some(permissions) = previous_permissions {
+        staged
+            .as_file()
+            .set_permissions(permissions)
+            .with_context(|| {
+                format!(
+                    "failed to preserve permissions for {}",
+                    output_path.display()
+                )
+            })?;
+    }
+    staged
+        .persist(&target)
+        .with_context(|| format!("failed to replace {}", output_path.display()))?;
+    fs::canonicalize(&target).with_context(|| {
         format!(
             "failed to resolve absolute path for {}",
             output_path.display()
@@ -400,5 +463,71 @@ mod boundary_tests {
         assert!(stdout.is_empty());
         assert!(stderr.is_empty());
         assert_eq!(std::fs::read_to_string(blocker).unwrap(), "existing file");
+    }
+}
+
+#[cfg(unix)]
+#[cfg(test)]
+mod atomic_output_tests {
+    use super::{replace_output_file, write_output_file};
+
+    #[test]
+    fn transcript_replacement_preserves_the_previous_inode_until_commit() {
+        let directory = tempfile::tempdir().unwrap();
+        let output = directory.path().join("transcript.txt");
+        let backup = directory.path().join("previous.txt");
+        std::fs::write(&output, "previous transcript\n").unwrap();
+        std::fs::hard_link(&output, &backup).unwrap();
+
+        write_output_file("new transcript", &output).unwrap();
+
+        assert_eq!(std::fs::read_to_string(output).unwrap(), "new transcript\n");
+        assert_eq!(
+            std::fs::read_to_string(backup).unwrap(),
+            "previous transcript\n"
+        );
+    }
+
+    #[test]
+    fn failed_staging_preserves_existing_transcript_and_cleans_up() {
+        use std::io::{self, Write};
+        let directory = tempfile::tempdir().unwrap();
+        let output = directory.path().join("transcript.txt");
+        std::fs::write(&output, "previous transcript\n").unwrap();
+        let error = replace_output_file(&output, |file| {
+            file.write_all(b"partial transcript")?;
+            Err(io::Error::other("simulated disk full"))
+        })
+        .unwrap_err();
+        assert!(format!("{error:#}").contains("simulated disk full"));
+        drop(error);
+        assert_eq!(
+            std::fs::read_to_string(&output).unwrap(),
+            "previous transcript\n"
+        );
+        assert_eq!(std::fs::read_dir(directory.path()).unwrap().count(), 1);
+    }
+
+    #[test]
+    fn transcript_replacement_keeps_symlinks_and_target_permissions() {
+        use std::os::unix::fs::{symlink, PermissionsExt};
+        let directory = tempfile::tempdir().unwrap();
+        let output = directory.path().join("transcript.txt");
+        let target = directory.path().join("target.txt");
+        std::fs::write(&target, "previous transcript\n").unwrap();
+        std::fs::set_permissions(&target, std::fs::Permissions::from_mode(0o640)).unwrap();
+        symlink("target.txt", &output).unwrap();
+
+        write_output_file("new transcript", &output).unwrap();
+
+        assert!(output.is_symlink());
+        assert_eq!(
+            std::fs::read_to_string(&target).unwrap(),
+            "new transcript\n"
+        );
+        assert_eq!(
+            std::fs::metadata(target).unwrap().permissions().mode() & 0o777,
+            0o640
+        );
     }
 }
