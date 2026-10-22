@@ -28,7 +28,13 @@ fn no_arguments_prints_a_successful_concise_introduction() {
 
 #[test]
 fn help_aliases_offer_examples_documentation_and_support() {
-    for args in [&["help"][..], &["--help"], &["-h"], &["--typo", "--help"]] {
+    for args in [
+        &["help"][..],
+        &["--help"],
+        &["-h"],
+        &["--typo", "--help"],
+        &["-qh"],
+    ] {
         let output = run(args);
         assert!(output.status.success(), "{args:?}: {output:?}");
         let help = stdout(&output);
@@ -246,4 +252,15 @@ fn normal_cli_errors_omit_backtraces_even_when_rust_backtrace_is_enabled() {
     assert!(!error.contains("stack backtrace:"), "{error}");
     assert!(error.lines().count() < 16, "{error}");
     assert!(output.stdout.is_empty());
+}
+
+#[test]
+fn clustered_version_flag_prints_the_installed_version() {
+    let output = run(&["-qV"]);
+    assert!(output.status.success(), "{output:?}");
+    assert_eq!(
+        stdout(&output).trim(),
+        format!("fscript {}", env!("CARGO_PKG_VERSION"))
+    );
+    assert!(output.stderr.is_empty());
 }

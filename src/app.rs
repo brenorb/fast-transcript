@@ -44,6 +44,15 @@ pub(crate) fn run(raw_args: Vec<String>) -> Result<()> {
         );
     }
     let matches = crate::cli::parse_command(&raw_args)?;
+    if matches.get_flag("help") {
+        return write_stdout(&mut io::stdout().lock(), format_args!("{}\n", usage()));
+    }
+    if matches.get_flag("version") {
+        return write_stdout(
+            &mut io::stdout().lock(),
+            format_args!("{}\n", version_string()),
+        );
+    }
     let _verbosity = crate::diagnostics::Scope::enter(matches.get_flag("quiet"));
     if matches.get_flag("manual") {
         return write_stdout(

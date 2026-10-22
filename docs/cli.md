@@ -19,7 +19,9 @@ fscript --reset-default-model
 ## Description
 
 With a local file or URL, fscript writes a transcript file and prints its absolute
-path to stdout. Progress, warnings, and completion notices go to stderr.
+path to stdout. Progress, warnings, and completion notices go to stderr. Animated progress
+requires an interactive stderr and is disabled with `TERM=dumb`; redirected
+streams use plain lines. A failed operation stops its progress worker.
 The default is speaker-aware text with timestamps, repetition cleanup, 120-second
 chunks, and two seconds of overlap. The built-in model is parakeet-v3-int8.
 A saved model preference or explicit override can select another model.
@@ -130,7 +132,7 @@ is staged and synced in the destination directory. A failed write leaves the
 earlier transcript intact. Existing file permissions and resolved symlink targets
 are preserved. Read-only files, special files, and dangling symlinks are rejected;
 choose a regular file or stdout instead. New transcript files are private to the
-current user. Choose another destination to retain earlier results.
+current user on Unix. Choose another destination to retain earlier results.
 
 File output prints only the final absolute path to stdout. Stdout mode prints
 only the selected transcript representation. JSON is formatted and can be piped
