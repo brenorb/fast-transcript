@@ -129,7 +129,11 @@ pub(crate) fn parse_settings_command(args: &[String]) -> Result<Option<SettingsC
             || arg.starts_with("--get-default-model=")
             || arg.starts_with("--reset-default-model=")
     };
-    if !args.iter().any(|arg| is_settings_flag(arg)) {
+    if !args
+        .iter()
+        .take_while(|arg| arg.as_str() != "--")
+        .any(|arg| is_settings_flag(arg))
+    {
         return Ok(None);
     }
     let command = match args {

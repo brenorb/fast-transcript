@@ -52,8 +52,8 @@ done"#);
             }
         }
         command
-            .args(args)
             .args(["--model", "ultra"])
+            .args(args)
             .current_dir(self.root.path())
             .env("PATH", self.root.path())
             .env("FSCRIPT_PYTHON_BINARY", self.root.path().join("python"))
@@ -251,5 +251,25 @@ fn quiet_protocol_failures_retain_the_workers_diagnostics() {
         assert!(!output.status.success());
         assert!(text(&output.stderr).contains("worker failure details"), "{}", text(&output.stderr));
         assert!(output.stdout.is_empty());
+    }
+}
+
+#[test]
+fn settings_named_media_after_end_of_options_stays_a_literal_path() {
+    for filename in [
+        "--get-default-model",
+        "--set-default-model",
+        "--reset-default-model",
+    ] {
+        let fixture = Fixture::new();
+        fs::copy(&fixture.audio, fixture.root.path().join(filename)).unwrap();
+        let output = fixture.run(&["--text=plain", "--stdout", "--", filename], &[]);
+        assert!(
+            output.status.success(),
+            "{filename}: {}",
+            text(&output.stderr)
+        );
+        assert_eq!(text(&output.stdout), "Pipe works.\n");
+        assert!(!fixture.root.path().join("config.json").exists());
     }
 }
