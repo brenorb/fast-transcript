@@ -129,9 +129,10 @@ INPUT.transcript.json, INPUT.srt, or INPUT.vtt, according to the selected format
 For remote media, filenames use a sanitized title or URL stem in the current
 directory. Existing output files are replaced only after the complete transcript
 is staged and synced in the destination directory. A failed write leaves the
-earlier transcript intact. Existing file permissions and resolved symlink targets
-are preserved. Read-only files, special files, and dangling symlinks are rejected;
-choose a regular file or stdout instead. New transcript files are private to the
+earlier transcript intact. Existing file permissions and symlink destinations are preserved, including
+links whose target file must be created. Saving an existing file still requires
+write access to that file. Read-only files, special files, and symlink loops are
+rejected; choose a writable regular file or stdout instead. New transcript files are private to the
 current user on Unix. Choose another destination to retain earlier results.
 
 File output prints only the final absolute path to stdout. Stdout mode prints

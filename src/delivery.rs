@@ -136,19 +136,41 @@ fn write_output_file(contents: &str, output_path: &Path) -> Result<PathBuf> {
     replace_output_file(output_path, |file| writeln!(file, "{contents}"))
 }
 
+fn resolve_output_symlink(output_path: &Path) -> Result<PathBuf> {
+    let mut target = output_path.to_path_buf();
+    for _ in 0..40 {
+        match fs::symlink_metadata(&target) {
+            Ok(metadata) if metadata.file_type().is_symlink() => {
+                let link = fs::read_link(&target).with_context(|| {
+                    format!("failed to read output symlink {}", target.display())
+                })?;
+                target = if link.is_absolute() {
+                    link
+                } else {
+                    target.parent().unwrap_or_else(|| Path::new(".")).join(link)
+                };
+            }
+            Ok(_) => return Ok(target),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(target),
+            Err(error) => {
+                return Err(error)
+                    .with_context(|| format!("failed to inspect output {}", target.display()))
+            }
+        }
+    }
+    anyhow::bail!(
+        "too many output symlinks for {}; choose another destination",
+        output_path.display()
+    )
+}
+
 // Stage beside the destination so rename commits a complete transcript on the
 // same filesystem. Failed writes leave earlier transcripts untouched.
 fn replace_output_file(
     output_path: &Path,
     write: impl FnOnce(&mut fs::File) -> std::io::Result<()>,
 ) -> Result<PathBuf> {
-    let target = if output_path.is_symlink() {
-        fs::canonicalize(output_path).with_context(|| {
-            format!("failed to resolve output symlink {}", output_path.display())
-        })?
-    } else {
-        output_path.to_path_buf()
-    };
+    let target = resolve_output_symlink(output_path)?;
     let parent = target
         .parent()
         .filter(|path| !path.as_os_str().is_empty())
@@ -168,6 +190,17 @@ fn replace_output_file(
                     output_path.display()
                 );
             }
+            // Rename permission comes from the directory; verify the file's
+            // own owner/group/ACL access without truncating its existing data.
+            fs::OpenOptions::new()
+                .write(true)
+                .open(&target)
+                .with_context(|| {
+                    format!(
+                        "cannot write output {}; choose another destination",
+                        output_path.display()
+                    )
+                })?;
             Some(metadata.permissions())
         }
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
@@ -560,6 +593,36 @@ mod atomic_output_tests {
         assert_eq!(
             std::fs::metadata(target).unwrap().permissions().mode() & 0o777,
             0o640
+        );
+    }
+    #[test]
+    fn transcript_replacement_follows_a_dangling_relative_symlink() {
+        use std::os::unix::fs::symlink;
+        let directory = tempfile::tempdir().unwrap();
+        let output = directory.path().join("transcript.txt");
+        let target = directory.path().join("nested/new.txt");
+        symlink("nested/new.txt", &output).unwrap();
+        write_output_file("new transcript", &output).unwrap();
+        assert!(output.is_symlink());
+        assert_eq!(std::fs::read_to_string(target).unwrap(), "new transcript\n");
+    }
+
+    #[test]
+    fn transcript_replacement_respects_owner_write_permission() {
+        use std::os::unix::fs::PermissionsExt;
+        let directory = tempfile::tempdir().unwrap();
+        let output = directory.path().join("transcript.txt");
+        std::fs::write(&output, "previous transcript\n").unwrap();
+        // Unix owner permissions apply even when the group has write access.
+        std::fs::set_permissions(&output, std::fs::Permissions::from_mode(0o460)).unwrap();
+        assert!(std::fs::OpenOptions::new()
+            .write(true)
+            .open(&output)
+            .is_err());
+        assert!(write_output_file("new transcript", &output).is_err());
+        assert_eq!(
+            std::fs::read_to_string(output).unwrap(),
+            "previous transcript\n"
         );
     }
 }
