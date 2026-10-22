@@ -200,3 +200,50 @@ fn both_offline_formats_cover_every_documented_long_option() {
         assert!(man.contains(option), "man page is missing {option}");
     }
 }
+
+#[cfg(unix)]
+#[test]
+fn informational_output_handles_a_closed_pipe_without_panicking() {
+    use std::os::fd::OwnedFd;
+    use std::os::unix::net::UnixStream;
+    use std::process::Stdio;
+
+    for args in [
+        &[][..],
+        &["--help"],
+        &["--version"],
+        &["--manual"],
+        &["--man-page"],
+        &["--list-models"],
+        &["--get-default-model"],
+    ] {
+        let (reader, writer) = UnixStream::pair().unwrap();
+        drop(reader);
+        let directory = tempfile::tempdir().unwrap();
+        let output = Command::new(env!("CARGO_BIN_EXE_fscript"))
+            .args(args)
+            .env("FSCRIPT_CONFIG_FILE", directory.path().join("missing.json"))
+            .stdout(Stdio::from(OwnedFd::from(writer)))
+            .output()
+            .unwrap();
+        assert!(output.status.success(), "{args:?}: {output:?}");
+        assert!(output.stderr.is_empty(), "{args:?}: {output:?}");
+    }
+}
+
+#[test]
+fn normal_cli_errors_omit_backtraces_even_when_rust_backtrace_is_enabled() {
+    let output = Command::new(env!("CARGO_BIN_EXE_fscript"))
+        .args(["--certainly-invalid"])
+        .env("RUST_BACKTRACE", "1")
+        .output()
+        .unwrap();
+    let error = String::from_utf8_lossy(&output.stderr);
+    assert!(!output.status.success());
+    assert!(error.starts_with("error:"), "{error}");
+    assert!(error.contains("--help"), "{error}");
+    assert!(!error.contains("Stack backtrace:"), "{error}");
+    assert!(!error.contains("stack backtrace:"), "{error}");
+    assert!(error.lines().count() < 16, "{error}");
+    assert!(output.stdout.is_empty());
+}

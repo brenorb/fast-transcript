@@ -358,7 +358,7 @@ pub(crate) fn parse_command(raw_args: &[String]) -> Result<ArgMatches> {
                 }
                 _ => error.to_string(),
             };
-            anyhow::anyhow!(message)
+            anyhow::anyhow!("{message}\nFor help, run fscript --help.")
         })?;
     if let Some(input) = matches.get_one::<String>("input") {
         let input_index = raw_args

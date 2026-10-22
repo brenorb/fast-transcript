@@ -1,7 +1,7 @@
 //! Application routing for local media, remote subtitles, and rendered output.
 
 use crate::cli::{parse_args_with_default_model, usage, version_string};
-use crate::delivery::{default_output_path_for_input, OutputDestination};
+use crate::delivery::{default_output_path_for_input, write_stdout, OutputDestination};
 use crate::output::render_output;
 use crate::remote::{
     download_manual_remote_transcript, download_remote_audio, infer_input_source,
@@ -20,8 +20,10 @@ pub(crate) fn run(raw_args: Vec<String>) -> Result<()> {
         raw_args
     };
     if raw_args.is_empty() {
-        println!("{}", crate::cli::introduction());
-        return Ok(());
+        return write_stdout(
+            &mut io::stdout().lock(),
+            format_args!("{}\n", crate::cli::introduction()),
+        );
     }
     if raw_args == ["help"]
         || raw_args
@@ -29,30 +31,37 @@ pub(crate) fn run(raw_args: Vec<String>) -> Result<()> {
             .take_while(|arg| *arg != "--")
             .any(|arg| arg == "--help" || arg == "-h")
     {
-        println!("{}", usage());
-        return Ok(());
+        return write_stdout(&mut io::stdout().lock(), format_args!("{}\n", usage()));
     }
     if raw_args
         .iter()
         .take_while(|arg| *arg != "--")
         .any(|arg| arg == "--version" || arg == "-V")
     {
-        println!("{}", version_string());
-        return Ok(());
+        return write_stdout(
+            &mut io::stdout().lock(),
+            format_args!("{}\n", version_string()),
+        );
     }
     let matches = crate::cli::parse_command(&raw_args)?;
     let _verbosity = crate::diagnostics::Scope::enter(matches.get_flag("quiet"));
     if matches.get_flag("manual") {
-        print!("{}", include_str!("../docs/cli.md"));
-        return Ok(());
+        return write_stdout(
+            &mut io::stdout().lock(),
+            format_args!("{}", include_str!("../docs/cli.md")),
+        );
     }
     if matches.get_flag("man-page") {
-        print!("{}", include_str!("../docs/fscript.1"));
-        return Ok(());
+        return write_stdout(
+            &mut io::stdout().lock(),
+            format_args!("{}", include_str!("../docs/fscript.1")),
+        );
     }
     if matches.get_flag("list-models") {
-        println!("{}", crate::model_catalog::list_models());
-        return Ok(());
+        return write_stdout(
+            &mut io::stdout().lock(),
+            format_args!("{}\n", crate::model_catalog::list_models()),
+        );
     }
 
     if let Some(command) = crate::settings::parse_settings_command(&raw_args)? {

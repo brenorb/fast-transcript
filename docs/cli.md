@@ -135,7 +135,9 @@ current user. Choose another destination to retain earlier results.
 File output prints only the final absolute path to stdout. Stdout mode prints
 only the selected transcript representation. JSON is formatted and can be piped
 to jq when stdout is selected. Use `--json --stdout` for local files, or `- --json`
-for piped media. Quiet mode does not remove requested data from stdout.
+for piped media. Quiet mode does not remove requested data from stdout. A consumer that closes
+its input early, such as `head`, ends stdout delivery successfully without a
+panic or a broken-pipe diagnostic. Other output failures remain errors.
 
 ## Troubleshooting
 
@@ -167,6 +169,8 @@ that staging file and rerun the command.
 Zero indicates success, including help, manual, and version queries. Nonzero
 indicates an argument, configuration, dependency, input, transcription, or output
 failure. Scripts should check the exit status before using the result path.
+Ordinary failures report their causes concisely on stderr, including when
+`RUST_BACKTRACE` is set; backtraces are reserved for unexpected Rust panics.
 
 ## See also
 

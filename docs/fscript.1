@@ -210,7 +210,11 @@ only the selected transcript representation. JSON is formatted and can be
 piped
 to jq when stdout is selected. Use \fB\-\-json \-\-stdout\fR for local files,
 or \fB\- \-\-json\fR
-for piped media. Quiet mode does not remove requested data from stdout.
+for piped media. Quiet mode does not remove requested data from stdout. A
+consumer that closes
+its input early, such as \fBhead\fR, ends stdout delivery successfully without
+a
+panic or a broken\-pipe diagnostic. Other output failures remain errors.
 .SH TROUBLESHOOTING
 Unknown options and nearby model\-name mistakes suggest likely corrections.
 Use \fB\-\-help\fR to inspect syntax or \fB\-\-list\-models\fR to choose a
@@ -247,6 +251,9 @@ Zero indicates success, including help, manual, and version queries. Nonzero
 indicates an argument, configuration, dependency, input, transcription, or
 output
 failure. Scripts should check the exit status before using the result path.
+Ordinary failures report their causes concisely on stderr, including when
+\fBRUST_BACKTRACE\fR is set; backtraces are reserved for unexpected Rust
+panics.
 .SH "SEE ALSO"
 Documentation: https://github.com/brenorb/fast\-transcript#readme
 .PP

@@ -146,12 +146,15 @@ pub(crate) fn run_settings_command(command: SettingsCommand) -> Result<()> {
     let store = DefaultModelStore::configured();
     match command {
         SettingsCommand::Set(model) => eprintln!("Default model: {}", store.save(&model)?),
-        SettingsCommand::Get => println!(
-            "{}",
-            store
-                .load()?
-                .unwrap_or_else(|| "parakeet-v3-int8".to_string())
-        ),
+        SettingsCommand::Get => crate::delivery::write_stdout(
+            &mut std::io::stdout().lock(),
+            format_args!(
+                "{}\n",
+                store
+                    .load()?
+                    .unwrap_or_else(|| "parakeet-v3-int8".to_string())
+            ),
+        )?,
         SettingsCommand::Reset => {
             store.reset()?;
             eprintln!("Saved default model reset.");

@@ -2,9 +2,20 @@
 
 use crate::types::{InputSource, OutputFormat, SubtitleFormat};
 use anyhow::{Context, Result};
+use std::fmt;
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
+
+/// A consumer such as `head` can finish before us; that is a successful pipe.
+/// Keep this policy on stdout only: a dead model-worker pipe is still a failure.
+pub(crate) fn write_stdout(writer: &mut impl Write, contents: fmt::Arguments<'_>) -> Result<()> {
+    match writer.write_fmt(contents) {
+        Ok(()) => Ok(()),
+        Err(error) if error.kind() == std::io::ErrorKind::BrokenPipe => Ok(()),
+        Err(error) => Err(error).context("failed to write output to stdout"),
+    }
+}
 
 pub(crate) enum OutputDestination {
     Stdout,
@@ -32,9 +43,7 @@ impl OutputDestination {
         stderr: &mut impl Write,
     ) -> Result<()> {
         match self {
-            Self::Stdout => {
-                writeln!(stdout, "{contents}").context("failed to write transcript to stdout")
-            }
+            Self::Stdout => write_stdout(stdout, format_args!("{contents}\n")),
             Self::File(path) => {
                 let absolute_path = write_output_file(contents, path)?;
                 emit_file_output_completion(stdout, stderr, &absolute_path, status_message)
@@ -209,8 +218,7 @@ fn emit_file_output_completion(
     output_path: &Path,
     status_message: &str,
 ) -> Result<()> {
-    writeln!(stdout, "{}", output_path.display())
-        .context("failed to write final output path to stdout")?;
+    write_stdout(stdout, format_args!("{}\n", output_path.display()))?;
     writeln!(stderr, "{status_message}").context("failed to write status message to stderr")?;
     Ok(())
 }
@@ -400,8 +408,32 @@ mod tests {
 
 #[cfg(test)]
 mod boundary_tests {
-    use super::OutputDestination;
+    use super::{write_stdout, OutputDestination};
     use std::path::Path;
+
+    #[test]
+    fn stdout_ignores_only_broken_pipe_errors() {
+        struct BrokenWriter(std::io::ErrorKind);
+        impl std::io::Write for BrokenWriter {
+            fn write(&mut self, _: &[u8]) -> std::io::Result<usize> {
+                Err(std::io::Error::from(self.0))
+            }
+            fn flush(&mut self) -> std::io::Result<()> {
+                Ok(())
+            }
+        }
+        assert!(write_stdout(
+            &mut BrokenWriter(std::io::ErrorKind::BrokenPipe),
+            format_args!("result")
+        )
+        .is_ok());
+        let error = write_stdout(
+            &mut BrokenWriter(std::io::ErrorKind::WriteZero),
+            format_args!("result"),
+        )
+        .unwrap_err();
+        assert!(format!("{error:#}").contains("stdout"));
+    }
 
     #[test]
     fn stdout_delivery_writes_only_contents_and_propagates_stream_errors() {
