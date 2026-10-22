@@ -56,7 +56,9 @@ that file on completion or an ordinary error. Empty stdin or a terminal is rejec
 with a pipeline example. An explicit output file overrides the stdout default;
 a directory destination uses `stdin` as the filename stem.
 
-Use `--` before paths that begin with a hyphen. To read a file named help, use
+Use `--` before paths that begin with a hyphen. Local filenames are passed as
+absolute paths to ffprobe, ffmpeg, and the diarization helper so those programs
+do not reinterpret them as options. To read a file named help, use
 `fscript ./help`. Bare `fscript help` displays help.
 
 ## Options

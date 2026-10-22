@@ -30,7 +30,9 @@ impl Fixture {
         }
         wav.finalize().unwrap();
         let fixture = Self { root, audio };
-        fixture.script("ffprobe", r#"printf '%s\n' '{"streams":[{"codec_type":"audio","sample_rate":"16000","channels":1,"codec_name":"pcm_s16le","bits_per_sample":16}]}'"#);
+        fixture.script("ffprobe", r#"for argument do :; done
+case "$argument" in -*) printf '%s\n' 'filename was interpreted as an option' >&2; exit 2;; esac
+printf '%s\n' '{"streams":[{"codec_type":"audio","sample_rate":"16000","channels":1,"codec_name":"pcm_s16le","bits_per_sample":16}]}'"#);
         fixture.script("python", r#"printf '%s\n' '{"ready":true,"device":"cpu","model_dir":"fixture","load_seconds":0.1}'
 while IFS= read -r line; do
   printf '%s\n' '{"text":"Pipe works.","segments":[{"start":0,"end":1,"text":"Pipe works."}]}'
