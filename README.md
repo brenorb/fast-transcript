@@ -192,6 +192,19 @@ That includes `-D` / `--no-diarization`, every `--text` mode, and the default sp
 
 ## Usage
 
+Run `fscript` for a short introduction, `fscript help` / `fscript --help` for full
+option help, or `fscript help manual` / `fscript --manual` for the complete offline
+[CLI manual](docs/cli.md). `fscript --man-page` exports the same manual as roff:
+
+```bash
+fscript --man-page > fscript.1
+man ./fscript.1
+```
+
+The checked-in `docs/fscript.1` is generated with
+`python3 scripts/generate_man_page.py`; CI checks that it matches the manual.
+
+
 ```bash
 fscript <media-or-url> [output-path]
 fscript <media-or-url> -o output-path

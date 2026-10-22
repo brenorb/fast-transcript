@@ -14,6 +14,11 @@ use std::env;
 use std::io::{self, IsTerminal};
 
 pub(crate) fn run(raw_args: Vec<String>) -> Result<()> {
+    let raw_args = if raw_args == ["help", "manual"] {
+        vec!["--manual".to_string()]
+    } else {
+        raw_args
+    };
     if raw_args.is_empty() {
         println!("{}", crate::cli::introduction());
         return Ok(());
@@ -37,6 +42,14 @@ pub(crate) fn run(raw_args: Vec<String>) -> Result<()> {
     }
     let matches = crate::cli::parse_command(&raw_args)?;
     let _verbosity = crate::diagnostics::Scope::enter(matches.get_flag("quiet"));
+    if matches.get_flag("manual") {
+        print!("{}", include_str!("../docs/cli.md"));
+        return Ok(());
+    }
+    if matches.get_flag("man-page") {
+        print!("{}", include_str!("../docs/fscript.1"));
+        return Ok(());
+    }
     if matches.get_flag("list-models") {
         println!("{}", crate::model_catalog::list_models());
         return Ok(());

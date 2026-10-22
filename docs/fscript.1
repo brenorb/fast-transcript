@@ -1,0 +1,243 @@
+.TH FSCRIPT 1 "October 22, 2026" "fast-transcript 1.1.3" "User Commands"
+.SH NAME
+fscript \- transcribe local audio, video, and remote media URLs.
+.SH SYNOPSIS
+.nf
+fscript <media\-or\-url> [destination] [options]
+fscript \- [destination] [options]
+fscript help [manual]
+fscript \-\-list\-models
+fscript \-\-set\-default\-model NAME
+fscript \-\-get\-default\-model
+fscript \-\-reset\-default\-model
+.fi
+.SH DESCRIPTION
+With a local file or URL, fscript writes a transcript file and prints its
+absolute
+path to stdout. Progress, warnings, and completion notices go to stderr.
+The default is speaker\-aware text with timestamps, repetition cleanup,
+120\-second
+chunks, and two seconds of overlap. The built\-in model is parakeet\-v3\-int8.
+A saved model preference or explicit override can select another model.
+.PP
+Speaker diarization uses FluidAudio when available. If the helper is
+unavailable,
+the default mode warns and continues with plain transcription. Explicit
+\fB\-\-diarize\fR requests require the helper and fail when it is unavailable.
+Text modes always disable diarization; conflicting diarization flags produce a
+warning.
+.PP
+Local media decoding requires ffmpeg and ffprobe. Remote URLs use yt\-dlp,
+with
+uvx yt\-dlp as a fallback. Remote input prefers manual subtitles when
+diarization
+is disabled; \fB\-\-local\fR forces audio download and local transcription.
+The first model download and SDK setup require network access and writable
+storage.
+.SH EXAMPLES
+.nf
+fscript lecture.mp3
+fscript lecture.mp3 notes/
+fscript lecture.mp3 \-\-text=plain \-\-stdout
+cat lecture.wav | fscript \- \-\-text=plain
+cat lecture.mp3 | fscript \- \-\-no\-diarization \-\-json | jq .text
+fscript meeting.m4a \-\-diarize coreml \-\-num\-speakers 2
+fscript lecture.mp3 \-\-model ultra \-\-device cpu
+fscript lecture.mp3 \-\-text=plain \-\-quiet \-\-output transcript.txt
+fscript \-\-list\-models
+.fi
+.PP
+Use \fB\-\fR as input for piped media. Its default destination is stdout. The
+command
+spools media to a temporary file so decoding and diarization can seek, then
+deletes
+that file on completion or an ordinary error. Empty stdin or a terminal is
+rejected
+with a pipeline example. An explicit output file overrides the stdout default;
+a directory destination uses \fBstdin\fR as the filename stem.
+.PP
+Use \fB\-\-\fR before paths that begin with a hyphen. To read a file named
+help, use
+\fBfscript ./help\fR. Bare \fBfscript help\fR displays help.
+.SH OPTIONS
+.IP \(bu 2
+\fB\-\-speakers[=plain|timestamps]\fR: speaker\-aware text; timestamps are the
+default.
+.IP \(bu 2
+\fB\-\-text[=plain|compact|timestamps]\fR: text without diarization;
+timestamps are the default. Plain writes one segment per line; compact
+flattens the transcript.
+.IP \(bu 2
+\fB\-\-json\fR: structured transcript, segments, model metadata, and timings.
+.IP \(bu 2
+\fB\-\-srt\fR, \fB\-\-vtt\fR: experimental subtitle formats.
+.IP \(bu 2
+\fB\-o, \-\-output PATH\fR: output file or directory. A trailing slash denotes
+a directory even if it does not exist. \fB\-\-output \-\fR writes transcript
+contents to stdout.
+.IP \(bu 2
+\fB\-\-stdout\fR: write transcript contents to stdout. A positional
+destination of \fB\-\fR is equivalent.
+.IP \(bu 2
+\fB\-\-raw\fR: disable repeated\-word cleanup.
+.IP \(bu 2
+\fB\-c, \-\-clean\fR: enable repeated\-word cleanup, the default.
+.IP \(bu 2
+\fB\-\-diarize[=coreml|lseend\-dihard3]\fR: require speaker diarization;
+defaults to coreml when no value is given. A space before the backend value
+also works. The legacy \fB\-d\fR alias remains supported; it does not mean
+debug.
+.IP \(bu 2
+\fB\-D, \-\-no\-diarization\fR: disable diarization.
+.IP \(bu 2
+\fB\-n, \-\-num\-speakers N\fR: expected positive speaker count for coreml.
+.IP \(bu 2
+\fB\-t, \-\-threshold N\fR: finite ls\-eend\-dihard3 threshold; defaults to
+0.3.
+.IP \(bu 2
+\fB\-\-backend coreml|lseend\-dihard3|none\fR: legacy diarization selection.
+.IP \(bu 2
+\fB\-l, \-\-local\fR: download remote audio and transcribe locally.
+\fB\-\-prefer\-local\-for\-remote\fR is an alias.
+.IP \(bu 2
+\fB\-\-chunk N\fR: chunk duration in seconds; 0 disables chunking.
+\fB\-\-chunk\-seconds\fR is an alias.
+.IP \(bu 2
+\fB\-\-overlap N\fR: chunk overlap in seconds; must be smaller than the chunk
+duration. \fB\-\-chunk\-overlap\-seconds\fR is an alias.
+.IP \(bu 2
+\fB\-\-model NAME|URL\fR: predefined model or custom http(s) ONNX bundle URL.
+.IP \(bu 2
+\fB\-\-device auto|cpu|mps|mlx|cuda\fR: choose a device supported by the
+selected model. The default is auto.
+.IP \(bu 2
+\fB\-\-model\-dir PATH\fR: existing extracted ONNX model or SDK model
+directory.
+.IP \(bu 2
+\fB\-\-model\-package PATH\fR: override the cached ONNX tarball path.
+.IP \(bu 2
+\fB\-\-model\-url URL\fR: explicit http(s) ONNX bundle URL.
+.IP \(bu 2
+\fB\-\-list\-models\fR: available models, aliases, benchmark advice, and
+device notes.
+.IP \(bu 2
+\fB\-\-set\-default\-model NAME\fR: save a predefined model or alias without
+downloading it.
+.IP \(bu 2
+\fB\-\-get\-default\-model\fR: print the saved model, or the built\-in
+default, to stdout.
+.IP \(bu 2
+\fB\-\-reset\-default\-model\fR: clear the saved preference.
+.IP \(bu 2
+\fB\-q, \-\-quiet\fR: suppress progress, completion notices, and successful
+model\-worker diagnostics. Keep transcript data, result paths, model queries,
+warnings, and errors. SDK installers can still report dependency diagnostics
+during first setup.
+.IP \(bu 2
+\fB\-h, \-\-help\fR: full help, common examples, and defaults. Bare invocation
+displays a short introduction.
+.IP \(bu 2
+\fB\-V, \-\-version\fR: installed version.
+.IP \(bu 2
+\fB\-\-manual\fR: this offline manual. \fBfscript help manual\fR is
+equivalent.
+.IP \(bu 2
+\fB\-\-man\-page\fR: export this manual in roff format for man(1).
+.PP
+Output formats are mutually exclusive. Explicit output paths and stdout are
+mutually exclusive. Specify one model selection. Settings commands run on
+their
+own, with an optional \fB\-\-quiet\fR flag. Their confirmations go to stderr.
+Optional output\-mode values also accept a space, for example \fB\-\-text
+plain\fR.
+When an output path follows an optional\-value flag, use \fB\-\-output PATH\fR
+to make
+the destination explicit.
+.SH CONFIGURATION
+Model selection precedence is explicit \fB\-\-model\fR or
+\fB\-\-model\-url\fR, then
+\fBFSCRIPT_MODEL_URL\fR, then the saved preference, then the built\-in
+default.
+The saved model is per user and applies in future shells and scripts.
+Use \fB\-\-get\-default\-model\fR to inspect the saved preference; it does not
+report an
+environment override. An explicit selection bypasses loading the saved
+setting.
+.PP
+Settings live in default\-model.json in the platform configuration directory:
+on macOS, ~/Library/Application Support/fast\-transcript; on Linux,
+~/.config/fast\-transcript. \fBFSCRIPT_CONFIG_FILE\fR overrides the entire
+filename.
+.SH ENVIRONMENT
+.IP \(bu 2
+\fBFSCRIPT_CONFIG_FILE\fR: default\-model configuration filename.
+.IP \(bu 2
+\fBFSCRIPT_MODEL_DIR\fR: default model directory.
+.IP \(bu 2
+\fBFSCRIPT_MODEL_PACKAGE\fR: default cached ONNX bundle filename.
+.IP \(bu 2
+\fBFSCRIPT_MODEL_URL\fR: model source override, ahead of the saved preference.
+.IP \(bu 2
+\fBFSCRIPT_DIARIZATION_BINARY\fR: explicit FluidAudio executable path or
+command name. Without an override, standard installation locations and PATH
+are searched.
+.IP \(bu 2
+\fBFSCRIPT_RUNTIME_DIR\fR: persistent location for managed SDK runtimes, when
+using an installation that provisions them separately.
+.IP \(bu 2
+\fBFSCRIPT_PYTHON_BINARY\fR: prepared Python interpreter with the selected
+model's pinned SDK dependencies.
+.IP \(bu 2
+\fBUV_CACHE_DIR\fR: uv installer cache override.
+.SH OUTPUT
+Default local filenames are INPUT.speakers.txt, INPUT.transcript.txt,
+INPUT.transcript.json, INPUT.srt, or INPUT.vtt, according to the selected
+format.
+For remote media, filenames use a sanitized title or URL stem in the current
+directory. Existing output files are replaced; choose another destination to
+retain earlier results.
+.PP
+File output prints only the final absolute path to stdout. Stdout mode prints
+only the selected transcript representation. JSON is formatted and can be
+piped
+to jq when stdout is selected. Use \fB\-\-json \-\-stdout\fR for local files,
+or \fB\- \-\-json\fR
+for piped media. Quiet mode does not remove requested data from stdout.
+.SH TROUBLESHOOTING
+Unknown options and nearby model\-name mistakes suggest likely corrections.
+Use \fB\-\-help\fR to inspect syntax or \fB\-\-list\-models\fR to choose a
+model.
+.PP
+If saved settings are malformed, run \fBfscript \-\-reset\-default\-model\fR,
+or select
+\fB\-\-model NAME\fR explicitly for that invocation.
+.PP
+If audio inspection fails, install ffmpeg and ffprobe and check the input
+path.
+For remote download failures, check yt\-dlp or uvx and network access.
+.PP
+If speaker labels are required, pass \fB\-\-diarize coreml\fR. Set
+\fBFSCRIPT_DIARIZATION_BINARY\fR to the installed helper when it cannot be
+discovered.
+Speaker labels identify voices; they are not people's names.
+.PP
+If SDK startup fails, install uv or set \fBFSCRIPT_PYTHON_BINARY\fR to a
+prepared
+interpreter. For offline work, cache dependencies and model weights
+beforehand,
+then use the same storage paths. \fB\-\-model\-dir PATH\fR selects existing
+model files.
+Quiet\-mode worker failures retain their last diagnostic messages.
+.PP
+Press Ctrl\-C to interrupt. Temporary media and normal output are not a resume
+checkpoint; interrupted output writes can leave incomplete files. Correct the
+problem and rerun the command.
+.SH "EXIT STATUS"
+Zero indicates success, including help, manual, and version queries. Nonzero
+indicates an argument, configuration, dependency, input, transcription, or
+output
+failure. Scripts should check the exit status before using the result path.
+.SH "SEE ALSO"
+Documentation: https://github.com/brenorb/fast\-transcript#readme
+.PP
+Issues: https://github.com/brenorb/fast\-transcript/issues

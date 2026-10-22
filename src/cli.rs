@@ -160,6 +160,8 @@ pub(crate) fn usage() -> String {
         "Help:".to_string(),
         option("-h, --help; help", "Show full help."),
         option("-V, --version", "Show the installed version."),
+        option("--manual; help manual", "Read the full offline manual."),
+        option("--man-page", "Export the manual in roff format for man(1)."),
         String::new(),
         "Documentation: https://github.com/brenorb/fast-transcript#readme".to_string(),
         "Report issues: https://github.com/brenorb/fast-transcript/issues".to_string(),
@@ -232,6 +234,8 @@ pub(crate) fn command() -> Command {
         ("help", Some('h')),
         ("version", Some('V')),
         ("list-models", None),
+        ("manual", None),
+        ("man-page", None),
         ("get-default-model", None),
         ("reset-default-model", None),
     ] {

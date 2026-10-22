@@ -140,3 +140,63 @@ fn settings_confirmations_are_status_messages_on_stderr() {
     assert!(output.stdout.is_empty());
     assert!(String::from_utf8_lossy(&output.stderr).contains("Default model: parakeet-ultra"));
 }
+
+#[test]
+fn offline_manual_explains_pipelines_configuration_and_error_recovery() {
+    for args in [&["help", "manual"][..], &["--manual"]] {
+        let output = run(args);
+        assert!(output.status.success(), "{output:?}");
+        let manual = stdout(&output);
+        for topic in [
+            "cat lecture.wav | fscript -",
+            "FSCRIPT_CONFIG_FILE",
+            "FSCRIPT_DIARIZATION_BINARY",
+            "--quiet",
+            "--list-models",
+            "--model",
+            "--stdout",
+            "--reset-default-model",
+            "Troubleshooting",
+        ] {
+            assert!(manual.contains(topic), "manual must cover {topic}");
+        }
+        assert!(output.stderr.is_empty());
+    }
+}
+
+#[test]
+fn man_page_is_exportable_without_terminal_escapes() {
+    let output = run(&["--man-page"]);
+    assert!(output.status.success(), "{output:?}");
+    let man = stdout(&output);
+    assert!(man.starts_with(".TH FSCRIPT 1"));
+    assert!(man.contains(".SH SYNOPSIS"));
+    assert!(man.contains(".SH OPTIONS"));
+    assert!(man.contains("FSCRIPT_CONFIG_FILE"));
+    assert!(!man.contains('\u{1b}'));
+    assert!(output.stderr.is_empty());
+    let help = stdout(&run(&["--help"]));
+    assert!(help.contains("--manual"));
+    assert!(help.contains("--man-page"));
+}
+
+#[test]
+fn both_offline_formats_cover_every_documented_long_option() {
+    let help = stdout(&run(&["--help"]));
+    let manual = stdout(&run(&["--manual"]));
+    let man = stdout(&run(&["--man-page"])).replace("\\-", "-");
+    for token in help
+        .split_whitespace()
+        .filter(|token| token.starts_with("--"))
+    {
+        let option = token
+            .split(|c: char| !(c.is_ascii_alphanumeric() || c == '-'))
+            .next()
+            .unwrap();
+        assert!(
+            manual.contains(option),
+            "offline manual is missing {option}"
+        );
+        assert!(man.contains(option), "man page is missing {option}");
+    }
+}
