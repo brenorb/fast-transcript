@@ -371,7 +371,7 @@ Raw text output modes:
 Cleaning mode:
 
 - cleaning is on by default and affects only the output being written for that invocation
-- `--raw`: disables output cleaning for that invocation
+- `--raw`: disables repeated-word cleanup for that invocation; it does not normalize segment timing
 - it applies to JSON, speakers, text, SRT, and VTT outputs
 - it is intentionally conservative and leaves ordinary repetition alone
 
@@ -517,6 +517,36 @@ JSON output via `--json` includes:
 - per-chunk timing
 - transcript `segments`
 - optional `speaker_diarization` metadata
+
+### Segment timing with overlapping chunks
+
+`segments` contains audio-relative `start_s` / `end_s` intervals assembled in
+chunk processing order. With a positive `--overlap`, independently decoded
+boundary cues can overlap or start before the preceding cue ends. The array
+is not guaranteed to be a globally sorted, non-overlapping timeline.
+
+This applies to the advanced raw JSON path, for example:
+
+```bash
+fscript audio_2min.wav -D --json --raw --chunk 60 --overlap 3
+```
+
+A segment ending at 62 seconds can be followed by one starting at 59 seconds.
+`--raw` only disables repeated-word cleanup; `--clean` changes text and does
+not repair timestamps. Boundary text deduplication still runs during chunk
+assembly, but different independently decoded text may retain both intervals.
+
+Programmatic consumers should treat cues as time intervals. A consumer that
+requires disjoint cues must choose its own overlap policy (for example, merging
+adjacent overlapping cues while retaining their text). Sorting by `start_s`
+alone does not remove overlapping durations. Avoid dropping an interval merely
+because it starts before the previous interval ends: it may contain distinct
+words.
+
+`--overlap 0` removes audio overlap introduced by chunking. `--chunk 0` disables
+chunking entirely; individual backend cues can still overlap. These options do
+not establish a universal non-overlap guarantee for every model. Keep original
+intervals if exact backend timing matters.
 
 When diarization is enabled, each transcript segment may include:
 
