@@ -141,6 +141,7 @@ struct WorkerTranscript {
 }
 
 struct PythonEngine {
+    name: &'static str,
     child: Child,
     input: Option<ChildStdin>,
     output: BufReader<ChildStdout>,
@@ -149,7 +150,9 @@ struct PythonEngine {
 
 impl PythonEngine {
     fn load(config: &ModelConfig) -> Result<(Self, WorkerInfo)> {
-        let preset = config.preset.context("missing SDK model preset")?;
+        let preset = config
+            .preset
+            .context("this model can only be selected by name; run fscript --list-models")?;
         let mut command = if let Some(python) = env::var_os("FSCRIPT_PYTHON_BINARY") {
             Command::new(python)
         } else {
@@ -194,30 +197,34 @@ impl PythonEngine {
             .stdout(Stdio::piped())
             .stderr(Stdio::inherit());
         let diagnostics = crate::diagnostics::capture_stderr(&mut command)?;
-        let mut child = command.spawn().context(
-            "failed to start model runtime; install uv (https://docs.astral.sh/uv/) or set FSCRIPT_PYTHON_BINARY to an interpreter with the model SDK installed"
-        )?;
-        let input = child
-            .stdin
-            .take()
-            .context("model worker stdin is unavailable")?;
-        let output = child
-            .stdout
-            .take()
-            .context("model worker stdout is unavailable")?;
+        let name = preset.name;
+        let mut child = command.spawn().map_err(|error| {
+            if let Some(python) = env::var_os("FSCRIPT_PYTHON_BINARY") {
+                anyhow::Error::new(error).context(format!(
+                    "could not start the Python interpreter in FSCRIPT_PYTHON_BINARY ({}); point it to a working interpreter, or unset it so fscript can set up the model itself",
+                    std::path::Path::new(&python).display()
+                ))
+            } else if error.kind() == std::io::ErrorKind::NotFound {
+                anyhow::anyhow!("the {name} model needs uv to set itself up, but uv is not installed. Install uv (https://docs.astral.sh/uv/), or use the default model with --model default")
+            } else {
+                anyhow::Error::new(error).context(format!("could not start the {name} model"))
+            }
+        })?;
+        let unexpected = || unexpected_reply(name);
+        let input = child.stdin.take().with_context(unexpected)?;
+        let output = child.stdout.take().with_context(unexpected)?;
         let mut engine = Self {
+            name,
             child,
             input: Some(input),
             output: BufReader::new(output),
             diagnostics,
         };
         let info: WorkerInfo = serde_json::from_value(engine.read_response()?)
-            .with_context(|| engine.failure_context("invalid model worker startup response"))?;
+            .map_err(crate::errors::technical)
+            .with_context(|| engine.failure_context(&unexpected_reply(name)))?;
         if !info.ready || !info.load_seconds.is_finite() || info.load_seconds < 0.0 {
-            bail!(
-                "{}",
-                engine.failure_context("model worker did not report a valid loaded model")
-            );
+            bail!("{}", engine.failure_context(&unexpected_reply(name)));
         }
         Ok((engine, info))
     }
@@ -229,28 +236,36 @@ impl PythonEngine {
         )
     }
 
+    fn stopped_message(&self) -> String {
+        let see_above = if crate::diagnostics::quiet() {
+            ""
+        } else {
+            " (see the messages above)"
+        };
+        self.failure_context(&format!(
+            "the {} model stopped unexpectedly{see_above}; try again, or use the default model with --model default",
+            self.name
+        ))
+    }
+
     fn read_response(&mut self) -> Result<serde_json::Value> {
         let mut line = String::new();
-        if self
+        let read = self
             .output
             .read_line(&mut line)
-            .context("failed to read model worker response")?
-            == 0
-        {
-            let status = self
-                .child
-                .try_wait()
-                .context("failed to inspect model worker")?;
-            bail!(
-                "model worker stopped before responding ({status:?}); see the runtime error above{}",
-                crate::diagnostics::diagnostic_tail(self.diagnostics.as_ref())
-            );
+            .map_err(crate::errors::technical)
+            .with_context(|| self.stopped_message())?;
+        if read == 0 {
+            let _ = self.child.try_wait();
+            bail!("{}", self.stopped_message());
         }
         let response: serde_json::Value = serde_json::from_str(&line)
-            .with_context(|| self.failure_context("model worker returned invalid JSON"))?;
+            .map_err(crate::errors::technical)
+            .with_context(|| self.failure_context(&unexpected_reply(self.name)))?;
         if let Some(error) = response.get("error").and_then(|value| value.as_str()) {
             bail!(
-                "model runtime failed: {error}{}",
+                "the {} model reported an error: {error}{}",
+                self.name,
                 crate::diagnostics::diagnostic_tail(self.diagnostics.as_ref())
             );
         }
@@ -261,18 +276,18 @@ impl PythonEngine {
 impl SpeechEngine for PythonEngine {
     fn transcribe(&mut self, samples: &[f32]) -> Result<TranscriptionResult> {
         let audio = worker_audio(samples)?;
-        let input = self
-            .input
-            .as_mut()
-            .context("model worker stdin was closed")?;
-        serde_json::to_writer(
-            &mut *input,
-            &serde_json::json!({ "audio_path": audio.path() }),
-        )?;
-        input.write_all(b"\n")?;
-        input.flush()?;
+        let stopped = self.stopped_message();
+        let input = self.input.as_mut().context(stopped.clone())?;
+        let request = serde_json::to_vec(&serde_json::json!({ "audio_path": audio.path() }))?;
+        input
+            .write_all(&request)
+            .and_then(|()| input.write_all(b"\n"))
+            .and_then(|()| input.flush())
+            .map_err(crate::errors::technical)
+            .context(stopped)?;
         let result: WorkerTranscript = serde_json::from_value(self.read_response()?)
-            .with_context(|| self.failure_context("invalid model worker transcript response"))?;
+            .map_err(crate::errors::technical)
+            .with_context(|| self.failure_context(&unexpected_reply(self.name)))?;
         Ok(TranscriptionResult {
             text: result.text,
             segments: Some(
@@ -290,25 +305,37 @@ impl SpeechEngine for PythonEngine {
     }
 }
 
+fn unexpected_reply(name: &str) -> String {
+    format!("the {name} model sent an unexpected reply; update fscript, or use the default model with --model default")
+}
+
+/// Keep disk errors (e.g. a full disk) readable; other WAV errors are internal.
+fn wav_error(error: hound::Error) -> Box<dyn std::error::Error + Send + Sync> {
+    match error {
+        hound::Error::IoError(error) => Box::new(error),
+        other => Box::new(crate::errors::technical(other)),
+    }
+}
+
 fn worker_audio(samples: &[f32]) -> Result<tempfile::NamedTempFile> {
     // Recreate normalized PCM16 exactly so every engine receives the same audio.
-    let audio = tempfile::Builder::new()
-        .suffix(".wav")
-        .tempfile()
-        .context("failed to create model worker audio file")?;
-    let mut writer = hound::WavWriter::new(
-        audio.reopen()?,
-        hound::WavSpec {
-            channels: 1,
-            sample_rate: crate::SAMPLE_RATE as u32,
-            bits_per_sample: 16,
-            sample_format: hound::SampleFormat::Int,
-        },
-    )?;
-    for sample in samples {
-        writer.write_sample((sample * i16::MAX as f32).round() as i16)?;
-    }
-    writer.finalize()?;
+    let audio = crate::errors::temp(tempfile::Builder::new().suffix(".wav").tempfile())?;
+    let write = || -> std::result::Result<(), hound::Error> {
+        let mut writer = hound::WavWriter::new(
+            audio.reopen()?,
+            hound::WavSpec {
+                channels: 1,
+                sample_rate: crate::SAMPLE_RATE as u32,
+                bits_per_sample: 16,
+                sample_format: hound::SampleFormat::Int,
+            },
+        )?;
+        for sample in samples {
+            writer.write_sample((sample * i16::MAX as f32).round() as i16)?;
+        }
+        writer.finalize()
+    };
+    crate::errors::temp(write().map_err(wav_error))?;
     Ok(audio)
 }
 

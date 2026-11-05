@@ -1,6 +1,6 @@
 //! Scoped verbosity for library status messages. Warnings use `std::eprintln!`.
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use std::cell::Cell;
 use std::fmt;
 use std::fs::File;
@@ -66,8 +66,8 @@ pub(crate) fn capture_stderr(command: &mut Command) -> Result<Option<NamedTempFi
     if !quiet() {
         return Ok(None);
     }
-    let file = NamedTempFile::new().context("cannot create worker diagnostic file")?;
-    command.stderr(Stdio::from(file.reopen()?));
+    let file = crate::errors::temp(NamedTempFile::new())?;
+    command.stderr(Stdio::from(crate::errors::temp(file.reopen())?));
     Ok(Some(file))
 }
 
@@ -82,7 +82,7 @@ pub(crate) fn diagnostic_tail(file: Option<&NamedTempFile>) -> String {
     };
     file.and_then(|file| read_tail(file).ok())
         .filter(|tail| !tail.is_empty())
-        .map(|tail| format!("\n{tail}"))
+        .map(|tail| format!("\nlast messages from the model:\n{tail}"))
         .unwrap_or_default()
 }
 
@@ -112,7 +112,7 @@ mod tests {
         file.write_all(&vec![b'x'; 20_000]).unwrap();
         file.write_all(b"\nbackend failed").unwrap();
         let tail = diagnostic_tail(Some(&file));
-        assert!(tail.len() <= 8193);
+        assert!(tail.len() <= 8192 + "\nlast messages from the model:\n".len());
         assert!(tail.ends_with("backend failed"));
     }
 }

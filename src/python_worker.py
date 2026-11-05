@@ -7,15 +7,21 @@ import sys
 import time
 import traceback
 from pathlib import Path
-from importlib.metadata import version
+from importlib.metadata import PackageNotFoundError, version
 
 
 def require_version(package, expected):
-    actual = version(package)
+    try:
+        actual = version(package)
+    except PackageNotFoundError:
+        raise RuntimeError(
+            f"{package} {expected} is not installed; "
+            "unset FSCRIPT_PYTHON_BINARY so fscript can install the right version"
+        ) from None
     if actual != expected:
         raise RuntimeError(
-            f"{package}=={expected} is required (found {actual}); "
-            "unset FSCRIPT_PYTHON_BINARY to let uv provision the pinned runtime"
+            f"{package} {expected} is required (found {actual}); "
+            "unset FSCRIPT_PYTHON_BINARY so fscript can install the right version"
         )
 
 
@@ -41,9 +47,9 @@ def main():
                     "mps" if torch.backends.mps.is_available() else "cpu"
                 )
             if device == "mps" and not torch.backends.mps.is_available():
-                raise RuntimeError("MPS is unavailable; select --device cpu")
+                raise RuntimeError("the Apple GPU (--device mps) is not available on this computer; use --device cpu")
             if device == "cuda" and not torch.cuda.is_available():
-                raise RuntimeError("CUDA is unavailable; select --device cpu")
+                raise RuntimeError("no NVIDIA GPU (--device cuda) is available on this computer; use --device cpu")
             if local_directory:
                 directory = str(Path(local_directory).resolve())
             else:
@@ -76,7 +82,7 @@ def main():
 
             repo, profile, pin, _ = _resolve(repository)
             if pin["sha256"] != revision:
-                raise RuntimeError("Phonon SDK artifact differs from the benchmark pin")
+                raise RuntimeError("the phonon-2 model files do not match the version this fscript expects; update fscript")
             device = backends.resolve("fscript --model phonon-2")
             backends.require_engine_for(device, pin["backend"])
             directory = str(Path(local_directory).resolve()) if local_directory else str(
@@ -89,7 +95,7 @@ def main():
             def transcribe(path):
                 result = model.transcribe_detailed(path)
                 if result.truncated:
-                    raise RuntimeError("Phonon truncated the transcript; use a smaller --chunk")
+                    raise RuntimeError("the model cut off part of the transcript; rerun with a smaller --chunk, such as --chunk 60")
                 return {"text": result.text, "segments": result.segments}
 
         send({"ready": True, "device": device, "model_dir": directory, "load_seconds": load_seconds})
@@ -107,8 +113,10 @@ if __name__ == "__main__":
     try:
         main()
     except BaseException as error:
-        print(json.dumps({"error": str(error) or type(error).__name__}), flush=True)
-        # The one-line error above reaches the user; the stack trace is for debugging.
+        # The one-line error reaches the user; the stack trace is only for debugging.
+        # Print it first: fscript stops this process as soon as it reads the error.
         if os.environ.get("FSCRIPT_DEBUG", "0") not in ("", "0"):
             traceback.print_exc(file=sys.stderr)
+            sys.stderr.flush()
+        print(json.dumps({"error": str(error) or type(error).__name__}), flush=True)
         sys.exit(1)

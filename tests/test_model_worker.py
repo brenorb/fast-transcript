@@ -82,14 +82,14 @@ runpy.run_path(worker, run_name="__main__")
 
 
 class ModelWorkerTests(unittest.TestCase):
-    def run_worker(self, mode="normal", *, phonon=False):
+    def run_worker(self, mode="normal", *, phonon=False, device=None, env=None):
         repository = "FermionResearch/Phonon-2" if phonon else "moondream/parakeet-ultra"
         revision = PHONON_SHA256 if phonon else ULTRA_REVISION
         return subprocess.run(
             [sys.executable, "-c", BOOTSTRAP, str(WORKER), mode, repository,
-             revision, "cpu" if phonon else "auto", ""],
+             revision, device or ("cpu" if phonon else "auto"), ""],
             input='{"audio_path":"first.wav"}\n{"audio_path":"second.wav"}\n',
-            text=True, capture_output=True, timeout=20,
+            text=True, capture_output=True, timeout=20, env=env,
         )
 
     def test_photon_loads_pinned_weights_once_and_preserves_stdout_protocol(self):
@@ -115,14 +115,27 @@ class ModelWorkerTests(unittest.TestCase):
         messages = [json.loads(line) for line in result.stdout.splitlines()]
         self.assertTrue(messages[0]["ready"])
         self.assertEqual(messages[0]["device"], "cpu")
-        self.assertIn("truncated", messages[1]["error"])
+        self.assertIn("cut off part of the transcript", messages[1]["error"])
         self.assertNotIn("text", messages[1])
 
     def test_phonon_refuses_a_changed_artifact_pin(self):
         result = self.run_worker("wrong-pin", phonon=True)
         self.assertNotEqual(result.returncode, 0)
         messages = [json.loads(line) for line in result.stdout.splitlines()]
-        self.assertIn("benchmark pin", messages[0]["error"])
+        self.assertIn("do not match the version", messages[0]["error"])
+
+    def test_unavailable_gpu_names_the_fix_without_a_stack_trace(self):
+        import os
+        environment = {key: value for key, value in os.environ.items() if key != "FSCRIPT_DEBUG"}
+        result = self.run_worker(device="cuda", env=environment)
+        self.assertNotEqual(result.returncode, 0)
+        messages = [json.loads(line) for line in result.stdout.splitlines()]
+        self.assertIn("no NVIDIA GPU (--device cuda)", messages[0]["error"])
+        self.assertIn("use --device cpu", messages[0]["error"])
+        self.assertNotIn("Traceback", result.stderr)
+
+        debug = self.run_worker(device="cuda", env={**environment, "FSCRIPT_DEBUG": "1"})
+        self.assertIn("Traceback", debug.stderr)
 
 
 if __name__ == "__main__":

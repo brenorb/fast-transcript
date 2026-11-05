@@ -76,9 +76,14 @@ pub(crate) fn transcribe_samples(
         let started = Instant::now();
         let mut transcription = engine.transcribe(&samples[start..end]).with_context(|| {
             if chunk_seconds.is_some() {
-                format!("failed chunk {index} ({start}..{end})")
+                let rate = crate::SAMPLE_RATE as f64;
+                format!(
+                    "transcription failed between {} and {}",
+                    crate::output::format_hhmmss(start as f64 / rate),
+                    crate::output::format_hhmmss(end as f64 / rate)
+                )
             } else {
-                "failed to transcribe audio".to_string()
+                "transcription failed".to_string()
             }
         })?;
         let transcribe_seconds = started.elapsed().as_secs_f64();
@@ -193,8 +198,12 @@ mod tests {
         }
         let samples = vec![0.0; 2 * crate::SAMPLE_RATE];
         for (chunk_seconds, initial_calls, context) in [
-            (Some(1.0), 0, "failed chunk 1"),
-            (None, 1, "failed to transcribe audio"),
+            (
+                Some(1.0),
+                0,
+                "transcription failed between 00:00:01 and 00:00:02",
+            ),
+            (None, 1, "transcription failed"),
         ] {
             let error = super::transcribe_samples(
                 &mut Engine {
@@ -257,7 +266,7 @@ mod tests {
         let error = super::transcribe_samples(&mut FailedEngine, &[0.0; 16000], Some(1.0), 0.0)
             .err()
             .unwrap();
-        assert!(format!("{error:#}").contains("failed chunk 0"));
+        assert!(format!("{error:#}").contains("transcription failed between 00:00:00 and 00:00:01"));
         assert!(format!("{error:#}").contains("model inference failed"));
     }
 
