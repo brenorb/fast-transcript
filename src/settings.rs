@@ -1,5 +1,6 @@
 //! Persistent named-model preference, kept separate from model caches and CLI parsing.
 
+use crate::errors::Explain;
 use crate::model_catalog::find_model;
 use anyhow::{bail, Context, Result};
 use directories::ProjectDirs;
@@ -44,18 +45,32 @@ impl DefaultModelStore {
         let contents = match fs::read(&self.path) {
             Ok(contents) => contents,
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
-            Err(error) => {
-                return Err(error)
-                    .with_context(|| format!("failed to read {}", self.path.display()))
-            }
+            Err(error) => return Err(error).explain(
+                || {
+                    format!(
+                        "could not read the saved default model in {}",
+                        self.path.display()
+                    )
+                },
+                "Check that the file is readable, or set FSCRIPT_CONFIG_FILE to another location",
+            ),
         };
-        let saved: SavedDefaultModel = serde_json::from_slice(&contents).with_context(|| {
-            format!(
-                "invalid default-model settings in {}; run fscript --reset-default-model to reset",
-                self.path.display()
-            )
-        })?;
-        canonical_model(&saved.model).map(Some)
+        let saved: SavedDefaultModel = serde_json::from_slice(&contents)
+            .map_err(crate::errors::technical)
+            .with_context(|| {
+                format!(
+                    "the saved default model in {} is damaged; run fscript --reset-default-model, then choose a model again with --set-default-model",
+                    self.path.display()
+                )
+            })?;
+        find_model(&saved.model)
+            .map(|preset| Some(preset.name.to_string()))
+            .with_context(|| {
+                format!(
+                    "the saved default model {:?} is not available in this version of fscript; run fscript --reset-default-model, or choose one from fscript --list-models",
+                    saved.model
+                )
+            })
     }
 
     pub(crate) fn save(&self, model: &str) -> Result<String> {
@@ -65,21 +80,27 @@ impl DefaultModelStore {
             .parent()
             .filter(|path| !path.as_os_str().is_empty())
             .unwrap_or_else(|| std::path::Path::new("."));
-        fs::create_dir_all(parent)
-            .with_context(|| format!("failed to create {}", parent.display()))?;
-        let mut temporary = tempfile::NamedTempFile::new_in(parent)
-            .context("failed to create temporary default-model settings")?;
-        serde_json::to_writer_pretty(
-            &mut temporary,
-            &SavedDefaultModel {
-                model: model.clone(),
-            },
-        )?;
-        temporary.write_all(b"\n")?;
-        temporary.flush()?;
+        let failed = || {
+            format!(
+                "could not save the default model to {}",
+                self.path.display()
+            )
+        };
+        fs::create_dir_all(parent).explain(failed, SETTINGS_HINT)?;
+        let mut temporary =
+            tempfile::NamedTempFile::new_in(parent).explain(failed, SETTINGS_HINT)?;
+        let contents = serde_json::to_vec_pretty(&SavedDefaultModel {
+            model: model.clone(),
+        })?;
+        temporary
+            .write_all(&contents)
+            .and_then(|()| temporary.write_all(b"\n"))
+            .and_then(|()| temporary.flush())
+            .explain(failed, SETTINGS_HINT)?;
         temporary
             .persist(&self.path)
-            .with_context(|| format!("failed to save default model to {}", self.path.display()))?;
+            .map_err(|error| error.error)
+            .explain(failed, SETTINGS_HINT)?;
         Ok(model)
     }
 
@@ -87,12 +108,21 @@ impl DefaultModelStore {
         match fs::remove_file(&self.path) {
             Ok(()) => Ok(()),
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
-            Err(error) => {
-                Err(error).with_context(|| format!("failed to reset {}", self.path.display()))
-            }
+            Err(error) => Err(error).explain(
+                || {
+                    format!(
+                        "could not reset the saved default model in {}",
+                        self.path.display()
+                    )
+                },
+                SETTINGS_HINT,
+            ),
         }
     }
 }
+
+const SETTINGS_HINT: &str =
+    "Check that the folder is writable, or set FSCRIPT_CONFIG_FILE to another location";
 
 fn canonical_model(name: &str) -> Result<String> {
     find_model(name)
