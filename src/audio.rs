@@ -6,15 +6,11 @@ use crate::time_range::TimeRange;
 use crate::types::{FfprobeOutput, FfprobeStream, PreparedAudio};
 
 fn probe_audio_with(ffprobe_program: &str, path: &Path) -> Result<FfprobeStream> {
+    let path_argument = std::path::absolute(path)
+        .with_context(|| format!("failed to resolve audio path {}", path.display()))?;
     let output = Command::new(ffprobe_program)
-        .args([
-            "-v",
-            "error",
-            "-print_format",
-            "json",
-            "-show_streams",
-            path.to_string_lossy().as_ref(),
-        ])
+        .args(["-v", "error", "-print_format", "json", "-show_streams"])
+        .arg(path_argument)
         .output()
         .with_context(|| "failed to run ffprobe; install ffmpeg/ffprobe to inspect audio")?;
     if !output.status.success() {
@@ -65,13 +61,15 @@ fn normalize_audio_with(
     let normalized_path = tempdir.path().join(format!("{stem}.16k_mono.wav"));
 
     eprintln!("normalizing audio...");
+    let input_argument = std::path::absolute(input_path)
+        .with_context(|| format!("failed to resolve audio path {}", input_path.display()))?;
     let mut command = Command::new(ffmpeg_program);
     command.args(["-hide_banner", "-loglevel", "error", "-nostats", "-y"]);
     // Input seeking remains accurate when transcoding (ffmpeg's default).
     if let Some(start) = range.start {
         command.args(["-ss", &start.to_string()]);
     }
-    command.arg("-i").arg(input_path);
+    command.arg("-i").arg(input_argument);
     if let Some(end) = range.end {
         command.args(["-t", &(end - range.start_seconds()).to_string()]);
     }

@@ -194,6 +194,9 @@ impl<R: CommandRunner> SpeakerDiarizer for FluidAudioDiarizer<R> {
         audio_path: &Path,
         request: &DiarizationRequest,
     ) -> Result<DiarizationResult> {
+        // Child parsers must receive a path, even when the filename begins with '-'.
+        let audio_path = std::path::absolute(audio_path)
+            .with_context(|| format!("failed to resolve audio path {}", audio_path.display()))?;
         let tempdir = tempdir().context("failed to create temp dir for diarization output")?;
         let output_path = tempdir.path().join("diarization.json");
         let mut args = match request.backend {
@@ -330,7 +333,7 @@ pub fn maybe_diarize_segments(
     let diarization = match diarizer.diarize(audio_path, request) {
         Ok(diarization) => diarization,
         Err(err) if should_skip_diarization_error(&err.to_string()) => {
-            eprintln!("speaker diarization skipped: {}", err);
+            std::eprintln!("speaker diarization skipped: {}", err);
             return Ok((transcript_segments, None));
         }
         Err(err) => return Err(err),

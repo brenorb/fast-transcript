@@ -97,9 +97,7 @@ impl DefaultModelStore {
 fn canonical_model(name: &str) -> Result<String> {
     find_model(name)
         .map(|preset| preset.name.to_string())
-        .with_context(|| {
-            format!("unknown model {name:?}; run fscript --list-models to choose a model")
-        })
+        .with_context(|| crate::model_catalog::unknown_model_message(name))
 }
 
 pub(crate) fn default_model_selection() -> Result<Option<String>> {
@@ -117,6 +115,12 @@ pub(crate) enum SettingsCommand {
 }
 
 pub(crate) fn parse_settings_command(args: &[String]) -> Result<Option<SettingsCommand>> {
+    let filtered = args
+        .iter()
+        .filter(|arg| !matches!(arg.as_str(), "--quiet" | "-q"))
+        .cloned()
+        .collect::<Vec<_>>();
+    let args = filtered.as_slice();
     let is_settings_flag = |arg: &str| {
         matches!(
             arg,
@@ -125,7 +129,11 @@ pub(crate) fn parse_settings_command(args: &[String]) -> Result<Option<SettingsC
             || arg.starts_with("--get-default-model=")
             || arg.starts_with("--reset-default-model=")
     };
-    if !args.iter().any(|arg| is_settings_flag(arg)) {
+    if !args
+        .iter()
+        .take_while(|arg| arg.as_str() != "--")
+        .any(|arg| is_settings_flag(arg))
+    {
         return Ok(None);
     }
     let command = match args {
@@ -141,16 +149,19 @@ pub(crate) fn parse_settings_command(args: &[String]) -> Result<Option<SettingsC
 pub(crate) fn run_settings_command(command: SettingsCommand) -> Result<()> {
     let store = DefaultModelStore::configured();
     match command {
-        SettingsCommand::Set(model) => println!("Default model: {}", store.save(&model)?),
-        SettingsCommand::Get => println!(
-            "{}",
-            store
-                .load()?
-                .unwrap_or_else(|| "parakeet-v3-int8".to_string())
-        ),
+        SettingsCommand::Set(model) => eprintln!("Default model: {}", store.save(&model)?),
+        SettingsCommand::Get => crate::delivery::write_stdout(
+            &mut std::io::stdout().lock(),
+            format_args!(
+                "{}\n",
+                store
+                    .load()?
+                    .unwrap_or_else(|| "parakeet-v3-int8".to_string())
+            ),
+        )?,
         SettingsCommand::Reset => {
             store.reset()?;
-            println!("Saved default model reset.");
+            eprintln!("Saved default model reset.");
         }
     }
     Ok(())

@@ -1,3 +1,5 @@
+#[macro_use]
+mod diagnostics;
 mod app;
 mod audio;
 mod cli;
@@ -5,6 +7,7 @@ mod delivery;
 mod diarization;
 mod engine;
 mod inference;
+mod input;
 mod model;
 mod model_catalog;
 mod output;

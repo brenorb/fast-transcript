@@ -1,7 +1,7 @@
 //! Application routing for local media, remote subtitles, and rendered output.
 
 use crate::cli::{parse_args_with_default_model, usage, version_string};
-use crate::delivery::{default_output_path_for_input, OutputDestination};
+use crate::delivery::{default_output_path_for_input, write_stdout, OutputDestination};
 use crate::output::render_output;
 use crate::remote::{
     download_manual_remote_transcript, download_remote_audio, infer_input_source,
@@ -11,20 +11,66 @@ use crate::transcribe::transcribe_audio_input;
 use crate::types::{BenchmarkChunk, BenchmarkResult, CliArgs, InputSource};
 use anyhow::{Context, Result};
 use std::env;
-use std::io;
+use std::io::{self, IsTerminal};
 
 pub(crate) fn run(raw_args: Vec<String>) -> Result<()> {
-    if raw_args.iter().any(|arg| arg == "--help" || arg == "-h") {
-        println!("{}", usage());
-        return Ok(());
+    let raw_args = if raw_args == ["help", "manual"] {
+        vec!["--manual".to_string()]
+    } else {
+        raw_args
+    };
+    if raw_args.is_empty() {
+        return write_stdout(
+            &mut io::stdout().lock(),
+            format_args!("{}\n", crate::cli::introduction()),
+        );
     }
-    if raw_args.iter().any(|arg| arg == "--version" || arg == "-V") {
-        println!("{}", version_string());
-        return Ok(());
+    if raw_args == ["help"]
+        || raw_args
+            .iter()
+            .take_while(|arg| *arg != "--")
+            .any(|arg| arg == "--help" || arg == "-h")
+    {
+        return write_stdout(&mut io::stdout().lock(), format_args!("{}\n", usage()));
     }
-    if raw_args.iter().any(|arg| arg == "--list-models") {
-        println!("{}", crate::model_catalog::list_models());
-        return Ok(());
+    if raw_args
+        .iter()
+        .take_while(|arg| *arg != "--")
+        .any(|arg| arg == "--version" || arg == "-V")
+    {
+        return write_stdout(
+            &mut io::stdout().lock(),
+            format_args!("{}\n", version_string()),
+        );
+    }
+    let matches = crate::cli::parse_command(&raw_args)?;
+    if matches.get_flag("help") {
+        return write_stdout(&mut io::stdout().lock(), format_args!("{}\n", usage()));
+    }
+    if matches.get_flag("version") {
+        return write_stdout(
+            &mut io::stdout().lock(),
+            format_args!("{}\n", version_string()),
+        );
+    }
+    let _verbosity = crate::diagnostics::Scope::enter(matches.get_flag("quiet"));
+    if matches.get_flag("manual") {
+        return write_stdout(
+            &mut io::stdout().lock(),
+            format_args!("{}", include_str!("../docs/cli.md")),
+        );
+    }
+    if matches.get_flag("man-page") {
+        return write_stdout(
+            &mut io::stdout().lock(),
+            format_args!("{}", include_str!("../docs/fscript.1")),
+        );
+    }
+    if matches.get_flag("list-models") {
+        return write_stdout(
+            &mut io::stdout().lock(),
+            format_args!("{}\n", crate::model_catalog::list_models()),
+        );
     }
 
     if let Some(command) = crate::settings::parse_settings_command(&raw_args)? {
@@ -33,11 +79,19 @@ pub(crate) fn run(raw_args: Vec<String>) -> Result<()> {
 
     let args = parse_args_with_default_model(&raw_args, crate::settings::default_model_selection)?;
     if let Some(notice) = &args.diarization_notice {
-        eprintln!("{notice}");
+        std::eprintln!("{notice}");
     }
     let input_source = infer_input_source(&args.input);
 
     match &input_source {
+        InputSource::Stdin => {
+            let stdin = io::stdin();
+            let media = crate::input::spool_stdin(&mut stdin.lock(), stdin.is_terminal())?;
+            let destination = output_destination_for_args(&args, &input_source, None)?;
+            let result = transcribe_audio_input(&args, "-", media.path(), "stdin-local-model")?;
+            emit_result(&args, &result, destination)
+        }
+
         InputSource::RemoteUrl(url) => handle_remote_input(&args, &input_source, url),
         InputSource::LocalPath(path) => {
             let destination = output_destination_for_args(&args, &input_source, None)?;
@@ -70,7 +124,7 @@ fn handle_remote_input(args: &CliArgs, input_source: &InputSource, url: &str) ->
             }
             Ok(None) => {}
             Err(error) => {
-                eprintln!(
+                std::eprintln!(
                     "warning: manual subtitle download failed; falling back to remote audio download: {error}"
                 );
             }
@@ -92,7 +146,9 @@ fn output_destination_for_args(
     input_source: &InputSource,
     title_hint: Option<&str>,
 ) -> Result<OutputDestination> {
-    if args.output_to_stdout {
+    if args.output_to_stdout
+        || (matches!(input_source, InputSource::Stdin) && args.output_path.is_none())
+    {
         return Ok(OutputDestination::Stdout);
     }
     let current_dir = env::current_dir().context("failed to resolve current working directory")?;
@@ -161,6 +217,6 @@ fn emit_result_with_status(
         &output,
         status_message,
         &mut io::stdout(),
-        &mut io::stderr(),
+        &mut crate::diagnostics::StatusWriter,
     )
 }

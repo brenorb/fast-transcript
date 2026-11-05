@@ -19,7 +19,7 @@ fscript lecture.mp3 --srt
 fscript lecture.mp3 --vtt
 fscript lecture.mp3 --json
 fscript lecture.mp3 --diarize lseend-dihard3
-fscript lecture.mp3 -D --json --raw
+fscript lecture.mp3 --no-diarization --json --raw
 fscript lecture.mp3 -n 2
 fscript lecture.mp3 --model parakeet-ultra
 fscript --list-models
@@ -218,6 +218,21 @@ That includes `-D` / `--no-diarization`, every `--text` mode, and the default sp
 
 ## Usage
 
+Run `fscript` for a short introduction, `fscript help` / `fscript --help` for full
+option help, or `fscript help manual` / `fscript --manual` for the complete offline
+[CLI manual](docs/cli.md). `fscript --man-page` exports the same manual as roff:
+
+```bash
+fscript --man-page > fscript.1
+man ./fscript.1
+```
+
+The checked-in `docs/fscript.1` is generated with
+`python3 scripts/generate_man_page.py`; CI checks that it matches the manual.
+The [CLI conventions review](docs/cli-guidelines.md) records the applicable
+guidelines, tested behavior, and intentional interface choices.
+
+
 ```bash
 fscript <media-or-url> [output-path]
 fscript <media-or-url> -o output-path
@@ -234,14 +249,36 @@ fscript <media-or-url> --json
 fscript <media-or-url> --srt
 fscript <media-or-url> --vtt
 fscript <media-or-url> --diarize lseend-dihard3
-fscript <media-or-url> -D --json --raw
+fscript <media-or-url> --no-diarization --json --raw
 fscript <media-or-url> -n 2
 fscript --version
 ```
 
 `<media-or-url>` can be a local audio file, a local video file, or a supported remote media URL.
 
+Use `-` as the input to read piped media. Stdin input defaults to transcript contents on
+stdout, so you can compose a pipeline directly:
+
+```bash
+cat lecture.wav | fscript - --text=plain
+cat lecture.mp3 | fscript - --no-diarization --json | jq .text
+cat lecture.mp3 | fscript - notes/ --text=plain
+fscript lecture.mp3 --text=plain --output -
+```
+
+Piped media is spooled to a temporary file for seekable decoding and diarization,
+then removed when the command finishes. Empty stdin and interactive terminal input
+return an error with a pipeline example. An explicit file destination overrides the
+stdout default; directory destinations use `stdin` as the filename stem.
+
+
 When `fscript` writes the transcript to a file, it keeps progress and human-readable status on `stderr` and prints only the final absolute transcript path on `stdout`.
+Use `-q` / `--quiet` to suppress progress, completion messages, and successful
+model-worker diagnostics. Transcript contents, result paths, model queries, warnings,
+and errors remain visible. SDK installers may still report dependency diagnostics
+during first setup. Settings commands also accept `--quiet`; saving or resetting a
+preference reports its confirmation on stderr.
+
 That makes it easy to compose in shell scripts:
 
 ```bash
@@ -270,7 +307,7 @@ fscript lecture.wav --json
 fscript lecture.wav --srt
 fscript lecture.wav --vtt
 fscript lecture.wav --diarize lseend-dihard3
-fscript lecture.wav -D --json --raw
+fscript lecture.wav --no-diarization --json --raw
 fscript lecture.wav -n 2
 fscript lecture.wav --chunk 180 --overlap 3
 fscript lecture.wav --chunk 0
@@ -414,9 +451,11 @@ By default, it:
 
 Modes:
 
-- `-d` / `--diarize`: enable diarization explicitly with the default `coreml` model
-- `-d coreml` / `--diarize coreml`: `FluidInference/speaker-diarization-coreml` path via `fluidaudiocli process --mode offline`
-- `-d lseend-dihard3` / `--diarize lseend-dihard3`: alternate `FluidInference/ls-eend-coreml` DIHARD III path via `fluidaudiocli lseend --variant dihard3`
+Prefer the descriptive `--diarize` flag. The existing `-d` alias remains supported for compatibility; it does not mean debug.
+
+- `--diarize`: enable diarization explicitly with the default `coreml` model
+- `--diarize coreml`: `FluidInference/speaker-diarization-coreml` path via `fluidaudiocli process --mode offline`
+- `--diarize lseend-dihard3`: alternate `FluidInference/ls-eend-coreml` DIHARD III path via `fluidaudiocli lseend --variant dihard3`
   - defaults to `--threshold 0.3`
 - `-D` / `--no-diarization`: skip diarization entirely
 - `--backend=coreml|lseend-dihard3|none`: legacy alias kept for backwards compatibility

@@ -27,7 +27,9 @@ pub(crate) struct DirectTranscript {
 }
 
 pub(crate) fn infer_input_source(value: &str) -> InputSource {
-    if value.starts_with("https://") || value.starts_with("http://") {
+    if value == "-" {
+        InputSource::Stdin
+    } else if value.starts_with("https://") || value.starts_with("http://") {
         InputSource::RemoteUrl(value.to_string())
     } else {
         InputSource::LocalPath(PathBuf::from(value))

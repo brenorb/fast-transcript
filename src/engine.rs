@@ -135,6 +135,7 @@ struct PythonEngine {
     child: Child,
     input: Option<ChildStdin>,
     output: BufReader<ChildStdout>,
+    diagnostics: Option<tempfile::NamedTempFile>,
 }
 
 impl PythonEngine {
@@ -183,6 +184,7 @@ impl PythonEngine {
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::inherit());
+        let diagnostics = crate::diagnostics::capture_stderr(&mut command)?;
         let mut child = command.spawn().context(
             "failed to start model runtime; install uv (https://docs.astral.sh/uv/) or set FSCRIPT_PYTHON_BINARY to an interpreter with the model SDK installed"
         )?;
@@ -198,13 +200,24 @@ impl PythonEngine {
             child,
             input: Some(input),
             output: BufReader::new(output),
+            diagnostics,
         };
         let info: WorkerInfo = serde_json::from_value(engine.read_response()?)
-            .context("invalid model worker startup response")?;
+            .with_context(|| engine.failure_context("invalid model worker startup response"))?;
         if !info.ready || !info.load_seconds.is_finite() || info.load_seconds < 0.0 {
-            bail!("model worker did not report a valid loaded model");
+            bail!(
+                "{}",
+                engine.failure_context("model worker did not report a valid loaded model")
+            );
         }
         Ok((engine, info))
+    }
+
+    fn failure_context(&self, message: &str) -> String {
+        format!(
+            "{message}{}",
+            crate::diagnostics::diagnostic_tail(self.diagnostics.as_ref())
+        )
     }
 
     fn read_response(&mut self) -> Result<serde_json::Value> {
@@ -220,13 +233,17 @@ impl PythonEngine {
                 .try_wait()
                 .context("failed to inspect model worker")?;
             bail!(
-                "model worker stopped before responding ({status:?}); see the runtime error above"
+                "model worker stopped before responding ({status:?}); see the runtime error above{}",
+                crate::diagnostics::diagnostic_tail(self.diagnostics.as_ref())
             );
         }
-        let response: serde_json::Value =
-            serde_json::from_str(&line).context("model worker returned invalid JSON")?;
+        let response: serde_json::Value = serde_json::from_str(&line)
+            .with_context(|| self.failure_context("model worker returned invalid JSON"))?;
         if let Some(error) = response.get("error").and_then(|value| value.as_str()) {
-            bail!("model runtime failed: {error}");
+            bail!(
+                "model runtime failed: {error}{}",
+                crate::diagnostics::diagnostic_tail(self.diagnostics.as_ref())
+            );
         }
         Ok(response)
     }
@@ -246,7 +263,7 @@ impl SpeechEngine for PythonEngine {
         input.write_all(b"\n")?;
         input.flush()?;
         let result: WorkerTranscript = serde_json::from_value(self.read_response()?)
-            .context("invalid model worker transcript response")?;
+            .with_context(|| self.failure_context("invalid model worker transcript response"))?;
         Ok(TranscriptionResult {
             text: result.text,
             segments: Some(

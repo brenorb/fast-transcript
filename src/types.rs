@@ -77,6 +77,7 @@ pub(crate) struct PreparedAudio {
 
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) enum InputSource {
+    Stdin,
     LocalPath(PathBuf),
     RemoteUrl(String),
 }

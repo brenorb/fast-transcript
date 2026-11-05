@@ -35,11 +35,8 @@ impl ModelConfig {
                 Self::resolve(Some(selection), directory, package)
             }
             Some(selection) => {
-                let preset = find_model(&selection).with_context(|| {
-                    format!(
-                        "unknown model {selection:?}; run fscript --list-models to choose a model"
-                    )
-                })?;
+                let preset = find_model(&selection)
+                    .with_context(|| crate::model_catalog::unknown_model_message(&selection))?;
                 if preset.runtime == ModelRuntime::Onnx {
                     let mut config =
                         Self::resolve(Some(preset.url.to_string()), directory, package);

@@ -15,6 +15,8 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - name: Format
         run: cargo fmt --check
+      - name: Check generated man page
+        run: python3 scripts/generate_man_page.py --check
       - name: Test
         run: cargo test --locked
       - name: Publish dry run
