@@ -1,3 +1,4 @@
+use crate::errors::Explain;
 use crate::types::TranscriptSegment;
 use anyhow::{bail, Context, Result};
 use serde::Deserialize;
@@ -138,16 +139,16 @@ pub(crate) fn missing_diarization_notice(status: &FluidaudioBinaryStatus) -> Opt
     match status {
         FluidaudioBinaryStatus::Available => None,
         FluidaudioBinaryStatus::MissingDefaultBinary => Some(
-            "speaker diarization disabled because `fluidaudiocli` is not available on PATH; this installation may be incomplete. Reinstall the bundled helper or set FSCRIPT_DIARIZATION_BINARY to a working fluidaudiocli binary.".to_string(),
+            "note: speaker labels are off because fluidaudiocli was not found; writing the transcript without speakers. On macOS, install FluidAudio (or reinstall fast-transcript) to get speaker labels; pass --no-diarization to hide this note.".to_string(),
         ),
         FluidaudioBinaryStatus::MissingConfiguredBinaryOnPath { binary } => Some(
             format!(
-                "speaker diarization disabled because FSCRIPT_DIARIZATION_BINARY is set to `{binary}`, but that command is not available on PATH; falling back to plain transcription."
+                "warning: speaker labels are off because FSCRIPT_DIARIZATION_BINARY is set to {binary}, which is not on PATH; writing the transcript without speakers."
             ),
         ),
         FluidaudioBinaryStatus::InvalidConfiguredBinaryPath { binary } => Some(
             format!(
-                "speaker diarization disabled because FSCRIPT_DIARIZATION_BINARY points to `{binary}`, but that path is not an executable file; falling back to plain transcription."
+                "warning: speaker labels are off because FSCRIPT_DIARIZATION_BINARY points to {binary}, which is not a program fscript can run; writing the transcript without speakers."
             ),
         ),
     }
@@ -196,8 +197,8 @@ impl<R: CommandRunner> SpeakerDiarizer for FluidAudioDiarizer<R> {
     ) -> Result<DiarizationResult> {
         // Child parsers must receive a path, even when the filename begins with '-'.
         let audio_path = std::path::absolute(audio_path)
-            .with_context(|| format!("failed to resolve audio path {}", audio_path.display()))?;
-        let tempdir = tempdir().context("failed to create temp dir for diarization output")?;
+            .with_context(|| format!("cannot open {}", audio_path.display()))?;
+        let tempdir = crate::errors::temp(tempdir())?;
         let output_path = tempdir.path().join("diarization.json");
         let mut args = match request.backend {
             DiarizationBackend::Coreml => vec![
@@ -230,36 +231,56 @@ impl<R: CommandRunner> SpeakerDiarizer for FluidAudioDiarizer<R> {
             Ok(output) => output,
             Err(err) if err.kind() == io::ErrorKind::NotFound => {
                 bail!(
-                    "speaker diarization requested, but `{}` is not available as an executable. Install {} or point FSCRIPT_DIARIZATION_BINARY at a working fluidaudiocli binary.",
-                    self.binary,
-                    request.backend.backend_name()
+                    "speaker labels need fluidaudiocli, but {} was not found. Install FluidAudio, set FSCRIPT_DIARIZATION_BINARY to its fluidaudiocli path, or rerun with --no-diarization",
+                    self.binary
                 );
             }
             Err(err) => {
-                return Err(err).with_context(|| {
-                    format!("failed to run `{}` for speaker diarization", self.binary)
-                });
+                return Err(err).explain(
+                    || format!("could not start the speaker-label tool {}", self.binary),
+                    NO_DIARIZATION_HINT,
+                );
             }
         };
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
-            bail!(
-                "speaker diarization failed via `{}`: {}",
-                self.binary,
-                stderr.trim()
-            );
+            if should_skip_diarization_error(&stderr) {
+                return Err(anyhow::Error::new(NoSpeech));
+            }
+            if crate::errors::debug_enabled() {
+                std::eprintln!("{}", stderr.trim());
+            }
+            bail!("speaker detection failed. {NO_DIARIZATION_HINT}");
         }
 
         let payload = std::fs::read_to_string(&output_path)
-            .with_context(|| format!("failed to read {}", output_path.display()))?;
+            .map_err(crate::errors::technical)
+            .context(NO_RESULT)?;
         parse_diarization_output(&payload)
     }
 }
 
+const NO_DIARIZATION_HINT: &str =
+    "Rerun with --no-diarization to get the transcript without speaker labels";
+const NO_RESULT: &str = "speaker detection returned no usable result. Rerun with --no-diarization to get the transcript without speaker labels";
+
+/// The speaker tool found no speech; the transcript continues without labels.
+#[derive(Debug)]
+struct NoSpeech;
+
+impl std::fmt::Display for NoSpeech {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str("no speech detected")
+    }
+}
+
+impl std::error::Error for NoSpeech {}
+
 pub fn parse_diarization_output(payload: &str) -> Result<DiarizationResult> {
-    let parsed: FluidAudioOutput =
-        serde_json::from_str(payload).context("failed to parse diarization JSON output")?;
+    let parsed: FluidAudioOutput = serde_json::from_str(payload)
+        .map_err(crate::errors::technical)
+        .context(NO_RESULT)?;
     let mut segments = Vec::with_capacity(parsed.segments.len());
     for segment in parsed.segments {
         let speaker = segment
@@ -332,8 +353,10 @@ pub fn maybe_diarize_segments(
 
     let diarization = match diarizer.diarize(audio_path, request) {
         Ok(diarization) => diarization,
-        Err(err) if should_skip_diarization_error(&err.to_string()) => {
-            std::eprintln!("speaker diarization skipped: {}", err);
+        Err(err) if err.is::<NoSpeech>() || should_skip_diarization_error(&err.to_string()) => {
+            std::eprintln!(
+                "warning: no speech found for speaker labels; writing the transcript without speakers"
+            );
             return Ok((transcript_segments, None));
         }
         Err(err) => return Err(err),
@@ -695,9 +718,10 @@ mod tests {
             )
             .unwrap_err();
 
-        assert!(err.to_string().contains(
-            "speaker diarization requested, but `fluidaudiocli` is not available as an executable"
-        ));
+        assert!(err
+            .to_string()
+            .contains("speaker labels need fluidaudiocli, but fluidaudiocli was not found"));
+        assert!(err.to_string().contains("--no-diarization"));
     }
 
     #[test]
@@ -727,7 +751,7 @@ mod tests {
         assert_eq!(
             notice.as_deref(),
             Some(
-                "speaker diarization disabled because `fluidaudiocli` is not available on PATH; this installation may be incomplete. Reinstall the bundled helper or set FSCRIPT_DIARIZATION_BINARY to a working fluidaudiocli binary."
+                "note: speaker labels are off because fluidaudiocli was not found; writing the transcript without speakers. On macOS, install FluidAudio (or reinstall fast-transcript) to get speaker labels; pass --no-diarization to hide this note."
             )
         );
     }
@@ -741,7 +765,7 @@ mod tests {
         assert_eq!(
             notice.as_deref(),
             Some(
-                "speaker diarization disabled because FSCRIPT_DIARIZATION_BINARY is set to `custom-fluidaudiocli`, but that command is not available on PATH; falling back to plain transcription."
+                "warning: speaker labels are off because FSCRIPT_DIARIZATION_BINARY is set to custom-fluidaudiocli, which is not on PATH; writing the transcript without speakers."
             )
         );
     }
@@ -755,7 +779,7 @@ mod tests {
         assert_eq!(
             notice.as_deref(),
             Some(
-                "speaker diarization disabled because FSCRIPT_DIARIZATION_BINARY points to `/definitely/missing/fluidaudiocli`, but that path is not an executable file; falling back to plain transcription."
+                "warning: speaker labels are off because FSCRIPT_DIARIZATION_BINARY points to /definitely/missing/fluidaudiocli, which is not a program fscript can run; writing the transcript without speakers."
             )
         );
     }

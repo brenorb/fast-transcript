@@ -1457,7 +1457,7 @@ mod tests {
         assert_eq!(
             parsed.diarization_notice.as_deref(),
             Some(
-                "speaker diarization disabled because `fluidaudiocli` is not available on PATH; this installation may be incomplete. Reinstall the bundled helper or set FSCRIPT_DIARIZATION_BINARY to a working fluidaudiocli binary."
+                "note: speaker labels are off because fluidaudiocli was not found; writing the transcript without speakers. On macOS, install FluidAudio (or reinstall fast-transcript) to get speaker labels; pass --no-diarization to hide this note."
             )
         );
     }
@@ -1471,7 +1471,7 @@ mod tests {
         assert_eq!(
             notice.as_deref(),
             Some(
-                "speaker diarization disabled because FSCRIPT_DIARIZATION_BINARY is set to `custom-fluidaudiocli`, but that command is not available on PATH; falling back to plain transcription."
+                "warning: speaker labels are off because FSCRIPT_DIARIZATION_BINARY is set to custom-fluidaudiocli, which is not on PATH; writing the transcript without speakers."
             )
         );
     }
@@ -1485,7 +1485,7 @@ mod tests {
         assert_eq!(
             notice.as_deref(),
             Some(
-                "speaker diarization disabled because FSCRIPT_DIARIZATION_BINARY points to `/definitely/missing/fluidaudiocli`, but that path is not an executable file; falling back to plain transcription."
+                "warning: speaker labels are off because FSCRIPT_DIARIZATION_BINARY points to /definitely/missing/fluidaudiocli, which is not a program fscript can run; writing the transcript without speakers."
             )
         );
     }

@@ -218,7 +218,7 @@ fn quiet_preserves_warnings_and_worker_failure_details() {
         &[],
     );
     assert!(output.status.success(), "{}", text(&output.stderr));
-    assert!(text(&output.stderr).contains("speaker diarization disabled"));
+    assert!(text(&output.stderr).contains("speaker labels are off"));
     assert!(!text(&output.stderr).contains("loading model"));
     fixture.script(
         "python",
