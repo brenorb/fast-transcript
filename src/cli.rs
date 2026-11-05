@@ -846,7 +846,7 @@ mod tests {
             (vec!["--model-url", "ultra"], "http(s)"),
             (
                 vec!["--model", "ultra", "--model-package", "weights.tar.gz"],
-                "only applies to ONNX",
+                "works only with the default model",
             ),
             (
                 vec!["--model", "phonon-2", "--device", "mps"],

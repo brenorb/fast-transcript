@@ -1,3 +1,4 @@
+use crate::errors::{technical, Explain};
 use crate::model_catalog::{find_model, ModelPreset, ModelRuntime};
 use anyhow::{bail, Context, Result};
 use directories::ProjectDirs;
@@ -44,7 +45,7 @@ impl ModelConfig {
                     config
                 } else {
                     if package.is_some() {
-                        bail!("--model-package only applies to ONNX bundles; {} downloads its predefined model through its SDK", preset.name);
+                        bail!("--model-package works only with the default model or --model-url; {} downloads its own files. Remove --model-package", preset.name);
                     }
                     Self {
                         directory: directory.unwrap_or_default(),
@@ -179,12 +180,11 @@ pub(crate) fn remove_appledouble_files(root: &Path) -> Result<()> {
         return Ok(());
     }
 
-    for entry in fs::read_dir(root).with_context(|| format!("failed to read {}", root.display()))? {
-        let entry = entry.with_context(|| format!("failed to inspect {}", root.display()))?;
+    let failed = || format!("could not install the speech model into {}", root.display());
+    for entry in fs::read_dir(root).explain(failed, MODEL_DIR_HINT)? {
+        let entry = entry.explain(failed, MODEL_DIR_HINT)?;
         let path = entry.path();
-        let file_type = entry
-            .file_type()
-            .with_context(|| format!("failed to inspect {}", path.display()))?;
+        let file_type = entry.file_type().explain(failed, MODEL_DIR_HINT)?;
 
         if file_type.is_dir() {
             remove_appledouble_files(&path)?;
@@ -196,8 +196,7 @@ pub(crate) fn remove_appledouble_files(root: &Path) -> Result<()> {
             .and_then(|value| value.to_str())
             .is_some_and(|name| name.starts_with("._"));
         if is_appledouble {
-            fs::remove_file(&path)
-                .with_context(|| format!("failed to remove {}", path.display()))?;
+            fs::remove_file(&path).explain(failed, MODEL_DIR_HINT)?;
         }
     }
 
@@ -211,83 +210,135 @@ fn has_required_model_files(model_dir: &Path) -> bool {
 }
 
 fn install_required_model_files(from_dir: &Path, into_dir: &Path) -> Result<()> {
-    fs::create_dir_all(into_dir)
-        .with_context(|| format!("failed to create {}", into_dir.display()))?;
+    let failed = || {
+        format!(
+            "could not install the speech model into {}",
+            into_dir.display()
+        )
+    };
+    fs::create_dir_all(into_dir).explain(failed, MODEL_DIR_HINT)?;
 
     for file_name in crate::REQUIRED_MODEL_FILES {
-        fs::copy(from_dir.join(file_name), into_dir.join(file_name)).with_context(|| {
-            format!(
-                "failed to install {} into {}",
-                file_name,
-                into_dir.display()
-            )
-        })?;
+        fs::copy(from_dir.join(file_name), into_dir.join(file_name))
+            .explain(failed, MODEL_DIR_HINT)?;
     }
 
     Ok(())
 }
 
-fn download_model_package(model_url: &str, package_path: &Path) -> Result<()> {
-    let parent = package_path
-        .parent()
-        .with_context(|| format!("package path {} has no parent", package_path.display()))?;
-    fs::create_dir_all(parent).with_context(|| format!("failed to create {}", parent.display()))?;
+const MODEL_DIR_HINT: &str = "Check that the folder is writable and has free space, or set FSCRIPT_MODEL_DIR and FSCRIPT_MODEL_PACKAGE to another folder";
+const NETWORK_HINT: &str = "Check your internet connection and try again";
 
-    eprintln!(
-        "model missing; downloading {} to {}",
-        model_url,
-        package_path.display()
-    );
+/// The default bundle is "the speech model"; a custom link is named so it can be checked.
+fn model_source(model_url: &str) -> String {
+    if model_url == crate::DEFAULT_MODEL_URL {
+        "the speech model".to_string()
+    } else {
+        format!("the model from {model_url}")
+    }
+}
+
+fn is_storage_problem(error: &io::Error) -> bool {
+    matches!(
+        error.kind(),
+        io::ErrorKind::StorageFull
+            | io::ErrorKind::PermissionDenied
+            | io::ErrorKind::ReadOnlyFilesystem
+            | io::ErrorKind::QuotaExceeded
+    )
+}
+
+fn download_model_package(model_url: &str, package_path: &Path) -> Result<()> {
+    let source = model_source(model_url);
+    let parent = package_path.parent().with_context(|| {
+        format!(
+            "cannot save {source} to {}; set FSCRIPT_MODEL_PACKAGE to a file path",
+            package_path.display()
+        )
+    })?;
+    let save_failed = || format!("could not save {source} to {}", parent.display());
+    fs::create_dir_all(parent).explain(save_failed, MODEL_DIR_HINT)?;
+
+    if model_url == crate::DEFAULT_MODEL_URL {
+        eprintln!("downloading the speech model (first run only)...");
+    } else {
+        eprintln!("downloading the model from {model_url}...");
+    }
     let client = Client::builder()
         .connect_timeout(Duration::from_secs(30))
         .timeout(Duration::from_secs(60 * 60))
         .build()
-        .context("failed to build HTTP client for model download")?;
-    let mut response = client
+        .map_err(technical)
+        .explain(
+            || format!("could not start downloading {source}"),
+            NETWORK_HINT,
+        )?;
+    let response = client
         .get(model_url)
         .send()
-        .with_context(|| format!("failed to request {model_url}"))?
-        .error_for_status()
-        .with_context(|| format!("download failed for {model_url}"))?;
+        .map_err(technical)
+        .explain(|| format!("could not download {source}"), NETWORK_HINT)?;
+    let status = response.status();
+    if !status.is_success() {
+        if model_url == crate::DEFAULT_MODEL_URL {
+            bail!("could not download the speech model (the server answered {status}); try again later");
+        }
+        bail!("could not download {source} (the server answered {status}); check the model link");
+    }
+    let mut response = response;
 
     let tmp_path = package_path.with_extension("tar.gz.partial");
-    let mut file = File::create(&tmp_path)
-        .with_context(|| format!("failed to create {}", tmp_path.display()))?;
-    io::copy(&mut response, &mut file)
-        .with_context(|| format!("failed to write {}", tmp_path.display()))?;
-    fs::rename(&tmp_path, package_path).with_context(|| {
-        format!(
-            "failed to move downloaded model package into {}",
-            package_path.display()
-        )
-    })?;
+    let mut file = File::create(&tmp_path).explain(save_failed, MODEL_DIR_HINT)?;
+    if let Err(error) = io::copy(&mut response, &mut file) {
+        drop(file);
+        let _ = fs::remove_file(&tmp_path);
+        if is_storage_problem(&error) {
+            return Err(error).explain(save_failed, MODEL_DIR_HINT);
+        }
+        return Err(technical(error)).explain(
+            || format!("the download of {source} was interrupted"),
+            "Check your internet connection and run fscript again",
+        );
+    }
+    fs::rename(&tmp_path, package_path).explain(save_failed, MODEL_DIR_HINT)?;
     Ok(())
 }
 
 fn extract_model_package(model_dir: &Path, package_path: &Path) -> Result<()> {
-    let destination_root = model_dir
-        .parent()
-        .with_context(|| format!("model dir {} has no parent", model_dir.display()))?;
-    fs::create_dir_all(destination_root)
-        .with_context(|| format!("failed to create {}", destination_root.display()))?;
-
-    let staging_dir = tempfile::tempdir_in(destination_root).with_context(|| {
+    let destination_root = model_dir.parent().with_context(|| {
         format!(
-            "failed to create a staging directory in {}",
-            destination_root.display()
+            "cannot install the speech model into {}; set FSCRIPT_MODEL_DIR to a folder path",
+            model_dir.display()
         )
     })?;
-    eprintln!(
-        "extracting {} into temporary model staging directory",
-        package_path.display()
-    );
-    let archive_file = File::open(package_path)
-        .with_context(|| format!("failed to open {}", package_path.display()))?;
+    let install_failed = || {
+        format!(
+            "could not install the speech model into {}",
+            destination_root.display()
+        )
+    };
+    fs::create_dir_all(destination_root).explain(install_failed, MODEL_DIR_HINT)?;
+
+    let staging_dir =
+        tempfile::tempdir_in(destination_root).explain(install_failed, MODEL_DIR_HINT)?;
+    eprintln!("installing the speech model...");
+    let archive_file = File::open(package_path).explain(
+        || {
+            format!(
+                "could not open the speech model package {}",
+                package_path.display()
+            )
+        },
+        MODEL_DIR_HINT,
+    )?;
     let decoder = GzDecoder::new(archive_file);
     let mut archive = Archive::new(decoder);
-    archive
-        .unpack(staging_dir.path())
-        .with_context(|| format!("failed to unpack {}", package_path.display()))?;
+    if let Err(error) = archive.unpack(staging_dir.path()) {
+        if is_storage_problem(&error) {
+            return Err(error).explain(install_failed, MODEL_DIR_HINT);
+        }
+        return Err(technical(error)).with_context(|| damaged_package_message(package_path));
+    }
     remove_appledouble_files(staging_dir.path())?;
 
     let extracted_default_dir = staging_dir.path().join(crate::DEFAULT_MODEL_BASENAME);
@@ -295,16 +346,27 @@ fn extract_model_package(model_dir: &Path, package_path: &Path) -> Result<()> {
         if model_dir.exists() {
             install_required_model_files(&extracted_default_dir, model_dir)?;
         } else {
-            fs::rename(&extracted_default_dir, model_dir).with_context(|| {
-                format!(
-                    "failed to move extracted model from {} to {}",
-                    extracted_default_dir.display(),
-                    model_dir.display()
-                )
-            })?;
+            fs::rename(&extracted_default_dir, model_dir)
+                .explain(install_failed, MODEL_DIR_HINT)?;
         }
     }
     Ok(())
+}
+
+fn damaged_package_message(package_path: &Path) -> String {
+    format!(
+        "the speech model package {} is damaged or incomplete; delete that file and run fscript again to download it fresh",
+        package_path.display()
+    )
+}
+
+/// Whether fscript chose this folder itself, so deleting it only removes a cache.
+pub(crate) fn is_managed_model_dir(model_dir: &Path, model_url: &str) -> bool {
+    if model_url == crate::DEFAULT_MODEL_URL {
+        model_dir == default_model_dir()
+    } else {
+        model_dir == model_cache_paths(model_url).0
+    }
 }
 
 pub(crate) fn ensure_model_dir(
@@ -318,19 +380,17 @@ pub(crate) fn ensure_model_dir(
 
     if !package_path.exists() {
         download_model_package(model_url, package_path)?;
-    } else {
-        eprintln!(
-            "model missing; reusing cached package {}",
-            package_path.display()
-        );
     }
 
     extract_model_package(model_dir, package_path)?;
     if !has_required_model_files(model_dir) {
-        bail!(
-            "model directory {} is still incomplete after extraction",
-            model_dir.display()
-        );
+        let mut message = damaged_package_message(package_path);
+        if model_url != crate::DEFAULT_MODEL_URL {
+            message.push_str(
+                ". If you set a model link, check that it points to a compatible model bundle",
+            );
+        }
+        bail!("{message}");
     }
     Ok(())
 }
@@ -400,6 +460,26 @@ mod tests {
         }
 
         builder.finish().unwrap();
+    }
+
+    #[test]
+    fn damaged_cached_package_says_how_to_recover() {
+        let dir = tempdir().unwrap();
+        let package = dir.path().join("cache").join("bundle.tar.gz");
+        fs::create_dir_all(package.parent().unwrap()).unwrap();
+        fs::write(&package, "not a tarball").unwrap();
+        let error = ensure_model_dir(
+            &dir.path().join("models").join("bundle"),
+            &package,
+            crate::DEFAULT_MODEL_URL,
+        )
+        .unwrap_err();
+        let message = crate::errors::render(&error);
+        assert!(
+            message.contains("is damaged or incomplete; delete that file and run fscript again"),
+            "{message}"
+        );
+        assert!(!message.contains("gzip"), "{message}");
     }
 
     #[test]

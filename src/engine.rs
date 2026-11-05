@@ -34,7 +34,15 @@ pub(crate) fn load_engine(config: &ModelConfig) -> Result<LoadedEngine> {
             ensure_model_dir(&config.directory, &config.package, &config.url)?;
             let started = Instant::now();
             let model = ParakeetModel::load(&config.directory, &Quantization::Int8)
-                .context("failed to load Parakeet ONNX model")?;
+                .map_err(crate::errors::technical)
+                .with_context(|| {
+                    let folder = config.directory.display();
+                    if crate::model::is_managed_model_dir(&config.directory, &config.url) {
+                        format!("could not load the speech model from {folder}; delete that folder and run fscript again to reinstall it")
+                    } else {
+                        format!("could not load the speech model from {folder}; check that --model-dir points to a compatible model folder")
+                    }
+                })?;
             (
                 Box::new(NativeEngine { model }),
                 started.elapsed().as_secs_f64(),
@@ -105,7 +113,8 @@ impl SpeechEngine for NativeEngine {
                     ..Default::default()
                 },
             )
-            .context("Parakeet ONNX transcription failed")
+            .map_err(crate::errors::technical)
+            .context("the speech model could not transcribe this audio")
     }
 }
 
