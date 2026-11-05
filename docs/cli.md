@@ -155,6 +155,19 @@ for piped media. Quiet mode does not remove requested data from stdout. A consum
 its input early, such as `head`, ends stdout delivery successfully without a
 panic or a broken-pipe diagnostic. Other output failures remain errors.
 
+## Segment timing
+
+Segment times follow the original media timeline, including when `--start`
+selects a range after zero. Chunk processing order can retain overlapping or
+out-of-order intervals. `--raw` disables repeated-word cleanup and `--clean`
+changes text; neither normalizes timestamps. Boundary text deduplication still
+runs during chunk assembly.
+
+A JSON consumer that requires disjoint cues must choose its own overlap policy
+while retaining distinct words. Sorting by `start_s` alone does not remove
+intersecting durations. `--overlap 0` removes chunk overlap and `--chunk 0`
+disables chunking, but neither guarantees non-overlapping backend cues.
+
 ## Troubleshooting
 
 Unknown options and nearby model-name mistakes suggest likely corrections.

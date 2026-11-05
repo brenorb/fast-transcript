@@ -240,6 +240,20 @@ consumer that closes
 its input early, such as \fBhead\fR, ends stdout delivery successfully without
 a
 panic or a broken\-pipe diagnostic. Other output failures remain errors.
+.SH "SEGMENT TIMING"
+Segment times follow the original media timeline, including when
+\fB\-\-start\fR
+selects a range after zero. Chunk processing order can retain overlapping or
+out\-of\-order intervals. \fB\-\-raw\fR disables repeated\-word cleanup and
+\fB\-\-clean\fR
+changes text; neither normalizes timestamps. Boundary text deduplication still
+runs during chunk assembly.
+.PP
+A JSON consumer that requires disjoint cues must choose its own overlap policy
+while retaining distinct words. Sorting by \fBstart_s\fR alone does not remove
+intersecting durations. \fB\-\-overlap 0\fR removes chunk overlap and
+\fB\-\-chunk 0\fR
+disables chunking, but neither guarantees non\-overlapping backend cues.
 .SH TROUBLESHOOTING
 Unknown options and nearby model\-name mistakes suggest likely corrections.
 Use \fB\-\-help\fR to inspect syntax or \fB\-\-list\-models\fR to choose a
