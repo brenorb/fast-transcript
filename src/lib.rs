@@ -6,6 +6,7 @@ mod cli;
 mod delivery;
 mod diarization;
 mod engine;
+mod errors;
 mod inference;
 mod input;
 mod model;
@@ -48,6 +49,12 @@ pub fn version_text() -> String {
 
 pub fn run_from_args(raw_args: Vec<String>) -> Result<()> {
     app::run(raw_args)
+}
+
+/// Render an error for people: plain causes, no OS codes or library internals.
+/// Set `FSCRIPT_DEBUG=1` to print the full technical chain instead.
+pub fn render_error(error: &anyhow::Error) -> String {
+    errors::render(error)
 }
 
 pub fn fuzz_parse_args(raw_args: &[String]) {

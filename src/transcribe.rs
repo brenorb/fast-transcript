@@ -4,11 +4,22 @@ use anyhow::{Context, Result};
 use std::path::Path;
 use transcribe_rs::audio::read_wav_samples;
 
-use crate::audio::normalize_audio;
+use crate::audio::{normalize_audio, MediaInput};
 use crate::diarization::{maybe_diarize_segments, FluidAudioDiarizer};
 use crate::engine::{load_engine, LoadedEngine};
 use crate::inference::{transcribe_samples, InferenceOutcome};
 use crate::types::{BenchmarkResult, CliArgs};
+
+/// How messages name the media: the user's path, the pipe, or the link it came from.
+fn media_label(input_source: &str, audio_path: &Path) -> String {
+    if input_source == "-" {
+        "the piped media".to_string()
+    } else if input_source.starts_with("http://") || input_source.starts_with("https://") {
+        format!("the audio downloaded from {input_source}")
+    } else {
+        audio_path.display().to_string()
+    }
+}
 
 pub(crate) fn transcribe_audio_input(
     args: &CliArgs,
@@ -16,14 +27,18 @@ pub(crate) fn transcribe_audio_input(
     audio_path: &Path,
     transcript_source: &str,
 ) -> Result<BenchmarkResult> {
-    let prepared_audio = normalize_audio(audio_path)?;
-
-    let samples = read_wav_samples(&prepared_audio.wav_path).with_context(|| {
-        format!(
-            "failed to read WAV samples from {}",
-            prepared_audio.wav_path.display()
-        )
+    let label = media_label(input_source, audio_path);
+    let prepared_audio = normalize_audio(&MediaInput {
+        path: audio_path,
+        label: &label,
+        user_path: transcript_source == "local-audio-local-model",
     })?;
+
+    let samples = read_wav_samples(&prepared_audio.wav_path)
+        .map_err(crate::errors::technical)
+        .with_context(|| {
+            format!("could not read the audio in {label}; the file may be damaged. Convert it to MP3 or WAV and try again")
+        })?;
     let audio_seconds = samples.len() as f64 / crate::SAMPLE_RATE as f64;
 
     eprintln!("loading model...");

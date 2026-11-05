@@ -107,6 +107,8 @@ if __name__ == "__main__":
     try:
         main()
     except BaseException as error:
-        print(json.dumps({"error": str(error)}), flush=True)
-        traceback.print_exc(file=sys.stderr)
+        print(json.dumps({"error": str(error) or type(error).__name__}), flush=True)
+        # The one-line error above reaches the user; the stack trace is for debugging.
+        if os.environ.get("FSCRIPT_DEBUG", "0") not in ("", "0"):
+            traceback.print_exc(file=sys.stderr)
         sys.exit(1)

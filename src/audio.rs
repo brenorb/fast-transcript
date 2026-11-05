@@ -1,31 +1,93 @@
-use anyhow::{bail, Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use std::path::Path;
-use std::process::Command;
+use std::process::{Command, Stdio};
 
 use crate::types::{FfprobeOutput, FfprobeStream, PreparedAudio};
 
-fn probe_audio_with(ffprobe_program: &str, path: &Path) -> Result<FfprobeStream> {
-    let path_argument = std::path::absolute(path)
-        .with_context(|| format!("failed to resolve audio path {}", path.display()))?;
-    let output = Command::new(ffprobe_program)
-        .args(["-v", "error", "-print_format", "json", "-show_streams"])
-        .arg(path_argument)
-        .output()
-        .with_context(|| "failed to run ffprobe; install ffmpeg/ffprobe to inspect audio")?;
-    if !output.status.success() {
-        bail!(
-            "ffprobe failed for {}: {}",
-            path.display(),
-            String::from_utf8_lossy(&output.stderr).trim()
-        );
+const FFMPEG_MISSING: &str = "fscript needs ffmpeg to read audio, but it is not installed. Install ffmpeg (for example: brew install ffmpeg), then try again";
+const CONVERT_HINT: &str =
+    "Check that it plays in a media player, or convert it to MP3 or WAV and try again";
+
+/// What the user passed: a local file (checked for existence) or media fscript
+/// already saved on their behalf (stdin, downloads), described by `label`.
+pub(crate) struct MediaInput<'a> {
+    pub(crate) path: &'a Path,
+    pub(crate) label: &'a str,
+    pub(crate) user_path: bool,
+}
+
+fn start_ffmpeg_tool(command: &mut Command) -> Result<std::process::Output> {
+    command.output().map_err(|error| {
+        if error.kind() == std::io::ErrorKind::NotFound {
+            anyhow!(FFMPEG_MISSING)
+        } else {
+            anyhow::Error::new(error).context("could not start ffmpeg to read the audio")
+        }
+    })
+}
+
+fn missing_input_message(path: &Path) -> String {
+    let text = path.to_string_lossy();
+    let looks_like_link = text.starts_with("www.")
+        || ["youtube.com/", "youtu.be/", "vimeo.com/", ".com/", ".org/"]
+            .iter()
+            .any(|marker| text.contains(marker));
+    let link_hint = if looks_like_link {
+        ". For a web link, start it with https://"
+    } else {
+        ""
+    };
+    format!(
+        "cannot find {}; check the file name and folder, then try again{link_hint}",
+        path.display()
+    )
+}
+
+fn check_user_path(path: &Path) -> Result<()> {
+    match std::fs::metadata(path) {
+        Ok(metadata) if metadata.is_dir() => bail!(
+            "{} is a folder; pass an audio or video file inside it",
+            path.display()
+        ),
+        Ok(_) => Ok(()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            bail!("{}", missing_input_message(path))
+        }
+        Err(error) => Err(error).with_context(|| format!("cannot open {}", path.display())),
     }
-    let parsed: FfprobeOutput = serde_json::from_slice(&output.stdout)
-        .with_context(|| format!("failed to parse ffprobe output for {}", path.display()))?;
+}
+
+fn probe_audio_with(ffprobe_program: &str, input: &MediaInput<'_>) -> Result<FfprobeStream> {
+    if input.user_path {
+        check_user_path(input.path)?;
+    }
+    let path_argument =
+        std::path::absolute(input.path).with_context(|| format!("cannot open {}", input.label))?;
+    let output = start_ffmpeg_tool(
+        Command::new(ffprobe_program)
+            .args(["-v", "error", "-print_format", "json", "-show_streams"])
+            .arg(path_argument),
+    )?;
+    let not_media = || {
+        anyhow!(
+            "{} is not an audio or video file fscript can read. {CONVERT_HINT}",
+            input.label
+        )
+    };
+    if !output.status.success() {
+        return Err(not_media());
+    }
+    let parsed: FfprobeOutput = serde_json::from_slice(&output.stdout).map_err(|_| not_media())?;
     parsed
         .streams
         .into_iter()
         .find(|stream| stream.codec_type.as_deref() == Some("audio"))
-        .with_context(|| format!("no audio stream found in {}", path.display()))
+        .with_context(|| {
+            format!(
+                "{} has no sound to transcribe; choose a file with an audio track",
+                input.label
+            )
+        })
 }
 
 pub(crate) fn is_supported_audio(stream: &FfprobeStream) -> bool {
@@ -39,9 +101,10 @@ pub(crate) fn is_supported_audio(stream: &FfprobeStream) -> bool {
 fn normalize_audio_with(
     ffprobe_program: &str,
     ffmpeg_program: &str,
-    input_path: &Path,
+    input: &MediaInput<'_>,
 ) -> Result<PreparedAudio> {
-    let stream = probe_audio_with(ffprobe_program, input_path)?;
+    let input_path = input.path;
+    let stream = probe_audio_with(ffprobe_program, input)?;
     if is_supported_audio(&stream) {
         return Ok(PreparedAudio {
             wav_path: input_path.to_path_buf(),
@@ -50,7 +113,7 @@ fn normalize_audio_with(
         });
     }
 
-    let tempdir = tempfile::tempdir().context("failed to create temp dir for normalized audio")?;
+    let tempdir = crate::errors::temp(tempfile::tempdir())?;
     let stem = input_path
         .file_stem()
         .and_then(|value| value.to_str())
@@ -59,32 +122,40 @@ fn normalize_audio_with(
     let normalized_path = tempdir.path().join(format!("{stem}.16k_mono.wav"));
 
     eprintln!("normalizing audio...");
-    let input_argument = std::path::absolute(input_path)
-        .with_context(|| format!("failed to resolve audio path {}", input_path.display()))?;
-    let status = Command::new(ffmpeg_program)
-        .args([
-            "-hide_banner",
-            "-loglevel",
-            "error",
-            "-nostats",
-            "-y",
-            "-i",
-            input_argument.to_string_lossy().as_ref(),
-            "-vn",
-            "-sn",
-            "-dn",
-            "-ar",
-            "16000",
-            "-ac",
-            "1",
-            "-c:a",
-            "pcm_s16le",
-            normalized_path.to_string_lossy().as_ref(),
-        ])
-        .status()
-        .with_context(|| "failed to run ffmpeg; install ffmpeg to normalize audio")?;
-    if !status.success() {
-        bail!("ffmpeg failed while converting {}", input_path.display());
+    let input_argument =
+        std::path::absolute(input_path).with_context(|| format!("cannot open {}", input.label))?;
+    // ffmpeg's own error lines are technical; keep them for FSCRIPT_DEBUG only.
+    let output = start_ffmpeg_tool(
+        Command::new(ffmpeg_program)
+            .args([
+                "-hide_banner",
+                "-loglevel",
+                "error",
+                "-nostats",
+                "-y",
+                "-i",
+                input_argument.to_string_lossy().as_ref(),
+                "-vn",
+                "-sn",
+                "-dn",
+                "-ar",
+                "16000",
+                "-ac",
+                "1",
+                "-c:a",
+                "pcm_s16le",
+                normalized_path.to_string_lossy().as_ref(),
+            ])
+            .stdin(Stdio::null()),
+    )?;
+    if !output.status.success() {
+        if crate::errors::debug_enabled() {
+            std::eprintln!("{}", String::from_utf8_lossy(&output.stderr).trim());
+        }
+        bail!(
+            "could not convert {} to audio fscript can transcribe; the file may be damaged. {CONVERT_HINT}",
+            input.label
+        );
     }
 
     Ok(PreparedAudio {
@@ -94,8 +165,8 @@ fn normalize_audio_with(
     })
 }
 
-pub(crate) fn normalize_audio(input_path: &Path) -> Result<PreparedAudio> {
-    normalize_audio_with("ffprobe", "ffmpeg", input_path)
+pub(crate) fn normalize_audio(input: &MediaInput<'_>) -> Result<PreparedAudio> {
+    normalize_audio_with("ffprobe", "ffmpeg", input)
 }
 
 #[cfg(test)]
@@ -162,7 +233,11 @@ mod tests {
         let prepared = normalize_audio_with(
             ffprobe.to_string_lossy().as_ref(),
             ffmpeg.to_string_lossy().as_ref(),
-            &input,
+            &super::MediaInput {
+                path: &input,
+                label: "input",
+                user_path: true,
+            },
         )
         .unwrap();
 
@@ -192,7 +267,11 @@ mod tests {
         let prepared = normalize_audio_with(
             ffprobe.to_string_lossy().as_ref(),
             ffmpeg.to_string_lossy().as_ref(),
-            &input,
+            &super::MediaInput {
+                path: &input,
+                label: "input",
+                user_path: true,
+            },
         )
         .unwrap();
 

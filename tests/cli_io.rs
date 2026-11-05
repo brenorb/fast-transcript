@@ -275,3 +275,68 @@ fn settings_named_media_after_end_of_options_stays_a_literal_path() {
         assert!(!fixture.root.path().join("config.json").exists());
     }
 }
+
+fn assert_plain_error(stderr: &str) {
+    for internal in [
+        "os error",
+        "ffprobe failed",
+        "Traceback",
+        "worker",
+        "ONNX",
+        "unix_wait_status",
+    ] {
+        assert!(!stderr.contains(internal), "{internal:?} leaked: {stderr}");
+    }
+}
+
+#[test]
+fn media_input_errors_name_the_problem_and_the_next_step() {
+    let fixture = Fixture::new();
+    let output = fixture.run(&["missing.mp3", "--text=plain"], &[]);
+    let stderr = text(&output.stderr);
+    assert!(!output.status.success());
+    assert!(
+        stderr.contains("error: cannot find missing.mp3; check the file name"),
+        "{stderr}"
+    );
+    assert_plain_error(&stderr);
+
+    let output = fixture.run(&["www.youtube.com/watch?v=abc", "--text=plain"], &[]);
+    assert!(
+        text(&output.stderr).contains("start it with https://"),
+        "{}",
+        text(&output.stderr)
+    );
+
+    fs::create_dir(fixture.root.path().join("folder")).unwrap();
+    let output = fixture.run(&["folder", "--text=plain"], &[]);
+    assert!(text(&output.stderr).contains("folder is a folder; pass an audio or video file"));
+
+    fs::remove_file(fixture.root.path().join("ffprobe")).unwrap();
+    let output = fixture.run(&[fixture.audio.to_str().unwrap(), "--text=plain"], &[]);
+    let stderr = text(&output.stderr);
+    assert!(!output.status.success());
+    assert!(
+        stderr.contains("fscript needs ffmpeg to read audio, but it is not installed"),
+        "{stderr}"
+    );
+    assert_plain_error(&stderr);
+}
+
+#[test]
+fn unreadable_media_hides_decoder_output() {
+    let fixture = Fixture::new();
+    fixture.script(
+        "ffprobe",
+        "printf '%s\\n' 'x: Invalid data found when processing input' >&2\nexit 1",
+    );
+    let output = fixture.run(&["-", "--text=plain"], b"not media");
+    let stderr = text(&output.stderr);
+    assert!(!output.status.success());
+    assert!(
+        stderr.contains("the piped media is not an audio or video file fscript can read"),
+        "{stderr}"
+    );
+    assert!(!stderr.contains("Invalid data"), "{stderr}");
+    assert!(!stderr.contains("fscript-stdin-"), "{stderr}");
+}

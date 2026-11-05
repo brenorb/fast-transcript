@@ -6,7 +6,11 @@ fn main() -> ExitCode {
     match fast_transcript::run_from_args(env::args().skip(1).collect()) {
         Ok(()) => ExitCode::SUCCESS,
         Err(error) => {
-            let _ = writeln!(io::stderr().lock(), "error: {error:#}");
+            let _ = writeln!(
+                io::stderr().lock(),
+                "error: {}",
+                fast_transcript::render_error(&error)
+            );
             ExitCode::FAILURE
         }
     }
