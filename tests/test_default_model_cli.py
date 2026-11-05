@@ -63,10 +63,11 @@ class DefaultModelCliTests(unittest.TestCase):
         missing_audio = str(Path(self.temporary.name) / "missing.wav")
         default = self.run_cli(missing_audio, "--text=plain")
         self.assertNotEqual(default.returncode, 0)
-        self.assertIn("invalid default-model settings", default.stderr)
+        self.assertIn("the saved default model in", default.stderr)
+        self.assertIn("is damaged", default.stderr)
         explicit = self.run_cli(missing_audio, "--text=plain", "--model", "onnx")
         self.assertNotEqual(explicit.returncode, 0)
-        self.assertNotIn("invalid default-model settings", explicit.stderr)
+        self.assertNotIn("is damaged", explicit.stderr)
         self.assertEqual(self.run_cli("--help").returncode, 0)
         self.assertEqual(self.run_cli("--reset-default-model").returncode, 0)
 
