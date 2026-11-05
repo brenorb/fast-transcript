@@ -231,7 +231,8 @@ fn emit_file_output_completion(
     status_message: &str,
 ) -> Result<()> {
     write_stdout(stdout, format_args!("{}\n", output_path.display()))?;
-    writeln!(stderr, "{status_message}").context("failed to write status message to stderr")?;
+    writeln!(stderr, "{status_message}")
+        .context("could not write the status message to the terminal")?;
     Ok(())
 }
 
