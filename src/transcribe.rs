@@ -1,14 +1,14 @@
 //! Media preparation, model lifecycle, inference, and diarization orchestration.
 
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use std::path::Path;
 use transcribe_rs::audio::read_wav_samples;
 
-use crate::audio::normalize_audio;
+use crate::audio::prepare_audio;
 use crate::diarization::{maybe_diarize_segments, FluidAudioDiarizer};
 use crate::engine::{load_engine, LoadedEngine};
 use crate::inference::{transcribe_samples, InferenceOutcome};
-use crate::types::{BenchmarkResult, CliArgs};
+use crate::types::{BenchmarkChunk, BenchmarkResult, CliArgs, TranscriptSegment};
 
 pub(crate) fn transcribe_audio_input(
     args: &CliArgs,
@@ -16,7 +16,7 @@ pub(crate) fn transcribe_audio_input(
     audio_path: &Path,
     transcript_source: &str,
 ) -> Result<BenchmarkResult> {
-    let prepared_audio = normalize_audio(audio_path)?;
+    let prepared_audio = prepare_audio(audio_path, args.time_range)?;
 
     let samples = read_wav_samples(&prepared_audio.wav_path).with_context(|| {
         format!(
@@ -24,6 +24,9 @@ pub(crate) fn transcribe_audio_input(
             prepared_audio.wav_path.display()
         )
     })?;
+    if samples.is_empty() && args.time_range.is_selected() {
+        bail!("selected time range contains no audio; --start may be at or beyond the end of the media");
+    }
     let audio_seconds = samples.len() as f64 / crate::SAMPLE_RATE as f64;
 
     eprintln!("loading model...");
@@ -35,7 +38,7 @@ pub(crate) fn transcribe_audio_input(
     } = load_engine(&args.model)?;
     let InferenceOutcome {
         text,
-        chunks,
+        mut chunks,
         segments: transcript_segments,
         transcribe_seconds,
     } = transcribe_samples(
@@ -47,12 +50,14 @@ pub(crate) fn transcribe_audio_input(
     drop(engine);
     drop(samples);
 
-    let (segments, speaker_diarization) = maybe_diarize_segments(
+    let (mut segments, speaker_diarization) = maybe_diarize_segments(
         &FluidAudioDiarizer::new(),
         &prepared_audio.wav_path,
         transcript_segments,
         args.diarization.as_ref(),
     )?;
+
+    offset_media_timestamps(&mut chunks, &mut segments, args.time_range.start_seconds());
 
     let total_inside_seconds = load_seconds + transcribe_seconds;
     let (seconds_per_audio_second, realtime_speedup) =
@@ -82,6 +87,22 @@ pub(crate) fn transcribe_audio_input(
     })
 }
 
+// Offset only after diarization has matched segments on the selected WAV's timeline.
+fn offset_media_timestamps(
+    chunks: &mut [BenchmarkChunk],
+    segments: &mut [TranscriptSegment],
+    offset: f64,
+) {
+    for chunk in chunks {
+        chunk.start_s += offset;
+        chunk.end_s += offset;
+    }
+    for segment in segments {
+        segment.start_s += offset;
+        segment.end_s += offset;
+    }
+}
+
 fn derived_benchmark_speeds(audio_seconds: f64, total_inside_seconds: f64) -> (f64, f64) {
     if audio_seconds <= 0.0 || !audio_seconds.is_finite() || total_inside_seconds <= 0.0 {
         return (0.0, 0.0);
@@ -95,6 +116,30 @@ fn derived_benchmark_speeds(audio_seconds: f64, total_inside_seconds: f64) -> (f
 #[cfg(test)]
 mod tests {
     use super::derived_benchmark_speeds;
+
+    #[test]
+    fn offset_keeps_original_timeline_and_speaker_labels() {
+        let mut chunks = vec![crate::types::BenchmarkChunk {
+            index: 0,
+            start_s: 0.0,
+            end_s: 10.0,
+            audio_seconds: 10.0,
+            transcribe_seconds: 0.1,
+            text: "hello".into(),
+        }];
+        let mut segments = vec![crate::types::TranscriptSegment {
+            start_s: 0.5,
+            end_s: 2.0,
+            text: "hello".into(),
+            speaker: Some("S1".into()),
+        }];
+        super::offset_media_timestamps(&mut chunks, &mut segments, 600.5);
+        assert_eq!((chunks[0].start_s, chunks[0].end_s), (600.5, 610.5));
+        assert_eq!(chunks[0].audio_seconds, 10.0);
+        assert_eq!((segments[0].start_s, segments[0].end_s), (601.0, 602.5));
+        assert_eq!(segments[0].speaker.as_deref(), Some("S1"));
+        assert_eq!(segments[0].text, "hello");
+    }
 
     #[test]
     fn derived_benchmark_speeds_stay_finite_for_zero_length_audio() {

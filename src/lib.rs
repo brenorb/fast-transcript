@@ -14,6 +14,7 @@ mod output;
 mod progress;
 mod remote;
 mod settings;
+mod time_range;
 mod transcribe;
 mod transcript;
 mod types;

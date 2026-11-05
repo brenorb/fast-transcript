@@ -114,6 +114,27 @@ fn nonfinite_chunk_options_fail_before_processing_audio() {
 }
 
 #[test]
+fn invalid_time_ranges_fail_before_processing_audio() {
+    for args in [
+        &["missing.wav", "--start", "NaN"][..],
+        &["missing.wav", "--start", "00:60:00"],
+        &["missing.wav", "--start", "30", "--end", "20"],
+        &["missing.wav", "--end", "0"],
+    ] {
+        let output = run(args);
+        let error = String::from_utf8_lossy(&output.stderr);
+        assert!(!output.status.success(), "{args:?}: {output:?}");
+        assert!(
+            error.contains("--start") || error.contains("--end"),
+            "{error}"
+        );
+        assert!(!error.contains("ffprobe"), "{error}");
+        assert!(!error.contains("loading model"), "{error}");
+        assert!(output.stdout.is_empty());
+    }
+}
+
+#[test]
 fn diarization_help_prefers_long_flags_and_explains_legacy_alias() {
     let output = run(&["--help"]);
     let help = stdout(&output);

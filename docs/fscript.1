@@ -35,7 +35,8 @@ Local media decoding requires ffmpeg and ffprobe. Remote URLs use yt\-dlp,
 with
 uvx yt\-dlp as a fallback. Remote input prefers manual subtitles when
 diarization
-is disabled; \fB\-\-local\fR forces audio download and local transcription.
+is disabled; \fB\-\-local\fR or a selected time range forces audio download
+and local transcription.
 The first model download and SDK setup require network access and writable
 storage.
 .SH EXAMPLES
@@ -48,6 +49,7 @@ cat lecture.mp3 | fscript \- \-\-no\-diarization \-\-json | jq .text
 fscript meeting.m4a \-\-diarize coreml \-\-num\-speakers 2
 fscript lecture.mp3 \-\-model ultra \-\-device cpu
 fscript lecture.mp3 \-\-text=plain \-\-quiet \-\-output transcript.txt
+fscript lecture.mp4 \-\-start 00:10:00 \-\-end 00:25:00
 fscript \-\-list\-models
 .fi
 .PP
@@ -66,6 +68,15 @@ absolute paths to ffprobe, ffmpeg, and the diarization helper so those
 programs
 do not reinterpret them as options. To read a file named help, use
 \fBfscript ./help\fR. Bare \fBfscript help\fR displays help.
+.PP
+Use \fB\-\-start\fR and \fB\-\-end\fR to select an interval from local
+audio/video, remote
+audio/video, or piped media. Times accept non\-negative seconds, MM:SS, or
+HH:MM:SS, with fractional seconds. Omitted bounds mean the beginning or end of
+the media; the end must follow the start. Empty selections fail before loading
+a model. The prepared audio and diarization cover only that interval, while
+output segment and chunk timestamps retain the original media timeline.
+Remote input may still require downloading the whole file.
 .SH OPTIONS
 .IP \(bu 2
 \fB\-\-speakers[=plain|timestamps]\fR: speaker\-aware text; timestamps are the
@@ -106,6 +117,11 @@ debug.
 .IP \(bu 2
 \fB\-l, \-\-local\fR: download remote audio and transcribe locally.
 \fB\-\-prefer\-local\-for\-remote\fR is an alias.
+.IP \(bu 2
+\fB\-\-start TIME\fR: start at this original\-media time; defaults to zero.
+.IP \(bu 2
+\fB\-\-end TIME\fR: stop at this original\-media time; defaults to the end of
+the media.
 .IP \(bu 2
 \fB\-\-chunk N\fR: chunk duration in seconds; 0 disables chunking.
 \fB\-\-chunk\-seconds\fR is an alias.
@@ -224,6 +240,20 @@ consumer that closes
 its input early, such as \fBhead\fR, ends stdout delivery successfully without
 a
 panic or a broken\-pipe diagnostic. Other output failures remain errors.
+.SH "SEGMENT TIMING"
+Segment times follow the original media timeline, including when
+\fB\-\-start\fR
+selects a range after zero. Chunk processing order can retain overlapping or
+out\-of\-order intervals. \fB\-\-raw\fR disables repeated\-word cleanup and
+\fB\-\-clean\fR
+changes text; neither normalizes timestamps. Boundary text deduplication still
+runs during chunk assembly.
+.PP
+A JSON consumer that requires disjoint cues must choose its own overlap policy
+while retaining distinct words. Sorting by \fBstart_s\fR alone does not remove
+intersecting durations. \fB\-\-overlap 0\fR removes chunk overlap and
+\fB\-\-chunk 0\fR
+disables chunking, but neither guarantees non\-overlapping backend cues.
 .SH TROUBLESHOOTING
 Unknown options and nearby model\-name mistakes suggest likely corrections.
 Use \fB\-\-help\fR to inspect syntax or \fB\-\-list\-models\fR to choose a

@@ -62,6 +62,32 @@ The existing options I tested had clear problems for this use case:
 - stays quiet by default: concise progress in the terminal, speaker-aware text on disk by default
 - shows a spinner and chunk progress bar on interactive terminals
 
+## Transcribe a time range
+
+```bash
+fscript lecture.mp4 --start 00:10:00 --end 00:25:00
+fscript lecture.mp3 --start 600.5 --end 1500 --json
+fscript https://example.com/lecture --end 01:30 --text
+```
+
+`--start` and `--end` accept non-negative seconds, `MM:SS`, or `HH:MM:SS`,
+with optional fractional seconds. Omit `--start` to begin at zero; omit `--end`
+to continue through EOF. The end must be greater than the start. An end beyond
+EOF uses the available audio; a range containing no audio fails before loading
+the model.
+
+The CLI uses ffmpeg to extract and normalize the selected audio stream, including
+for video inputs. Both transcription and diarization use that same interval.
+Text, JSON, SRT, and VTT timestamps remain relative to the **original media**:
+a segment at 2 seconds into a range starting at 600 seconds appears at 602 seconds.
+JSON chunk times also use the original timeline; `audio_seconds` measures only
+the selected audio duration.
+
+For remote URLs, range selection downloads the audio and transcribes locally,
+even if manual subtitles are available. It may download the entire remote file;
+the model processes only the selected interval. Existing destination rules apply,
+so choose `--output` to keep multiple excerpts of the same input in separate files.
+
 ## Install
 
 ### Requirements

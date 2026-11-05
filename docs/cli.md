@@ -33,7 +33,7 @@ Text modes always disable diarization; conflicting diarization flags produce a w
 
 Local media decoding requires ffmpeg and ffprobe. Remote URLs use yt-dlp, with
 uvx yt-dlp as a fallback. Remote input prefers manual subtitles when diarization
-is disabled; `--local` forces audio download and local transcription.
+is disabled; `--local` or a selected time range forces audio download and local transcription.
 The first model download and SDK setup require network access and writable storage.
 
 ## Examples
@@ -47,6 +47,7 @@ cat lecture.mp3 | fscript - --no-diarization --json | jq .text
 fscript meeting.m4a --diarize coreml --num-speakers 2
 fscript lecture.mp3 --model ultra --device cpu
 fscript lecture.mp3 --text=plain --quiet --output transcript.txt
+fscript lecture.mp4 --start 00:10:00 --end 00:25:00
 fscript --list-models
 ```
 
@@ -60,6 +61,14 @@ Use `--` before paths that begin with a hyphen. Local filenames are passed as
 absolute paths to ffprobe, ffmpeg, and the diarization helper so those programs
 do not reinterpret them as options. To read a file named help, use
 `fscript ./help`. Bare `fscript help` displays help.
+
+Use `--start` and `--end` to select an interval from local audio/video, remote
+audio/video, or piped media. Times accept non-negative seconds, MM:SS, or
+HH:MM:SS, with fractional seconds. Omitted bounds mean the beginning or end of
+the media; the end must follow the start. Empty selections fail before loading
+a model. The prepared audio and diarization cover only that interval, while
+output segment and chunk timestamps retain the original media timeline.
+Remote input may still require downloading the whole file.
 
 ## Options
 
@@ -77,6 +86,8 @@ do not reinterpret them as options. To read a file named help, use
 - `-t, --threshold N`: finite ls-eend-dihard3 threshold; defaults to 0.3.
 - `--backend coreml|lseend-dihard3|none`: legacy diarization selection.
 - `-l, --local`: download remote audio and transcribe locally. `--prefer-local-for-remote` is an alias.
+- `--start TIME`: start at this original-media time; defaults to zero.
+- `--end TIME`: stop at this original-media time; defaults to the end of the media.
 - `--chunk N`: chunk duration in seconds; 0 disables chunking. `--chunk-seconds` is an alias.
 - `--overlap N`: chunk overlap in seconds; must be smaller than the chunk duration. `--chunk-overlap-seconds` is an alias.
 - `--model NAME|URL`: predefined model or custom http(s) ONNX bundle URL.
@@ -143,6 +154,19 @@ to jq when stdout is selected. Use `--json --stdout` for local files, or `- --js
 for piped media. Quiet mode does not remove requested data from stdout. A consumer that closes
 its input early, such as `head`, ends stdout delivery successfully without a
 panic or a broken-pipe diagnostic. Other output failures remain errors.
+
+## Segment timing
+
+Segment times follow the original media timeline, including when `--start`
+selects a range after zero. Chunk processing order can retain overlapping or
+out-of-order intervals. `--raw` disables repeated-word cleanup and `--clean`
+changes text; neither normalizes timestamps. Boundary text deduplication still
+runs during chunk assembly.
+
+A JSON consumer that requires disjoint cues must choose its own overlap policy
+while retaining distinct words. Sorting by `start_s` alone does not remove
+intersecting durations. `--overlap 0` removes chunk overlap and `--chunk 0`
+disables chunking, but neither guarantees non-overlapping backend cues.
 
 ## Troubleshooting
 
