@@ -25,10 +25,10 @@ pub(crate) fn build_chunk_ranges(
     let chunk_samples = (chunk_seconds * sample_rate as f64).round() as usize;
     let overlap_samples = (chunk_overlap_seconds * sample_rate as f64).round() as usize;
     if chunk_samples == 0 {
-        bail!("chunk size rounded to zero samples");
+        bail!("--chunk is too short; use a number of seconds such as --chunk 120, or 0 to turn chunking off");
     }
     if overlap_samples >= chunk_samples {
-        bail!("overlap size rounded to chunk size or larger");
+        bail!("--overlap must be smaller than --chunk");
     }
     let mut ranges = Vec::new();
     let mut start = 0usize;

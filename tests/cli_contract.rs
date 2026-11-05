@@ -109,7 +109,7 @@ fn nonfinite_chunk_options_fail_before_processing_audio() {
         let output = run(&["audio.wav", flag, value]);
         let error = String::from_utf8_lossy(&output.stderr);
         assert!(!output.status.success());
-        assert!(error.contains("must be finite"), "{error}");
+        assert!(error.contains("needs a number, such as"), "{error}");
     }
 }
 

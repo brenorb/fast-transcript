@@ -397,13 +397,15 @@ fn last_value(matches: &ArgMatches, name: &str) -> Option<String> {
 fn number(matches: &ArgMatches, name: &str) -> Result<Option<f64>> {
     last_value(matches, name)
         .map(|value| {
-            let parsed: f64 = value
-                .parse()
-                .with_context(|| format!("invalid --{name} value {value:?}; expected a number"))?;
-            if !parsed.is_finite() {
-                bail!("--{name} must be finite");
+            let example = match name {
+                "chunk" => "120",
+                "overlap" => "2",
+                _ => "0.3",
+            };
+            match value.parse::<f64>() {
+                Ok(parsed) if parsed.is_finite() => Ok(parsed),
+                _ => bail!("--{name} needs a number, such as --{name} {example} (got {value:?})"),
             }
-            Ok(parsed)
         })
         .transpose()
 }
@@ -464,7 +466,7 @@ fn parse_args_with_diarization_status_and_default(
     }
     if let Some(url) = urls.last() {
         if !(url.starts_with("https://") || url.starts_with("http://")) {
-            bail!("--model-url requires an http(s) bundle URL; use --model for predefined names");
+            bail!("--model-url needs a link that starts with https:// or http://; use --model for built-in model names");
         }
     }
     let model_url_override = models.into_iter().chain(urls).next();
@@ -499,7 +501,7 @@ fn parse_args_with_diarization_status_and_default(
         })
         .collect::<Vec<_>>();
     if formats.len() > 1 {
-        bail!("output format flags are mutually exclusive; choose one");
+        bail!("choose only one output format: --text, --speakers, --json, --srt, or --vtt");
     }
     let output_format = match formats.first().copied() {
         Some("text") => OutputFormat::Text(
@@ -527,7 +529,10 @@ fn parse_args_with_diarization_status_and_default(
         ("overlap", chunk_overlap_seconds_override),
     ] {
         if value.is_some_and(|n| n < 0.0) {
-            bail!("--{flag} must be >= 0");
+            if flag == "chunk" {
+                bail!("--chunk can't be negative; use a number of seconds such as --chunk 120, or 0 to turn chunking off");
+            }
+            bail!("--{flag} can't be negative; use a number of seconds such as --{flag} 2");
         }
     }
     let mut diarization_backend = None;
@@ -565,11 +570,16 @@ fn parse_args_with_diarization_status_and_default(
     }
     let mut diarization_num_speakers = last_value(&matches, "num-speakers")
         .map(|value| {
-            let count = value.parse::<usize>().with_context(|| {
-                format!("invalid --num-speakers value {value:?}; expected an integer")
-            })?;
+            let count = value
+                .parse::<usize>()
+                .map_err(crate::errors::technical)
+                .with_context(|| {
+                    format!(
+                    "--num-speakers needs a whole number, such as --num-speakers 2 (got {value:?})"
+                )
+                })?;
             if count == 0 {
-                bail!("--num-speakers must be >= 1");
+                bail!("--num-speakers must be 1 or more");
             }
             Ok(count)
         })
@@ -628,6 +638,11 @@ fn parse_args_with_diarization_status_and_default(
     };
 
     let requested_chunk_seconds = chunk_seconds_override.unwrap_or(crate::DEFAULT_CHUNK_SECONDS);
+    if requested_chunk_seconds > 0.0
+        && (requested_chunk_seconds * crate::SAMPLE_RATE as f64).round() < 1.0
+    {
+        bail!("--chunk is too short; use a number of seconds such as --chunk 120, or 0 to turn chunking off");
+    }
     let (chunk_seconds, chunk_overlap_seconds) = if requested_chunk_seconds == 0.0 {
         let overlap = chunk_overlap_seconds_override.unwrap_or(0.0);
         if overlap > 0.0 {
@@ -843,7 +858,7 @@ mod tests {
                 ],
                 "single model",
             ),
-            (vec!["--model-url", "ultra"], "http(s)"),
+            (vec!["--model-url", "ultra"], "starts with https://"),
             (
                 vec!["--model", "ultra", "--model-package", "weights.tar.gz"],
                 "works only with the default model",
@@ -1297,9 +1312,7 @@ mod tests {
             "--json".to_string(),
         ];
         let err = parse_args(&args).unwrap_err();
-        assert!(err
-            .to_string()
-            .contains("output format flags are mutually exclusive"));
+        assert!(err.to_string().contains("choose only one output format"));
     }
 
     #[test]
