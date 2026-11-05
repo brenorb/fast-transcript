@@ -379,7 +379,7 @@ fn require_segments_for_output<'a>(
         Some(segments) => Ok(segments),
         None if result.text.trim().is_empty() => Ok(&[]),
         None => bail!(
-            "{output_name} output requires segment metadata, but only plain transcript text is available"
+            "{output_name} output needs timestamps, but this transcript has none; use --text=plain or --json instead"
         ),
     }
 }
@@ -632,7 +632,7 @@ mod tests {
         ] {
             let error = render_output(&result, output_format, false).unwrap_err();
             assert!(error.to_string().contains(
-                "requires segment metadata, but only plain transcript text is available"
+                "needs timestamps, but this transcript has none; use --text=plain or --json instead"
             ));
         }
     }

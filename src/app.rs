@@ -153,7 +153,9 @@ fn output_destination_for_args(
     {
         return Ok(OutputDestination::Stdout);
     }
-    let current_dir = env::current_dir().context("failed to resolve current working directory")?;
+    let current_dir = env::current_dir().map_err(crate::errors::technical).context(
+        "cannot read the current folder (it may have been deleted or moved); change to another folder and try again",
+    )?;
     let default_path = default_output_path_for_input(input_source, title_hint, args.output_format);
     Ok(OutputDestination::file(
         args.output_path.as_deref(),

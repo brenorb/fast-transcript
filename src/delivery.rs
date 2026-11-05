@@ -1,5 +1,6 @@
 //! Output destination selection and delivery; transcript rendering stays in output.rs.
 
+use crate::errors::Explain;
 use crate::types::{InputSource, OutputFormat, SubtitleFormat};
 use anyhow::{Context, Result};
 use std::fmt;
@@ -13,7 +14,7 @@ pub(crate) fn write_stdout(writer: &mut impl Write, contents: fmt::Arguments<'_>
     match writer.write_fmt(contents) {
         Ok(()) => Ok(()),
         Err(error) if error.kind() == std::io::ErrorKind::BrokenPipe => Ok(()),
-        Err(error) => Err(error).context("failed to write output to stdout"),
+        Err(error) => Err(error).context("could not write the transcript to stdout"),
     }
 }
 
@@ -136,14 +137,18 @@ fn write_output_file(contents: &str, output_path: &Path) -> Result<PathBuf> {
     replace_output_file(output_path, |file| writeln!(file, "{contents}"))
 }
 
+const SAVE_HINT: &str = "Choose a writable folder with free space using --output, or print the transcript with --stdout";
+
+fn save_failed(output_path: &Path) -> impl Fn() -> String + '_ {
+    move || format!("could not save the transcript to {}", output_path.display())
+}
+
 fn resolve_output_symlink(output_path: &Path) -> Result<PathBuf> {
     let mut target = output_path.to_path_buf();
     for _ in 0..40 {
         match fs::symlink_metadata(&target) {
             Ok(metadata) if metadata.file_type().is_symlink() => {
-                let link = fs::read_link(&target).with_context(|| {
-                    format!("failed to read output symlink {}", target.display())
-                })?;
+                let link = fs::read_link(&target).explain(save_failed(output_path), SAVE_HINT)?;
                 target = if link.is_absolute() {
                     link
                 } else {
@@ -152,14 +157,11 @@ fn resolve_output_symlink(output_path: &Path) -> Result<PathBuf> {
             }
             Ok(_) => return Ok(target),
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(target),
-            Err(error) => {
-                return Err(error)
-                    .with_context(|| format!("failed to inspect output {}", target.display()))
-            }
+            Err(error) => return Err(error).explain(save_failed(output_path), SAVE_HINT),
         }
     }
     anyhow::bail!(
-        "too many output symlinks for {}; choose another destination",
+        "cannot save the transcript to {} because its links loop or go too deep; choose another destination with --output",
         output_path.display()
     )
 }
@@ -175,18 +177,19 @@ fn replace_output_file(
         .parent()
         .filter(|path| !path.as_os_str().is_empty())
         .unwrap_or_else(|| Path::new("."));
-    fs::create_dir_all(parent).with_context(|| format!("failed to create {}", parent.display()))?;
+    let failed = save_failed(output_path);
+    fs::create_dir_all(parent).explain(&failed, SAVE_HINT)?;
     let previous_permissions = match fs::metadata(&target) {
         Ok(metadata) => {
             if metadata.permissions().readonly() {
                 anyhow::bail!(
-                    "output {} is read-only; choose another destination",
+                    "cannot save the transcript to {} because the file is read-only; choose another destination with --output",
                     output_path.display()
                 );
             }
             if !metadata.is_file() {
                 anyhow::bail!(
-                    "output {} is not a regular file; choose another destination",
+                    "cannot save the transcript to {} because it is not a regular file; choose another destination with --output",
                     output_path.display()
                 );
             }
@@ -195,54 +198,30 @@ fn replace_output_file(
             fs::OpenOptions::new()
                 .write(true)
                 .open(&target)
-                .with_context(|| {
-                    format!(
-                        "cannot write output {}; choose another destination",
-                        output_path.display()
-                    )
-                })?;
+                .explain(&failed, SAVE_HINT)?;
             Some(metadata.permissions())
         }
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
-        Err(error) => {
-            return Err(error)
-                .with_context(|| format!("failed to inspect {}", output_path.display()))
-        }
+        Err(error) => return Err(error).explain(&failed, SAVE_HINT),
     };
     let mut staged = tempfile::Builder::new()
         .prefix(".fscript-output-")
         .tempfile_in(parent)
-        .with_context(|| format!("failed to stage output in {}", parent.display()))?;
-    write(staged.as_file_mut())
-        .with_context(|| format!("failed to write {}", output_path.display()))?;
-    staged
-        .as_file_mut()
-        .flush()
-        .with_context(|| format!("failed to flush {}", output_path.display()))?;
-    staged
-        .as_file()
-        .sync_all()
-        .with_context(|| format!("failed to sync {}", output_path.display()))?;
+        .explain(&failed, SAVE_HINT)?;
+    write(staged.as_file_mut()).explain(&failed, SAVE_HINT)?;
+    staged.as_file_mut().flush().explain(&failed, SAVE_HINT)?;
+    staged.as_file().sync_all().explain(&failed, SAVE_HINT)?;
     if let Some(permissions) = previous_permissions {
         staged
             .as_file()
             .set_permissions(permissions)
-            .with_context(|| {
-                format!(
-                    "failed to preserve permissions for {}",
-                    output_path.display()
-                )
-            })?;
+            .explain(&failed, SAVE_HINT)?;
     }
     staged
         .persist(&target)
-        .with_context(|| format!("failed to replace {}", output_path.display()))?;
-    fs::canonicalize(&target).with_context(|| {
-        format!(
-            "failed to resolve absolute path for {}",
-            output_path.display()
-        )
-    })
+        .map_err(|error| error.error)
+        .explain(&failed, SAVE_HINT)?;
+    fs::canonicalize(&target).explain(&failed, SAVE_HINT)
 }
 
 fn emit_file_output_completion(
