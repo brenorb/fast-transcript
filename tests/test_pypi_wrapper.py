@@ -1,3 +1,5 @@
+import contextlib
+import io
 import subprocess
 import sys
 import tempfile
@@ -39,8 +41,13 @@ class PyPiWrapperTests(unittest.TestCase):
             mock.patch("fscript._cli.bundled_binary_path", return_value=missing),
             mock.patch.object(sys, "argv", ["fscript"]),
         ):
-            rc = main()
+            stderr = io.StringIO()
+            with contextlib.redirect_stderr(stderr):
+                rc = main()
         self.assertEqual(rc, 1)
+        self.assertIn("installation is incomplete", stderr.getvalue())
+        self.assertIn("--force-reinstall fscript", stderr.getvalue())
+        self.assertNotIn(str(missing), stderr.getvalue())
 
 
 if __name__ == "__main__":

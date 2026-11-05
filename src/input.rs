@@ -8,16 +8,26 @@ pub(crate) fn spool_stdin(reader: &mut impl Read, interactive: bool) -> Result<N
     if interactive {
         bail!("stdin is a terminal; pass a media path or pipe media: cat lecture.wav | fscript -");
     }
-    let mut media = tempfile::Builder::new()
+    let media = tempfile::Builder::new()
         .prefix("fscript-stdin-")
         .suffix(".media")
-        .tempfile()
-        .context("cannot create temporary file for stdin media")?;
-    let bytes = io::copy(reader, &mut media).context("failed to read media from stdin")?;
+        .tempfile();
+    let mut media = crate::errors::temp(media)?;
+    let bytes = match io::copy(reader, &mut media) {
+        Ok(bytes) => bytes,
+        Err(error) if error.kind() == io::ErrorKind::StorageFull => {
+            return crate::errors::temp(Err(error));
+        }
+        Err(error) => {
+            return Err(crate::errors::technical(error)).context(
+                "could not read media from the pipe; try again, or pass the file path instead",
+            );
+        }
+    };
     if bytes == 0 {
         bail!("stdin is empty; pipe media: cat lecture.wav | fscript -");
     }
-    media.flush().context("failed to save stdin media")?;
+    crate::errors::temp(media.flush())?;
     Ok(media)
 }
 

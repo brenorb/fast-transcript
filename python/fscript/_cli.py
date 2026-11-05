@@ -25,7 +25,8 @@ def main() -> int:
     binary = bundled_binary_path()
     if not binary.exists():
         print(
-            f"fscript wheel is missing its bundled binary: {binary}",
+            "error: this fscript installation is incomplete. Reinstall it with "
+            "`uv tool install --reinstall fscript` or `pip install --force-reinstall fscript`",
             file=sys.stderr,
         )
         return 1
