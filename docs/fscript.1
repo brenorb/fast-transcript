@@ -196,6 +196,9 @@ using an installation that provisions them separately.
 model's pinned SDK dependencies.
 .IP \(bu 2
 \fBUV_CACHE_DIR\fR: uv installer cache override.
+.IP \(bu 2
+\fBFSCRIPT_DEBUG\fR: set to 1 to print full technical error details, including
+tool output and stack traces, for bug reports.
 .SH OUTPUT
 Default local filenames are INPUT.speakers.txt, INPUT.transcript.txt,
 INPUT.transcript.json, INPUT.srt, or INPUT.vtt, according to the selected
@@ -233,9 +236,16 @@ If saved settings are malformed, run \fBfscript \-\-reset\-default\-model\fR,
 or select
 \fB\-\-model NAME\fR explicitly for that invocation.
 .PP
+Error messages name the problem and a next step without tool output or error
+codes. Set \fBFSCRIPT_DEBUG=1\fR to see the technical details behind a
+message.
+.PP
 If audio inspection fails, install ffmpeg and ffprobe and check the input
 path.
 For remote download failures, check yt\-dlp or uvx and network access.
+.PP
+If the speech model download or installation reports a damaged package, delete
+the file named in the message and rerun; fscript downloads it again.
 .PP
 If speaker labels are required, pass \fB\-\-diarize coreml\fR. Set
 \fBFSCRIPT_DIARIZATION_BINARY\fR to the installed helper when it cannot be

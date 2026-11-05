@@ -123,6 +123,7 @@ on macOS, ~/Library/Application Support/fast-transcript; on Linux,
 - `FSCRIPT_RUNTIME_DIR`: persistent location for managed SDK runtimes, when using an installation that provisions them separately.
 - `FSCRIPT_PYTHON_BINARY`: prepared Python interpreter with the selected model's pinned SDK dependencies.
 - `UV_CACHE_DIR`: uv installer cache override.
+- `FSCRIPT_DEBUG`: set to 1 to print full technical error details, including tool output and stack traces, for bug reports.
 
 ## Output
 
@@ -152,8 +153,14 @@ Use `--help` to inspect syntax or `--list-models` to choose a model.
 If saved settings are malformed, run `fscript --reset-default-model`, or select
 `--model NAME` explicitly for that invocation.
 
+Error messages name the problem and a next step without tool output or error
+codes. Set `FSCRIPT_DEBUG=1` to see the technical details behind a message.
+
 If audio inspection fails, install ffmpeg and ffprobe and check the input path.
 For remote download failures, check yt-dlp or uvx and network access.
+
+If the speech model download or installation reports a damaged package, delete
+the file named in the message and rerun; fscript downloads it again.
 
 If speaker labels are required, pass `--diarize coreml`. Set
 `FSCRIPT_DIARIZATION_BINARY` to the installed helper when it cannot be discovered.
