@@ -899,7 +899,7 @@ exec "{directory / helper_name}" "$@"
                     "downloaded-audio-local-model",
                 )
                 self.assertIn(
-                    "manual subtitle download failed; falling back to remote audio download",
+                    "could not use this link's published subtitles; transcribing its audio instead",
                     result.stderr,
                 )
 
@@ -934,7 +934,7 @@ exec "{directory / helper_name}" "$@"
                     "downloaded-audio-local-model",
                 )
                 self.assertIn(
-                    "manual subtitle download failed; falling back to remote audio download",
+                    "could not use this link's published subtitles; transcribing its audio instead",
                     result.stderr,
                 )
 
@@ -968,7 +968,7 @@ exec "{directory / helper_name}" "$@"
                 self.assertFalse(payload["used_local_model"])
                 self.assertEqual(payload["text"], "Primeira frase. Segunda frase.")
                 self.assertEqual(len(payload["segments"]), 2)
-                self.assertNotIn("falling back to remote audio download", result.stderr)
+                self.assertNotIn("transcribing its audio instead", result.stderr)
 
     def test_remote_manual_subtitle_shortcut_uses_vtt_tracks(self) -> None:
         release_binary = [entry for entry in self.modern_binaries if entry[0] == "release"]
@@ -1000,7 +1000,7 @@ exec "{directory / helper_name}" "$@"
                 self.assertFalse(payload["used_local_model"])
                 self.assertEqual(payload["text"], "Primeira frase. Segunda frase.")
                 self.assertEqual(len(payload["segments"]), 2)
-                self.assertNotIn("falling back to remote audio download", result.stderr)
+                self.assertNotIn("transcribing its audio instead", result.stderr)
 
     def test_remote_manual_subtitle_shortcut_supports_uvx_fallback(self) -> None:
         release_binary = [entry for entry in self.modern_binaries if entry[0] == "release"]

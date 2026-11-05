@@ -118,14 +118,17 @@ fn handle_remote_input(args: &CliArgs, input_source: &InputSource, url: &str) ->
                     args,
                     &result,
                     destination,
-                    "done: used manual subtitles via yt-dlp",
+                    "done: used the link's published subtitles",
                 );
             }
             Ok(None) => {}
             Err(error) => {
                 std::eprintln!(
-                    "warning: manual subtitle download failed; falling back to remote audio download: {error}"
+                    "warning: could not use this link's published subtitles; transcribing its audio instead"
                 );
+                if crate::errors::debug_enabled() {
+                    std::eprintln!("{error:#}");
+                }
             }
         }
     }

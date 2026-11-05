@@ -1,4 +1,4 @@
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result};
 use serde::Deserialize;
 use std::collections::BTreeMap;
 use std::fs;
@@ -70,10 +70,58 @@ fn choose_subtitle_extension(info: &YtDlpVideoInfo, language: &str) -> String {
     }
 }
 
-fn run_command(command: &mut Command, context: &str) -> Result<std::process::Output> {
-    command
-        .output()
-        .with_context(|| format!("failed to run {context}"))
+const LINK_HINT: &str = "Check that the link plays in a browser without signing in, or download the file and pass its path to fscript";
+const YT_DLP_MISSING: &str = "transcribing web links needs yt-dlp, which is not installed. Install it (for example: brew install yt-dlp), or download the file and pass its path to fscript";
+
+fn run_yt_dlp(command: &mut Command) -> Result<std::process::Output> {
+    command.output().map_err(|error| {
+        if error.kind() == std::io::ErrorKind::NotFound {
+            anyhow::anyhow!(YT_DLP_MISSING)
+        } else {
+            anyhow::Error::new(error).context("could not start yt-dlp to read the link")
+        }
+    })
+}
+
+/// The site's own reason (e.g. "Video unavailable"), without the downloader's
+/// prefixes, video ids, or advice about its own command-line flags.
+pub(crate) fn download_failure_reason(stderr: &[u8]) -> Option<String> {
+    let text = String::from_utf8_lossy(stderr);
+    let line = text
+        .lines()
+        .rev()
+        .map(str::trim)
+        .find(|line| line.starts_with("ERROR:"))?;
+    let mut reason = line.trim_start_matches("ERROR:").trim();
+    if reason.starts_with('[') {
+        if let Some(end) = reason.find("] ") {
+            reason = &reason[end + 2..];
+            if let Some((id, rest)) = reason.split_once(": ") {
+                if !id.contains(' ') {
+                    reason = rest;
+                }
+            }
+        }
+    }
+    let reason = reason
+        .split(". ")
+        .map(str::trim)
+        .filter(|sentence| {
+            !sentence.contains("--")
+                && !sentence.contains("yt-dlp")
+                && !sentence.to_ascii_lowercase().starts_with("see ")
+        })
+        .collect::<Vec<_>>()
+        .join(". ");
+    let reason = reason.trim().trim_end_matches('.').to_string();
+    (!reason.is_empty()).then_some(reason)
+}
+
+fn link_failure(action: &str, url: &str, stderr: &[u8]) -> anyhow::Error {
+    match download_failure_reason(stderr) {
+        Some(reason) => anyhow::anyhow!("could not {action} {url}: {reason}. {LINK_HINT}"),
+        None => anyhow::anyhow!("could not {action} {url}. {LINK_HINT}"),
+    }
 }
 
 fn yt_dlp_command() -> Command {
@@ -185,8 +233,9 @@ struct Json3CaptionSegment {
 }
 
 pub(crate) fn parse_json3_segments(contents: &str) -> Result<Vec<TranscriptSegment>> {
-    let parsed: Json3Transcript =
-        serde_json::from_str(contents).context("failed to parse json3 subtitle payload")?;
+    let parsed: Json3Transcript = serde_json::from_str(contents)
+        .map_err(crate::errors::technical)
+        .context("the published subtitles are in a format fscript cannot read")?;
     Ok(parsed
         .events
         .into_iter()
@@ -217,19 +266,20 @@ pub(crate) fn parse_json3_segments(contents: &str) -> Result<Vec<TranscriptSegme
 }
 
 pub(crate) fn load_remote_video_info(url: &str) -> Result<YtDlpVideoInfo> {
-    let output = run_command(
-        yt_dlp_command().args(["--dump-single-json", "--no-warnings", "--no-playlist", url]),
-        "yt-dlp to inspect remote media metadata",
-    )
-    .with_context(|| "install yt-dlp, or make `uvx yt-dlp` available, to transcribe remote URLs")?;
+    let output = run_yt_dlp(yt_dlp_command().args([
+        "--dump-single-json",
+        "--no-warnings",
+        "--no-playlist",
+        url,
+    ]))?;
     if !output.status.success() {
-        bail!(
-            "yt-dlp failed while inspecting {url}: {}",
-            String::from_utf8_lossy(&output.stderr).trim()
-        );
+        return Err(link_failure("open", url, &output.stderr));
     }
     serde_json::from_slice(&output.stdout)
-        .with_context(|| format!("failed to parse yt-dlp metadata for {url}"))
+        .map_err(crate::errors::technical)
+        .with_context(|| {
+            format!("could not read the details of {url}. Update yt-dlp and try again, or download the file and pass its path to fscript")
+        })
 }
 
 pub(crate) fn download_manual_remote_transcript(
@@ -240,53 +290,47 @@ pub(crate) fn download_manual_remote_transcript(
         return Ok(None);
     };
     let extension = choose_subtitle_extension(info, &language);
-    let tempdir = tempfile::tempdir().context("failed to create temp dir for remote subtitles")?;
+    let tempdir = crate::errors::temp(tempfile::tempdir())?;
     let output_template = tempdir.path().join("%(id)s.%(ext)s");
-    let output = run_command(
-        yt_dlp_command().args([
-            "--no-progress",
-            "--no-warnings",
-            "--skip-download",
-            "--write-subs",
-            "--sub-langs",
-            &language,
-            "--sub-format",
-            &extension,
-            "--no-playlist",
-            "--output",
-            output_template.to_string_lossy().as_ref(),
-            url,
-        ]),
-        "yt-dlp for manual subtitles",
-    )
-    .with_context(|| "install yt-dlp, or make `uvx yt-dlp` available, to transcribe remote URLs")?;
+    let output = run_yt_dlp(yt_dlp_command().args([
+        "--no-progress",
+        "--no-warnings",
+        "--skip-download",
+        "--write-subs",
+        "--sub-langs",
+        &language,
+        "--sub-format",
+        &extension,
+        "--no-playlist",
+        "--output",
+        output_template.to_string_lossy().as_ref(),
+        url,
+    ]))?;
     if !output.status.success() {
-        bail!(
-            "yt-dlp failed while downloading subtitles for {url}: {}",
-            String::from_utf8_lossy(&output.stderr).trim()
-        );
+        return Err(link_failure(
+            "download the published subtitles for",
+            url,
+            &output.stderr,
+        ));
     }
 
+    let missing = || format!("could not find the downloaded subtitles for {url}");
     let subtitle_path = fs::read_dir(tempdir.path())
-        .with_context(|| format!("failed to inspect {}", tempdir.path().display()))?
+        .map_err(crate::errors::technical)
+        .with_context(missing)?
         .filter_map(|entry| entry.ok().map(|value| value.path()))
         .find(|path| path.extension().and_then(|value| value.to_str()) == Some(extension.as_str()))
-        .with_context(|| {
-            format!("yt-dlp reported subtitles for {url} but did not write a .{extension} file")
-        })?;
+        .with_context(missing)?;
 
-    let (text, segments) = if extension == "vtt" {
-        let contents = fs::read_to_string(&subtitle_path)
-            .with_context(|| format!("failed to read {}", subtitle_path.display()))?;
-        let segments = parse_vtt_segments(&contents);
-        (join_segment_texts(&segments), segments)
+    let contents = fs::read_to_string(&subtitle_path)
+        .map_err(crate::errors::technical)
+        .with_context(missing)?;
+    let segments = if extension == "vtt" {
+        parse_vtt_segments(&contents)
     } else {
-        let contents = fs::read_to_string(&subtitle_path)
-            .with_context(|| format!("failed to read {}", subtitle_path.display()))?;
-        let segments = parse_json3_segments(&contents)
-            .with_context(|| format!("failed to parse {}", subtitle_path.display()))?;
-        (join_segment_texts(&segments), segments)
+        parse_json3_segments(&contents)?
     };
+    let text = join_segment_texts(&segments);
 
     if text.trim().is_empty() {
         return Ok(None);
@@ -296,36 +340,31 @@ pub(crate) fn download_manual_remote_transcript(
 }
 
 pub(crate) fn download_remote_audio(url: &str) -> Result<DownloadedAudio> {
-    let tempdir = tempfile::tempdir().context("failed to create temp dir for remote audio")?;
+    let tempdir = crate::errors::temp(tempfile::tempdir())?;
     let output_template = tempdir.path().join("%(id)s.%(ext)s");
-    let output = run_command(
-        yt_dlp_command().args([
-            "--no-progress",
-            "--no-warnings",
-            "--no-playlist",
-            "-f",
-            "bestaudio/best",
-            "--output",
-            output_template.to_string_lossy().as_ref(),
-            "--print",
-            "after_move:filepath",
-            url,
-        ]),
-        "yt-dlp to download remote audio",
-    )
-    .with_context(|| "install yt-dlp, or make `uvx yt-dlp` available, to transcribe remote URLs")?;
+    let output = run_yt_dlp(yt_dlp_command().args([
+        "--no-progress",
+        "--no-warnings",
+        "--no-playlist",
+        "-f",
+        "bestaudio/best",
+        "--output",
+        output_template.to_string_lossy().as_ref(),
+        "--print",
+        "after_move:filepath",
+        url,
+    ]))?;
     if !output.status.success() {
-        bail!(
-            "yt-dlp failed while downloading audio for {url}: {}",
-            String::from_utf8_lossy(&output.stderr).trim()
-        );
+        return Err(link_failure("download audio from", url, &output.stderr));
     }
     let audio_path = String::from_utf8_lossy(&output.stdout)
         .lines()
         .rev()
         .find(|line| !line.trim().is_empty())
         .map(|line| PathBuf::from(line.trim()))
-        .with_context(|| format!("yt-dlp did not report the downloaded audio path for {url}"))?;
+        .with_context(|| {
+            format!("could not find the downloaded audio for {url}; try again, or download the file and pass its path to fscript")
+        })?;
     Ok(DownloadedAudio {
         audio_path,
         _tempdir: tempdir,
@@ -334,6 +373,27 @@ pub(crate) fn download_remote_audio(url: &str) -> Result<DownloadedAudio> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn download_failure_reason_keeps_the_sites_reason_only() {
+        use super::download_failure_reason;
+        assert_eq!(
+            download_failure_reason(b"WARNING: x\nERROR: [youtube] dQw4w9WgXcQ: Video unavailable. This video is private\n").as_deref(),
+            Some("Video unavailable. This video is private")
+        );
+        assert_eq!(
+            download_failure_reason(b"ERROR: [youtube] abc: Sign in to confirm you are not a bot. Use --cookies-from-browser or --cookies for the authentication. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ for how to manually pass cookies").as_deref(),
+            Some("Sign in to confirm you are not a bot")
+        );
+        assert_eq!(
+            download_failure_reason(b"ERROR: [generic] abc: HTTP Error 403: Forbidden").as_deref(),
+            Some("HTTP Error 403: Forbidden")
+        );
+        assert_eq!(
+            download_failure_reason(b"Traceback (most recent call last):"),
+            None
+        );
+    }
+
     use super::{
         infer_input_source, join_segment_texts, parse_json3_segments, parse_vtt_segments,
         pick_manual_subtitle_language, YtDlpSubtitleTrack, YtDlpVideoInfo,
