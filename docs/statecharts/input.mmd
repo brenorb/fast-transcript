@@ -1,0 +1,30 @@
+---
+title: "Prepare audio from a file or a pipe"
+---
+stateDiagram-v2
+  s0: Media supplied
+  s1: Command failed
+  s2: Checking audio format
+  s3: Saving piped media temporarily
+  s4: Converting to 16 kHz mono
+  s5: Reading audio samples
+  s6: Transcribing audio
+  s7: Transcript ready
+  s8: Transcript delivered
+  [*] --> s0
+  s0 --> s1: report failure and release temporary media or reject terminal input
+  s0 --> s2: open media file
+  s0 --> s3: read piped input
+  s2 --> s1: report failure and release temporary media
+  s2 --> s4: convert unsupported audio
+  s2 --> s5: use supported audio as supplied
+  s3 --> s1: report failure and release temporary media
+  s3 --> s2: finish reading nonempty input
+  s4 --> s1: report failure and release temporary media
+  s4 --> s5: finish converting
+  s5 --> s1: report failure and release temporary media
+  s5 --> s6: load audio samples
+  s6 --> s1: report failure and release temporary media
+  s6 --> s7: finish transcription
+  s7 --> s1: report failure and release temporary media
+  s7 --> s8: deliver transcript
