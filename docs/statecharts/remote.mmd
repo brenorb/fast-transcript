@@ -1,0 +1,29 @@
+---
+title: "fscript transcription from a URL"
+---
+stateDiagram-v2
+  s0: Checking the URL
+  s1: Command failed
+  s2: Choosing a transcript source
+  s3: Downloading audio
+  s4: Retrieving manual captions
+  s5: Transcribing on this device
+  s6: Preparing the platform transcript
+  s7: Preparing the local transcript
+  s8: Platform transcript delivered
+  s9: Local transcript delivered
+  [*] --> s0
+  s0 --> s1: the URL could not be inspected
+  s0 --> s2: media details are available
+  s2 --> s3: captions are absent, local mode is requested, or speaker labels are enabled
+  s2 --> s4: manual captions are available [no local override or speaker labels]
+  s3 --> s1: the audio download fails
+  s3 --> s5: the audio is ready
+  s4 --> s3: the captions are empty or unavailable
+  s4 --> s6: the platform transcript is usable
+  s5 --> s1: transcription fails
+  s5 --> s7: the local model finishes
+  s6 --> s8: the transcript is printed or saved
+  s6 --> s1: the transcript cannot be rendered or written
+  s7 --> s9: the transcript is printed or saved
+  s7 --> s1: the transcript cannot be rendered or written
