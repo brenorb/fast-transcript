@@ -1,0 +1,17 @@
+---
+title: "Add speaker labels to an fscript transcript"
+---
+stateDiagram-v2
+  s0: Transcript available
+  s1: Return transcript without speaker labels
+  s2: Detecting speakers
+  s3: Report diarization failure
+  s4: Matching speakers to transcript segments
+  s5: Return transcript with speaker metadata
+  [*] --> s0
+  s0 --> s1: speaker detection not selected
+  s0 --> s2: run the selected backend
+  s2 --> s3: backend or its result fails
+  s2 --> s4: read detected speaker segments
+  s2 --> s1: backend reports no speech
+  s4 --> s5: assign speakers by overlap
