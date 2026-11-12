@@ -1,0 +1,22 @@
+---
+title: "fscript output to a file or pipeline"
+---
+stateDiagram-v2
+  s0: Checking the output path
+  s1: Writing the transcript to the pipeline
+  s2: Output failed
+  s3: Preparing the replacement transcript
+  s4: Pipeline command completed
+  s5: Transcript saved, reporting its location
+  s6: Transcript saved, completion reporting failed
+  s7: Transcript saved
+  [*] --> s0
+  [*] --> s1
+  s0 --> s2: the save fails
+  s0 --> s3: the destination can be used
+  s1 --> s4: the downstream command closes the pipe or the transcript is delivered
+  s1 --> s2: output reports an error
+  s3 --> s2: the save fails
+  s3 --> s5: the completed transcript replaces the destination
+  s5 --> s6: the saved path cannot be resolved or output reports an error
+  s5 --> s7: completion is reported
