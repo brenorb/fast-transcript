@@ -28,3 +28,5 @@ sh "$skill/references/check-hook.sh"
 The model covers one successful install and one hook execution with binary outcomes for Rust paths and the formatter. It abstracts Git errors, paths, actual formatting and concurrent staging. The fixture creates a temporary Git repository, runs the real installer and hook, and uses a fake formatter only to control exit status and count invocations.
 
 TLC checked 14 states. `Hook-mutant.cfg` allows a failed format check to succeed. In a disposable checkout, change the failure branch's `exit 1` to `exit 0`. The fixture detects the false success. Restore and rerun both checks before updating the reviewed refs.
+
+Use pstack’s `/statechart` to inspect the shortest path for a failing rule or visualize the checked flow. When the source changes, update the reviewed revision after rechecking the model and source fixture.

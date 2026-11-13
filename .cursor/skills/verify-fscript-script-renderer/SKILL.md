@@ -30,3 +30,5 @@ python3 -m unittest discover -s tests -p test_render_diarized_transcript_script.
 The model enumerates up to three input segments. It abstracts labels to two speakers and one unknown label, and maps blank or invalid segments to skip. It tracks output labels and abstracts the exact text and filesystem writes. The source tests verify emitted text and the optional unknown speaker prefix.
 
 TLC checked 212 states with merging and 260 without merging. Supply `Turns-mutant.cfg` to see the final turn disappear. In a disposable checkout, remove the final call to `flush()` before `return lines`. Four source tests then fail. All six pass with the source restored. Rerun both configs and the tests before updating the reviewed refs.
+
+Use pstack’s `/statechart` to inspect the shortest path for a failing rule or visualize the checked flow. When the source changes, update the reviewed revision after rechecking the model and source fixture.

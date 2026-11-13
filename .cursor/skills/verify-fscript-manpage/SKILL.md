@@ -29,3 +29,5 @@ Reviewed main `7562797c4462045c2a3edc2ceaf9595ed6a5d626`. `scripts/generate_man_
 The model bounds one invocation. It abstracts the initial destination to missing, stale or current, and distinguishes fenced lines from normal markup. It checks destination freshness and absence of writes in check mode. It omits exact roff text, filesystem errors during comparison and failure partway through a normal write.
 
 TLC checked `CheckIsReadOnly` and `CheckSuccessMeansCurrent` in 126 states. `ManPage-mutant.cfg` accepts stale output. In a disposable checkout, bypass the comparison in `main` and run the fixture. It fails with `Stale man page accepted`. The original fixture rejects stale output, verifies that the existing bytes survive check mode, then writes and checks a current man page. Rerun the fixture and the model before updating the reviewed refs.
+
+Use pstack’s `/statechart` to inspect the shortest path for a failing rule or visualize the checked flow. When the source changes, update the reviewed revision after rechecking the model and source fixture.

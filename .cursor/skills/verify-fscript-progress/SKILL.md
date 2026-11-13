@@ -31,3 +31,5 @@ Reviewed main `7562797c4462045c2a3edc2ceaf9595ed6a5d626` and tag `v1.1.3` at `75
 The progress model bounds three chunks and one worker. It abstracts joining as a completed cleanup transition and omits rendering and scheduling details. The scope model bounds two nested scopes on one thread. The source tests cover separate-thread isolation and a bounded diagnostic tail.
 
 TLC checked 64 progress states and seven scope states. The progress mutant starts animation on any terminal. The scope mutant leaves the prior setting unrestored. In a disposable checkout, return only `terminal` from `animated_progress` or remove the restore call from `Scope::drop`. The corresponding tests above detect both mutations. Restore, rerun the tests and update reviewed refs after changing the lifecycle.
+
+Use pstack’s `/statechart` to inspect the shortest path for a failing rule or visualize the checked flow. When the source changes, update the reviewed revision after rechecking the model and source fixture.

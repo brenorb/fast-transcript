@@ -9,6 +9,8 @@ Review `.github/workflows/release.yml` at `7562797` and the cited `v1.1.3`. On e
 
 Run the finite model from the repository root.
 
+Use Java 11 or later and set `TLA2TOOLS` to the absolute path of the official [TLC 1.7.4 JAR](https://github.com/tlaplus/tlaplus/releases/tag/v1.7.4).
+
 ```sh
 dir=.cursor/skills/verify-fscript-release
 sh scripts/check-cli-state-machine.sh "$dir/Release.tla"
@@ -19,3 +21,5 @@ python3 "$dir/references/check-release.py"
 The model advances each of two builds through six ordered milestones, with failure possible before each. It checks the tag and successful matrix gate, the selected wheel, and the skip path when the registry's newest version matches. The mutant must attempt a publish for a matching version. The fixture executes the actual guard shell with fake Cargo and curl and checks the workflow dependencies. Removing version equality must fail the matching case. If the registry has a different newest version or the lookup fails, the current guard proceeds to authentication and a publish attempt. The check compares the newest version alone.
 
 The model stops at publication decisions. Provider outcomes and partial success across the three independent jobs are outside the checked properties.
+
+Use pstack’s `/statechart` to inspect the shortest path for a failing rule or visualize the checked flow. When the source changes, update the reviewed revision after rechecking the model and source fixture.

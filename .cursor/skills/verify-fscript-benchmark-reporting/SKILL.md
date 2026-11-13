@@ -39,3 +39,5 @@ sh scripts/check-cli-state-machine.sh "$skill/ValidationCoverage.tla" "$skill/Va
 ```
 
 `ValidationHasCases` fails under the current behavior. An empty manifest list with the expected protocol and empty run metadata passes the coverage comparisons and writes `validation.json` with zero checked runs. The validator fixture reproduces this with temporary JSON files. The second config models a gate that requires a nonempty suite.
+
+Use pstack’s `/statechart` to inspect the shortest path for a failing rule or visualize the checked flow. When the source changes, update the reviewed revision after rechecking the model and source fixture.
