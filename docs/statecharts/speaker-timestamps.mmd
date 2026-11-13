@@ -1,0 +1,27 @@
+---
+title: "Timestamp the first speaker turn"
+---
+stateDiagram-v2
+  state "Legend" as legend {
+    lg0: Breaks TimestampFromFirstSegment
+    lg1: Path to the TimestampFromFirstSegment bug
+  }
+  class lg0 breaks
+  class lg1 bugPath
+  s0: Transcript ready
+  s1: Turn buffered with its start time
+  s2: Unlabeled turn buffered without start time
+  s3: Empty transcript
+  s4: Turns printed with their start times
+  s5: First turn printed at zero
+  [*] --> s0
+  s0 --> s1: First labeled segment supplies its start time
+  s0 --> s2: First segment has no speaker label
+  s0 --> s3: Render the final turn
+  s1 --> s4: Render the final turn
+  s2 --> s5: Render the final turn or Speaker changes and flushes the opening turn
+  classDef breaks fill:#ffecee,stroke:#e72e3b,stroke-width:2.5px,color:#cd2834
+  class s0 bugPath
+  class s2 bugPath
+  class s5 breaks
+  class s5 bugPath
