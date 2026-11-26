@@ -7,6 +7,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
+import wave
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -31,7 +32,14 @@ def main():
         expected = fixture.fixture.run_cli(source, '--chunk', '2.5', '--overlap', '0.5')
         batch = fixture.root / 'batch.json'
         batch.write_text(json.dumps(expected), encoding='utf-8')
-        environment = dict(fixture.env, FSCRIPT_DESKTOP_TEST_CLI=str(binary),
+        capture = fixture.root / 'capture.wav'
+        with wave.open(str(source), 'rb') as reader, wave.open(str(capture), 'wb') as writer:
+            writer.setparams(reader.getparams())
+            writer.writeframes(reader.readframes(reader.getframerate()))
+        recording_batch = fixture.root / 'recording-batch.json'
+        recording_batch.write_text(json.dumps(fixture.fixture.run_cli(capture)), encoding='utf-8')
+        environment = dict(fixture.env, FSCRIPT_DESKTOP_TEST_CAPTURE=str(capture),
+                           FSCRIPT_DESKTOP_TEST_RECORDING_BATCH=str(recording_batch), FSCRIPT_DESKTOP_TEST_CLI=str(binary),
                            FSCRIPT_DESKTOP_TEST_SOURCE=str(source),
                            FSCRIPT_DESKTOP_TEST_BATCH=str(batch))
         subprocess.run(['swift', 'test', '--package-path', str(ROOT / 'desktop'),

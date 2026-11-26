@@ -4,6 +4,16 @@ The shared capture/backend milestone is implemented. The desktop hold button and
 global shortcut are the next part of roadmap milestone 5; that milestone is not
 yet complete.
 
+The native process client now supports an explicit two-way control pipe. Writes
+are serialized off the UI thread, bounded to 64 KiB, and protected against SIGPIPE;
+ordinary media/notes jobs still receive closed stdin. A recording decoder checks
+protocol version, sequence, unique session identity, state transitions, complete
+final results, and exit status. Media and recording decoders share byte framing.
+Fifteen native tests include two real-CLI clips versus independent batch output
+with exactly one model worker start, full-duplex EOF, broken-pipe recovery, and
+500 randomized UTF-8 fragmentations of repeated/cancelled recording sessions.
+These use the deterministic capture/ASR fixture and do not prove physical capture.
+
 ## Defaults and unattended use
 
 ```sh

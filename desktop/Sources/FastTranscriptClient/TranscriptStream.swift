@@ -36,7 +36,7 @@ public struct ClientError: LocalizedError, Sendable {
 
 /// Presentation-only decoder. Transcription, merging, and exports stay in Rust.
 public struct TranscriptStreamDecoder {
-    private var pending = Data()
+    private var lines = JSONLines()
     private var jobID: String?
     private var sequence: UInt64 = 0
     private var terminal = false
@@ -46,12 +46,8 @@ public struct TranscriptStreamDecoder {
     public init() {}
 
     public mutating func append(_ data: Data) throws -> [TranscriptEvent] {
-        pending.append(data)
         var events: [TranscriptEvent] = []
-        while let newline = pending.firstIndex(of: 10) {
-            let line = pending[..<newline]
-            pending.removeSubrange(...newline)
-            if line.allSatisfy({ [UInt8(9), 13, 32].contains($0) }) { continue }
+        for line in lines.append(data) {
             guard !terminal else { throw ClientError("Received data after a terminal event.") }
             let event = try JSONDecoder().decode(TranscriptEvent.self, from: Data(line))
             guard event.version == 1, !event.job_id.isEmpty, event.sequence == sequence else {
@@ -84,9 +80,7 @@ public struct TranscriptStreamDecoder {
     }
 
     public func finish(exitStatus: Int32) throws {
-        guard pending.allSatisfy({ [UInt8(9), 10, 13, 32].contains($0) }) else {
-            throw ClientError("Transcription ended with an incomplete event.")
-        }
+        try lines.finish()
         if let errorMessage { throw ClientError(errorMessage) }
         guard exitStatus == 0 else { throw ClientError("Transcription process exited with status \(exitStatus).") }
         guard completed else { throw ClientError("Transcription ended before completion.") }

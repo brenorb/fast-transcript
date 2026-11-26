@@ -5,6 +5,89 @@ import XCTest
 @testable import FastTranscriptClient
 
 final class CLIProcessTests: XCTestCase {
+    func testControlInputIsFullDuplexAndClosesCleanly() async throws {
+        let process = CLIProcess()
+        defer { process.cancel() }
+        let payload = Data((String(repeating: "é 🦀\n", count: 1000)).utf8)
+        var output = Data()
+        var sent = false
+        var status: Int32?
+        for try await event in process.events(executable: URL(fileURLWithPath: "/bin/sh"), arguments: ["-c", "printf ready; exec cat"], controlInput: true) {
+            switch event {
+            case .stdout(let bytes):
+                output.append(bytes)
+                if !sent {
+                    sent = true
+                    try await process.writeInput(payload)
+                    process.closeInput()
+                }
+            case .exited(let code): status = code
+            default: break
+            }
+        }
+        XCTAssertEqual(status, 0)
+        XCTAssertEqual(output, Data("ready".utf8) + payload)
+        do { try await process.writeInput(Data("late".utf8)); XCTFail("Closed input must reject writes") }
+        catch {}
+    }
+
+    func testBrokenControlPipeThrowsWithoutTerminatingTheApp() async throws {
+        let process = CLIProcess()
+        defer { process.cancel() }
+        var rejected = false
+        for try await event in process.events(executable: URL(fileURLWithPath: "/bin/sh"), arguments: ["-c", "exec 0<&-; printf ready; sleep 0.05"], controlInput: true) {
+            if case .stdout = event {
+                do { try await process.writeInput(Data("request\n".utf8)); XCTFail("Broken pipe must fail") }
+                catch { rejected = true }
+            }
+        }
+        XCTAssertTrue(rejected)
+    }
+
+    func testWarmRecordingControllerMatchesBatchAcrossTwoNativeClientClips() async throws {
+        let (binary, _, _) = try fixture()
+        let environment = ProcessInfo.processInfo.environment
+        guard let capture = environment["FSCRIPT_DESKTOP_TEST_CAPTURE"], let batch = environment["FSCRIPT_DESKTOP_TEST_RECORDING_BATCH"] else { throw XCTSkip("Run scripts/test_desktop_client.py") }
+        let expected = try JSONDecoder().decode(TranscriptSnapshot.self, from: Data(contentsOf: URL(fileURLWithPath: batch)))
+        var childEnvironment = CLIProcess.inheritedEnvironment()
+        childEnvironment["FSCRIPT_CAPTURE_TEST_WAV"] = capture
+        let log = try XCTUnwrap(childEnvironment["STREAM_WORKER_LOG"])
+        let before = try String(contentsOfFile: log).split(separator: "\n").count
+        let process = CLIProcess()
+        defer { process.cancel() }
+        let timeout = Task { try? await Task.sleep(for: .seconds(10)); if !Task.isCancelled { process.cancel() } }
+        defer { timeout.cancel() }
+        var decoder = RecordingStreamDecoder()
+        var clips = 0
+        var status: Int32?
+        for try await event in process.events(executable: binary, arguments: ["record", "--control", "--model", "ultra", "--quiet"], environment: childEnvironment, controlInput: true) {
+            switch event {
+            case .stdout(let bytes):
+                for message in try decoder.append(bytes) {
+                    switch message.type {
+                    case "ready": try await process.writeInput(Data("{\"action\":\"start\"}\n".utf8))
+                    case "recording":
+                        try await Task.sleep(for: .milliseconds(1200))
+                        try await process.writeInput(Data("{\"action\":\"stop\"}\n".utf8))
+                    case "completed":
+                        XCTAssertEqual(message.data.result, expected)
+                        XCTAssertEqual(message.data.model_reused, clips > 0)
+                        clips += 1
+                        let action = clips == 2 ? "shutdown" : "start"
+                        try await process.writeInput(Data("{\"action\":\"\(action)\"}\n".utf8))
+                    case "error": XCTFail(message.data.message ?? "Recording error")
+                    default: break
+                    }
+                }
+            case .exited(let code): status = code
+            default: break
+            }
+        }
+        try decoder.finish(exitStatus: XCTUnwrap(status))
+        XCTAssertEqual(clips, 2)
+        XCTAssertEqual(try String(contentsOfFile: log).split(separator: "\n").count - before, 1)
+    }
+
     func testArgumentsAreLiteralAndDiagnosticsRemainSeparate() async throws {
         let result = try await CLIProcess().output(executable: URL(fileURLWithPath: "/usr/bin/printf"), arguments: ["%s|", "a b", "$(echo bad)", "", "🦀"])
         XCTAssertEqual(String(decoding: result, as: UTF8.self), "a b|$(echo bad)||🦀|")

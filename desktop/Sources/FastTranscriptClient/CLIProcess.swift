@@ -13,6 +13,8 @@ public final class CLIProcess: @unchecked Sendable {
     private var pid: Int32?
     private var cancelled = false
     private var started = false
+    private var input: FileHandle?
+    private let writes = DispatchQueue(label: "fast-transcript.cli-input")
 
     public init() {}
 
@@ -54,9 +56,45 @@ public final class CLIProcess: @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
         pid = nil
+        if let input {
+            self.input = nil
+            writes.async { try? input.close() }
+        }
     }
 
-    public func events(executable: URL, arguments: [String], environment: [String: String]? = nil) -> AsyncThrowingStream<ProcessEvent, Error> {
+    /// Small JSONL control requests are serialized off the UI thread. Closed
+    /// pipes throw; they must never deliver SIGPIPE to the desktop process.
+    public func writeInput(_ data: Data) async throws {
+        guard data.count <= 65536 else { throw ClientError("CLI control requests must fit in 64 KiB.") }
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            writes.async { [self] in
+                lock.lock()
+                let handle = cancelled ? nil : input
+                lock.unlock()
+                do {
+                    guard let handle else { throw ClientError("The CLI control channel is not open.") }
+                    try handle.write(contentsOf: data)
+                    continuation.resume()
+                } catch { continuation.resume(throwing: error) }
+            }
+        }
+    }
+
+    public func closeInput() {
+        lock.lock()
+        let handle = input
+        input = nil
+        lock.unlock()
+        writes.async { try? handle?.close() }
+    }
+
+    private func attachInput(_ handle: FileHandle) {
+        lock.lock()
+        input = handle
+        lock.unlock()
+    }
+
+    public func events(executable: URL, arguments: [String], environment: [String: String]? = nil, controlInput: Bool = false) -> AsyncThrowingStream<ProcessEvent, Error> {
         AsyncThrowingStream { continuation in
             guard claim() else {
                 continuation.finish(throwing: ClientError("A CLI process can only run once."))
@@ -69,16 +107,28 @@ public final class CLIProcess: @unchecked Sendable {
                 let process = Process()
                 let stdout = Pipe()
                 let stderr = Pipe()
+                let stdin = controlInput ? Pipe() : nil
                 process.executableURL = executable
                 process.arguments = arguments
                 process.environment = environment ?? Self.inheritedEnvironment()
-                process.standardInput = FileHandle.nullDevice
+                if let stdin { process.standardInput = stdin }
+                else { process.standardInput = FileHandle.nullDevice }
                 process.standardOutput = stdout
                 process.standardError = stderr
                 do {
+                    if let stdin {
+                        guard fcntl(stdin.fileHandleForWriting.fileDescriptor, F_SETNOSIGPIPE, 1) == 0 else {
+                            throw NSError(domain: NSPOSIXErrorDomain, code: Int(errno))
+                        }
+                    }
                     try process.run()
+                    if let stdin {
+                        try? stdin.fileHandleForReading.close()
+                        attachInput(stdin.fileHandleForWriting)
+                    }
                     launched(process.processIdentifier)
                 } catch {
+                    closeInput()
                     continuation.finish(throwing: error)
                     return
                 }
