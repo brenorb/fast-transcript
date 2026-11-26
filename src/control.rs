@@ -12,6 +12,12 @@ fn command() -> Command {
         .arg(Arg::new("json").long("json").global(true).action(ArgAction::SetTrue).help("Print machine-readable completion data"))
         .arg(Arg::new("manual").long("manual").global(true).action(ArgAction::SetTrue).help("Read the complete offline control manual"))
         .arg(Arg::new("man-page").long("man-page").action(ArgAction::SetTrue).help("Export the control manual for man(1)"))
+        .subcommand(Command::new("models").about("Inspect models and the shared saved preference")
+            .subcommand_required(true).arg_required_else_help(true)
+            .subcommand(Command::new("list").about("List the built-in catalog without downloading models"))
+            .subcommand(Command::new("get").about("Show the effective model and preference sources"))
+            .subcommand(Command::new("set").about("Save a predefined model or alias").arg(Arg::new("name").required(true)))
+            .subcommand(Command::new("reset").about("Clear the saved preference; leave cached models untouched")))
         .subcommand(Command::new("notes").about("Create notes using an installed headless agent")
             .after_help("Examples:\n  fscriptctl notes meeting.txt\n  fscriptctl notes meeting.json --agent claude\n  fscript media.wav --stream --json | fscriptctl notes -\n  fscriptctl notes meeting.txt --stdout --json")
             .arg(Arg::new("input").required(true).help("UTF-8 transcript file, fscript JSON/JSONL, or - for stdin"))
@@ -89,7 +95,49 @@ pub(crate) fn run(raw: Vec<String>) -> Result<()> {
             crate::notes::emit(&result, json)
         }
         Some(("agents", values)) => run_agents(values, json),
+        Some(("models", values)) => run_models(values, json),
         _ => print("fscriptctl — transcription controls and external-agent notes\n\nUsage: fscriptctl <command> [options]\n\nExamples:\n  fscriptctl notes meeting.txt\n  fscriptctl agents list\n\nRun fscriptctl --help for all commands.\n"),
+    }
+}
+
+fn run_models(matches: &ArgMatches, json: bool) -> Result<()> {
+    let store = crate::settings::DefaultModelStore::configured();
+    let (operation, values) = matches.subcommand().context("choose a models command")?;
+    match operation {
+        "set" => {
+            let model = store.save(values.get_one::<String>("name").unwrap())?;
+            eprintln!("Default model: {model}");
+        }
+        "reset" => {
+            store.reset()?;
+            eprintln!("Saved default model reset.");
+        }
+        "list" | "get" => {}
+        _ => unreachable!("clap validates model commands"),
+    }
+    let saved = store.load()?;
+    let environment = std::env::var("FSCRIPT_MODEL_URL").ok();
+    let effective = environment
+        .as_deref()
+        .or(saved.as_deref())
+        .unwrap_or("parakeet-v3-int8");
+    if json {
+        print(&format!(
+            "{}\n",
+            serde_json::to_string_pretty(&serde_json::json!({
+                "version": 1, "saved_default": saved, "environment_override": environment,
+                "effective_model": effective, "models": crate::model_catalog::MODELS,
+            }))?
+        ))
+    } else if operation == "list" {
+        print(&format!(
+            "{}\n\nEffective model: {effective}\n",
+            crate::model_catalog::list_models()
+        ))
+    } else if operation == "get" {
+        print(&format!("{effective}\n"))
+    } else {
+        Ok(())
     }
 }
 

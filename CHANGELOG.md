@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Expose the shared model catalog, saved preference, and effective environment override through noninteractive `fscriptctl models` commands and versioned JSON.
+
 - Add `fscriptctl notes TRANSCRIPT` for English summaries, key points, decisions, action items, and open questions using installed Codex, Claude Code, omp, or literal custom commands.
 - Save agent preferences, accept complete text/JSON/JSONL input through files or stdin, preserve source timestamps, and share timeout/cancellation and atomic output behavior across providers.
 - Bundle `fscriptctl` beside `fscript` in release archives and Python wheels, with offline command manuals and matching artifact checks.

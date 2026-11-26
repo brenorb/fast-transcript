@@ -1,13 +1,14 @@
 //! Runnable model presets and recommendations from the checked-in ASR v2 benchmarks.
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "lowercase")]
 pub(crate) enum ModelRuntime {
     Onnx,
     Photon,
     Phonon,
 }
 
-#[derive(Debug)]
+#[derive(Debug, serde::Serialize)]
 pub(crate) struct ModelPreset {
     pub(crate) name: &'static str,
     pub(crate) repository: &'static str,

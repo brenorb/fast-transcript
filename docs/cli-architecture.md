@@ -31,7 +31,7 @@ CLI. Other command families below remain planned until their roadmap milestone.
 | Dictation | `fscriptctl record` | Microphone capture and live text until stopped. |
 | Meetings | `fscriptctl record --source meeting` | Separate mic/system tracks and a durable session. |
 | Session control | `fscriptctl sessions list`, `sessions stop ID`, `sessions show ID` | Explicit target; no interactive selection. |
-| Models | `fscriptctl models list`, `models set NAME` | Same catalog and saved preference as existing model flags. |
+| Models | `fscriptctl models list`, `models set NAME`, `models get`, `models reset` | Shipped: same catalog and saved preference as existing flags; `--json` identifies saved/environment/effective selection. |
 | External notes | `fscriptctl notes TRANSCRIPT` | Shipped: save Markdown using the saved/first installed agent; `--agent` overrides, stdin defaults to stdout. |
 | Agent preference | `fscriptctl agents list`, `agents set NAME`, `agents add NAME -- COMMAND` | Shipped: inspect or save literal headless commands; no login or model startup during discovery. |
 | Detection | `fscriptctl calls watch`, `calendar list` | Inspect native adapter evidence without recording. |

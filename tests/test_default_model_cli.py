@@ -8,7 +8,8 @@ import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
-BINARY = ROOT / "target/release/fscript"
+BINARY = Path(os.environ.get("FSCRIPT_TEST_BINARY", ROOT / "target/release/fscript"))
+CONTROL = Path(os.environ.get("FSCRIPTCTL_TEST_BINARY", ROOT / "target/release/fscriptctl"))
 
 
 class DefaultModelCliTests(unittest.TestCase):
@@ -22,6 +23,64 @@ class DefaultModelCliTests(unittest.TestCase):
     def run_cli(self, *args):
         return subprocess.run([str(BINARY), *args], env=self.env, text=True,
                               capture_output=True, timeout=20)
+
+    def run_control(self, *args):
+        return subprocess.run([str(CONTROL), "--quiet", "models", *args], env=self.env,
+                              text=True, capture_output=True, timeout=20)
+
+    def control_json(self, *args):
+        result = self.run_control(*args, "--json")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stderr, "")
+        return json.loads(result.stdout)
+
+    def test_control_catalog_has_no_setup_side_effect_and_reports_precedence(self):
+        listed = self.control_json("list")
+        self.assertEqual(listed["version"], 1)
+        self.assertEqual(listed["effective_model"], "parakeet-v3-int8")
+        self.assertIsNone(listed["saved_default"])
+        self.assertIsNone(listed["environment_override"])
+        self.assertFalse(self.settings.exists())
+        human = self.run_cli("--list-models").stdout
+        for model in listed["models"]:
+            self.assertIn(model["name"], human)
+            self.assertIn(model["advice"], human)
+        self.assertEqual(len(listed["models"]), 4)
+        self.run_cli("--set-default-model", "ultra")
+        self.env["FSCRIPT_MODEL_URL"] = "https://example.test/override.tar.gz"
+        current = self.control_json("get")
+        self.assertEqual(current["saved_default"], "parakeet-ultra")
+        self.assertEqual(current["environment_override"], self.env["FSCRIPT_MODEL_URL"])
+        self.assertEqual(current["effective_model"], self.env["FSCRIPT_MODEL_URL"])
+        self.assertEqual(self.run_control("get").stdout.strip(), current["effective_model"])
+
+    def test_control_and_compatibility_flags_have_identical_saved_state_for_all_aliases(self):
+        for alias, canonical in [("default", "parakeet-v3-int8"), ("onnx", "parakeet-v3-int8"),
+                                 ("redux", "parakeet-redux"), ("ultra", "parakeet-ultra"),
+                                 ("phonon", "phonon-2"), *[(name, name) for name in
+                                  ("parakeet-v3-int8", "parakeet-redux", "parakeet-ultra", "phonon-2")]]:
+            with self.subTest(alias=alias):
+                state = self.control_json("set", alias)
+                control_bytes = self.settings.read_bytes()
+                self.assertEqual(state["saved_default"], canonical)
+                self.assertEqual(self.run_cli("--get-default-model").stdout.strip(), canonical)
+                self.assertEqual(self.run_cli("--set-default-model", alias).returncode, 0)
+                self.assertEqual(self.settings.read_bytes(), control_bytes)
+        self.assertEqual(self.run_cli("--reset-default-model").returncode, 0)
+        self.assertIsNone(self.control_json("get")["saved_default"])
+
+    def test_control_invalid_updates_preserve_state_and_reset_recovers_corruption(self):
+        self.control_json("set", "ultra")
+        before = self.settings.read_bytes()
+        invalid = self.run_control("set", "ultr")
+        self.assertNotEqual(invalid.returncode, 0)
+        self.assertIn("Did you mean ultra", invalid.stderr)
+        self.assertEqual(self.settings.read_bytes(), before)
+        self.settings.write_text("broken")
+        self.assertNotEqual(self.run_control("get").returncode, 0)
+        reset = self.control_json("reset")
+        self.assertIsNone(reset["saved_default"])
+        self.assertFalse(self.settings.exists())
 
     def test_default_persists_between_processes_and_can_be_reset(self):
         self.assertEqual(self.run_cli("--get-default-model").stdout.strip(), "parakeet-v3-int8")

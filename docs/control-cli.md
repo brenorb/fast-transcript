@@ -13,6 +13,10 @@ fscriptctl agents set NAME
 fscriptctl agents add NAME -- COMMAND [ARGS...]
 fscriptctl agents remove NAME
 fscriptctl agents reset
+fscriptctl models list [--json]
+fscriptctl models get [--json]
+fscriptctl models set NAME
+fscriptctl models reset
 ```
 
 ## Description
@@ -62,6 +66,21 @@ ASR preference. FSCRIPT_NOTES_CONFIG_FILE overrides that filename. FSCRIPT_AGENT
 replaces executable search paths; otherwise PATH and standard user/Homebrew/nvm
 locations are searched. FSCRIPT_CODEX_BINARY, FSCRIPT_CLAUDE_BINARY, and
 FSCRIPT_OMP_BINARY override built-in executables.
+
+## Models
+
+Models list uses the same catalog as fscript --list-models. Models set accepts
+the same names and aliases as fscript --set-default-model and saves to the same
+configuration file. Models reset clears only the saved preference and can recover
+malformed settings. These commands never download a model or start inference.
+
+Models get prints the effective model: FSCRIPT_MODEL_URL, otherwise the saved
+preference, otherwise parakeet-v3-int8. This differs from the compatibility flag
+fscript --get-default-model, which reports the saved or built-in choice only.
+With --json, each models command returns version 1, saved_default (or null),
+environment_override (or null), effective_model, and the shared models array.
+Each catalog entry includes name, repository, url, revision, runtime, and advice.
+Explicit per-transcription --model still takes precedence over these defaults.
 
 ## Errors and cancellation
 

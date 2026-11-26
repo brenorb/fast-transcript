@@ -44,6 +44,11 @@ the agent's own CLI first. Its configured provider handles the language model;
 Fast Transcript keeps transcription local. See [agent notes](docs/agent-notes.md)
 and `fscriptctl notes --help` for model overrides, stdout/JSON, and custom agents.
 
+`fscriptctl models list --json` exposes the same model catalog for desktop clients
+and agents. `fscriptctl models set ultra` saves the same preference as
+`fscript --set-default-model ultra`; `models get --json` distinguishes the saved
+choice from an active `FSCRIPT_MODEL_URL` override.
+
 `--srt` and `--vtt` subtitle output are experimental.
 
 That is the whole point of this project. One command. Large audio. No babysitting.
