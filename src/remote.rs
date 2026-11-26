@@ -12,6 +12,7 @@ use crate::types::{DownloadedAudio, InputSource, TranscriptSegment};
 pub(crate) struct YtDlpVideoInfo {
     pub(crate) id: Option<String>,
     pub(crate) title: Option<String>,
+    pub(crate) duration: Option<f64>,
     pub(crate) subtitles: Option<BTreeMap<String, Vec<YtDlpSubtitleTrack>>>,
 }
 
@@ -295,11 +296,24 @@ pub(crate) fn download_manual_remote_transcript(
     Ok(Some(DirectTranscript { text, segments }))
 }
 
-pub(crate) fn download_remote_audio(url: &str) -> Result<DownloadedAudio> {
+pub(crate) fn download_remote_audio(
+    url: &str,
+    range: crate::media_range::ResolvedRange,
+) -> Result<DownloadedAudio> {
     let tempdir = tempfile::tempdir().context("failed to create temp dir for remote audio")?;
     let output_template = tempdir.path().join("%(id)s.%(ext)s");
+    let mut command = yt_dlp_command();
+    if range.is_selected() {
+        command.args([
+            "--download-sections",
+            &range.download_section(),
+            "--force-keyframes-at-cuts",
+            "--downloader-args",
+            "ffmpeg:-xerror",
+        ]);
+    }
     let output = run_command(
-        yt_dlp_command().args([
+        command.args([
             "--no-progress",
             "--no-warnings",
             "--no-playlist",
@@ -371,6 +385,7 @@ mod tests {
         );
 
         let info = YtDlpVideoInfo {
+            duration: None,
             id: Some("abc123".to_string()),
             title: Some("Demo".to_string()),
             subtitles: Some(subtitles),

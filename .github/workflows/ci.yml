@@ -33,6 +33,10 @@ jobs:
       - uses: astral-sh/setup-uv@v6
       - name: Build release binary
         run: cargo build --release --locked
+      - name: Install media test dependencies
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Media selection E2E and FFmpeg differential tests
+        run: uv run --no-project --with yt-dlp python -m unittest tests/test_media_range_cli.py
       - name: Python wrapper tests
         run: uv run --no-project python -m unittest tests/test_pypi_wrapper.py
       - name: Model worker protocol tests

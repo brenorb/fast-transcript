@@ -44,6 +44,9 @@ fscript lecture.mp3 notes/
 fscript lecture.mp3 --text=plain --stdout
 cat lecture.wav | fscript - --text=plain
 cat lecture.mp3 | fscript - --no-diarization --json | jq .text
+fscript lecture.mp3 --last 5:00
+fscript lecture.mp3 --start 10:00 --end 15:00
+fscript 'https://example.com/video' --last 5:00
 fscript meeting.m4a --diarize coreml --num-speakers 2
 fscript lecture.mp3 --model ultra --device cpu
 fscript lecture.mp3 --text=plain --quiet --output transcript.txt
@@ -77,6 +80,9 @@ do not reinterpret them as options. To read a file named help, use
 - `-t, --threshold N`: finite ls-eend-dihard3 threshold; defaults to 0.3.
 - `--backend coreml|lseend-dihard3|none`: legacy diarization selection.
 - `-l, --local`: download remote audio and transcribe locally. `--prefer-local-for-remote` is an alias.
+- `--start TIME`: begin at this source timestamp; defaults to 0. TIME accepts seconds (including decimals), MM:SS, or HH:MM:SS.
+- `--end TIME`: stop at this source timestamp, exclusive; defaults to the end of the media. Must exceed start. Values beyond a known duration are clamped.
+- `--last TIME`: transcribe only the final duration, for example `--last 5:00` for the last five minutes. Requires a known finite media duration and cannot be combined with start/end. A duration longer than the media selects all of it.
 - `--chunk N`: chunk duration in seconds; 0 disables chunking. `--chunk-seconds` is an alias.
 - `--overlap N`: chunk overlap in seconds; must be smaller than the chunk duration. `--chunk-overlap-seconds` is an alias.
 - `--model NAME|URL`: predefined model or custom http(s) ONNX bundle URL.
@@ -100,6 +106,31 @@ own, with an optional `--quiet` flag. Their confirmations go to stderr.
 Optional output-mode values also accept a space, for example `--text plain`.
 When an output path follows an optional-value flag, use `--output PATH` to make
 the destination explicit.
+
+## Partial transcription
+
+Selection applies to local audio/video, piped media, remote manual subtitles, and
+remote audio downloads. Local decoding seeks and crops before loading the model;
+neither ASR nor diarization sees unselected audio. Piped media is still spooled
+before seeking. Chunk and segment timestamps, including subtitle output, retain
+their original source positions; `audio_seconds` measures only selected audio.
+
+For remote audio, fscript requests a section using yt-dlp's `--download-sections`
+and accurate cuts rather than downloading the entire media first. This requires
+FFmpeg and a server/protocol that supports seeking. The server can still transfer
+extra data or require earlier fragments; fscript cannot guarantee byte-range
+support from every site. An unknown duration rejects `--last` before audio download.
+Decoder errors during remote section download fail the command rather than
+silently accepting a corrupt or truncated clip.
+Ordinary start/end selection works without a known duration.
+
+Manual captions are filtered by interval overlap and cue times are clipped to
+the interval. A boundary cue retains its complete text because captions do not
+provide reliable word-level times. No model or audio download runs on this path.
+If no cues intersect the selection, the caption transcript is empty.
+
+Selection uses the same default output filename as a whole-media run. Use a
+different destination to retain both versions.
 
 ## Configuration
 

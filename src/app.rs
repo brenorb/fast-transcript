@@ -7,7 +7,7 @@ use crate::remote::{
     download_manual_remote_transcript, download_remote_audio, infer_input_source,
     load_remote_video_info, DirectTranscript,
 };
-use crate::transcribe::transcribe_audio_input;
+use crate::transcribe::{transcribe_audio_input, transcribe_prepared_audio};
 use crate::types::{BenchmarkChunk, BenchmarkResult, CliArgs, InputSource};
 use anyhow::{Context, Result};
 use std::env;
@@ -104,6 +104,7 @@ pub(crate) fn run(raw_args: Vec<String>) -> Result<()> {
 
 fn handle_remote_input(args: &CliArgs, input_source: &InputSource, url: &str) -> Result<()> {
     let info = load_remote_video_info(url)?;
+    let range = args.media_range.resolve(info.duration)?;
     let destination = output_destination_for_args(
         args,
         input_source,
@@ -112,7 +113,16 @@ fn handle_remote_input(args: &CliArgs, input_source: &InputSource, url: &str) ->
 
     if !args.force_local_for_remote && args.diarization.is_none() {
         match download_manual_remote_transcript(url, &info) {
-            Ok(Some(transcript)) => {
+            Ok(Some(mut transcript)) => {
+                if args.media_range.is_selected() {
+                    range.clip_segments(&mut transcript.segments);
+                    transcript.text = transcript
+                        .segments
+                        .iter()
+                        .map(|segment| segment.text.as_str())
+                        .collect::<Vec<_>>()
+                        .join(" ");
+                }
                 let result = manual_subtitle_result(url, transcript);
                 return emit_result_with_status(
                     args,
@@ -130,12 +140,16 @@ fn handle_remote_input(args: &CliArgs, input_source: &InputSource, url: &str) ->
         }
     }
 
-    let downloaded_audio = download_remote_audio(url)?;
-    let result = transcribe_audio_input(
+    let downloaded_audio = download_remote_audio(url, range)?;
+    // yt-dlp already selected the section. Do not seek into the clip again.
+    let mut prepared = crate::audio::normalize_audio(&downloaded_audio.audio_path)?;
+    prepared.source_start_s = range.start_s;
+    let result = transcribe_prepared_audio(
         args,
         url,
         &downloaded_audio.audio_path,
         "downloaded-audio-local-model",
+        prepared,
     )?;
     emit_result(args, &result, destination)
 }
@@ -160,6 +174,8 @@ fn output_destination_for_args(
 }
 
 fn manual_subtitle_result(input_source: &str, transcript: DirectTranscript) -> BenchmarkResult {
+    let start_s = transcript.segments.first().map_or(0.0, |cue| cue.start_s);
+    let end_s = transcript.segments.last().map_or(start_s, |cue| cue.end_s);
     BenchmarkResult {
         input_source: input_source.to_string(),
         model_dir: String::new(),
@@ -180,8 +196,8 @@ fn manual_subtitle_result(input_source: &str, transcript: DirectTranscript) -> B
         chunk_count: 1,
         chunks: vec![BenchmarkChunk {
             index: 0,
-            start_s: 0.0,
-            end_s: 0.0,
+            start_s,
+            end_s,
             audio_seconds: 0.0,
             transcribe_seconds: 0.0,
             text: transcript.text,

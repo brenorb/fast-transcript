@@ -4,11 +4,11 @@ use anyhow::{Context, Result};
 use std::path::Path;
 use transcribe_rs::audio::read_wav_samples;
 
-use crate::audio::normalize_audio;
+use crate::audio::prepare_audio;
 use crate::diarization::{maybe_diarize_segments, FluidAudioDiarizer};
 use crate::engine::{load_engine, LoadedEngine};
 use crate::inference::{transcribe_samples, InferenceOutcome};
-use crate::types::{BenchmarkResult, CliArgs};
+use crate::types::{BenchmarkResult, CliArgs, PreparedAudio};
 
 pub(crate) fn transcribe_audio_input(
     args: &CliArgs,
@@ -16,8 +16,23 @@ pub(crate) fn transcribe_audio_input(
     audio_path: &Path,
     transcript_source: &str,
 ) -> Result<BenchmarkResult> {
-    let prepared_audio = normalize_audio(audio_path)?;
+    let prepared_audio = prepare_audio(audio_path, args.media_range)?;
+    transcribe_prepared_audio(
+        args,
+        input_source,
+        audio_path,
+        transcript_source,
+        prepared_audio,
+    )
+}
 
+pub(crate) fn transcribe_prepared_audio(
+    args: &CliArgs,
+    input_source: &str,
+    audio_path: &Path,
+    transcript_source: &str,
+    prepared_audio: PreparedAudio,
+) -> Result<BenchmarkResult> {
     let samples = read_wav_samples(&prepared_audio.wav_path).with_context(|| {
         format!(
             "failed to read WAV samples from {}",
@@ -25,6 +40,9 @@ pub(crate) fn transcribe_audio_input(
         )
     })?;
     let audio_seconds = samples.len() as f64 / crate::SAMPLE_RATE as f64;
+    if samples.is_empty() {
+        anyhow::bail!("selected media contains no audio samples");
+    }
 
     eprintln!("loading model...");
     let LoadedEngine {
@@ -35,7 +53,7 @@ pub(crate) fn transcribe_audio_input(
     } = load_engine(&args.model)?;
     let InferenceOutcome {
         text,
-        chunks,
+        mut chunks,
         segments: transcript_segments,
         transcribe_seconds,
     } = transcribe_samples(
@@ -47,12 +65,22 @@ pub(crate) fn transcribe_audio_input(
     drop(engine);
     drop(samples);
 
-    let (segments, speaker_diarization) = maybe_diarize_segments(
+    let (mut segments, speaker_diarization) = maybe_diarize_segments(
         &FluidAudioDiarizer::new(),
         &prepared_audio.wav_path,
         transcript_segments,
         args.diarization.as_ref(),
     )?;
+
+    // Diarization uses clip-relative audio. Shift only after speaker assignment.
+    for segment in &mut segments {
+        segment.start_s += prepared_audio.source_start_s;
+        segment.end_s += prepared_audio.source_start_s;
+    }
+    for chunk in &mut chunks {
+        chunk.start_s += prepared_audio.source_start_s;
+        chunk.end_s += prepared_audio.source_start_s;
+    }
 
     let total_inside_seconds = load_seconds + transcribe_seconds;
     let (seconds_per_audio_second, realtime_speedup) =

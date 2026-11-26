@@ -11,6 +11,8 @@ The CLI binary is called **`fscript`**:
 ```bash
 fscript lecture.mp3
 fscript lecture.mp3 notes/
+fscript lecture.mp3 --last 5:00
+fscript lecture.mp3 --start 10:00 --end 15:00
 fscript lecture.mp3 --text
 fscript lecture.mp3 --text=plain
 fscript lecture.mp3 --text=compact
@@ -47,6 +49,7 @@ The existing options I tested had clear problems for this use case:
 - stores the extracted model in a persistent per-user application data directory
 - keeps the downloaded tarball in the user cache directory
 - accepts local audio/video files in formats supported by `ffmpeg`
+- transcribes just a selected interval with `--start` / `--end`, or `--last 5:00`; timestamps retain their position in the original media
 - accepts remote `http(s)` video/audio URLs supported by `yt-dlp`
 - prefers platform-provided manual subtitles for remote URLs when available and diarization is not active
 - falls back to downloading remote audio and transcribing locally when only auto-captions exist or no captions exist

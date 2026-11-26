@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Transcribe selected media intervals with `--start`, `--end`, or `--last`, keeping original source timestamps.
+- Crop local audio before inference and request remote audio sections through yt-dlp; filter manual captions without loading a model.
+- Document the sequential app roadmap, pinned reference-app study, and CLI architecture guided by clig.dev.
+
 ## 1.1.3 - 2026-06-24
 
 - add a crates.io trusted-publishing path to the tagged GitHub release workflow

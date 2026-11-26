@@ -13,6 +13,7 @@ pub(crate) struct CliArgs {
     pub(crate) output_format: OutputFormat,
     pub(crate) clean_output: bool,
     pub(crate) force_local_for_remote: bool,
+    pub(crate) media_range: crate::media_range::MediaRange,
     pub(crate) chunk_seconds: Option<f64>,
     pub(crate) chunk_overlap_seconds: f64,
     pub(crate) diarization_notice: Option<String>,
@@ -70,6 +71,7 @@ pub(crate) enum OutputFormat {
 #[derive(Debug)]
 pub(crate) struct PreparedAudio {
     pub(crate) wav_path: PathBuf,
+    pub(crate) source_start_s: f64,
     pub(crate) normalized: bool,
     pub(crate) _tempdir: Option<TempDir>,
 }

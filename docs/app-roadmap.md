@@ -8,7 +8,7 @@ outside these commits.
 | Order | Feature | Status | Completion criteria |
 | --- | --- | --- | --- |
 | 0 | Reference study and architecture | Complete | Pin Handy, Say It, and OpenOats source revisions; document reusable patterns and detection behavior. |
-| 1 | Partial transcription | Next | Start/end and last-duration selection for local files, stdin, remote captions and remote audio; crop before inference; preserve source timestamps. CLI E2E, property, and FFmpeg differential checks. |
+| 1 | Partial transcription | Complete | `--start`, `--end`, `--last`; local/stdin/remote audio/captions; original timestamps; [validation evidence](partial-transcription-validation.md). |
 | 2 | Incremental transcription | Planned | Shared bounded PCM/chunk pipeline, flushed versioned JSONL events, early text before download completes, cancellation, one loaded model per job. Measure first-result latency separately from setup. |
 | 3 | External agent notes | Planned | Noninteractive headless process adapters for Claude Code, omp, Codex, and custom commands; transcript via stdin; summaries, decisions, action items; no embedded LLM implementation. |
 | 4 | Desktop file/URL app | Planned | Native macOS shell around the same CLI protocol, drop/open/paste, live transcript, copy/export, cancel, persisted model picker. Button E2E with Computer Use. |
@@ -25,6 +25,8 @@ operation without interaction. A macOS SwiftUI shell launches that CLI and consu
 its structured protocol; it does not implement transcription or notes logic.
 Native capture and EventKit adapters expose noninteractive helper commands as well
 as GUI actions. Keep the existing one-argument file/URL invocation working.
+Use [clig.dev](https://clig.dev/) for CLI design decisions; the concrete contracts
+and compatibility plan live in [cli-architecture.md](cli-architecture.md).
 
 One primary action per context: drop a file or paste a URL to transcribe, hold to
 dictate, click Record for a meeting. Keep advanced controls out of the primary

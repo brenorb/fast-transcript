@@ -8,6 +8,7 @@ mod diarization;
 mod engine;
 mod inference;
 mod input;
+mod media_range;
 mod model;
 mod model_catalog;
 mod output;

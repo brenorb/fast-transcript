@@ -2,7 +2,37 @@ use anyhow::{bail, Context, Result};
 use std::path::Path;
 use std::process::Command;
 
+use crate::media_range::{MediaRange, ResolvedRange};
 use crate::types::{FfprobeOutput, FfprobeStream, PreparedAudio};
+
+fn probe_duration(path: &Path) -> Result<Option<f64>> {
+    let path_argument = std::path::absolute(path)
+        .with_context(|| format!("failed to resolve audio path {}", path.display()))?;
+    let output = Command::new("ffprobe")
+        .args([
+            "-v",
+            "error",
+            "-show_entries",
+            "format=duration",
+            "-of",
+            "json",
+        ])
+        .arg(path_argument)
+        .output()
+        .context("failed to run ffprobe to inspect media duration")?;
+    if !output.status.success() {
+        bail!(
+            "ffprobe failed for {}: {}",
+            path.display(),
+            String::from_utf8_lossy(&output.stderr).trim()
+        );
+    }
+    let info: serde_json::Value =
+        serde_json::from_slice(&output.stdout).context("invalid ffprobe duration response")?;
+    Ok(info["format"]["duration"]
+        .as_str()
+        .and_then(|v| v.parse().ok()))
+}
 
 fn probe_audio_with(ffprobe_program: &str, path: &Path) -> Result<FfprobeStream> {
     let path_argument = std::path::absolute(path)
@@ -40,12 +70,14 @@ fn normalize_audio_with(
     ffprobe_program: &str,
     ffmpeg_program: &str,
     input_path: &Path,
+    range: ResolvedRange,
 ) -> Result<PreparedAudio> {
     let stream = probe_audio_with(ffprobe_program, input_path)?;
-    if is_supported_audio(&stream) {
+    if is_supported_audio(&stream) && !range.is_selected() {
         return Ok(PreparedAudio {
             wav_path: input_path.to_path_buf(),
             normalized: false,
+            source_start_s: 0.0,
             _tempdir: None,
         });
     }
@@ -61,15 +93,24 @@ fn normalize_audio_with(
     eprintln!("normalizing audio...");
     let input_argument = std::path::absolute(input_path)
         .with_context(|| format!("failed to resolve audio path {}", input_path.display()))?;
-    let status = Command::new(ffmpeg_program)
+    let mut command = Command::new(ffmpeg_program);
+    command.args([
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-nostats",
+        "-y",
+        "-nostdin",
+    ]);
+    if range.start_s > 0.0 {
+        command.args(["-ss", &range.start_s.to_string()]);
+    }
+    command.arg("-i").arg(input_argument);
+    if let Some(end_s) = range.end_s {
+        command.args(["-t", &(end_s - range.start_s).to_string()]);
+    }
+    let status = command
         .args([
-            "-hide_banner",
-            "-loglevel",
-            "error",
-            "-nostats",
-            "-y",
-            "-i",
-            input_argument.to_string_lossy().as_ref(),
             "-vn",
             "-sn",
             "-dn",
@@ -90,12 +131,21 @@ fn normalize_audio_with(
     Ok(PreparedAudio {
         wav_path: normalized_path,
         normalized: true,
+        source_start_s: range.start_s,
         _tempdir: Some(tempdir),
     })
 }
 
 pub(crate) fn normalize_audio(input_path: &Path) -> Result<PreparedAudio> {
-    normalize_audio_with("ffprobe", "ffmpeg", input_path)
+    normalize_audio_with("ffprobe", "ffmpeg", input_path, ResolvedRange::default())
+}
+
+pub(crate) fn prepare_audio(input_path: &Path, selection: MediaRange) -> Result<PreparedAudio> {
+    if !selection.is_selected() {
+        return normalize_audio(input_path);
+    }
+    let range = selection.resolve(probe_duration(input_path)?)?;
+    normalize_audio_with("ffprobe", "ffmpeg", input_path, range)
 }
 
 #[cfg(test)]
@@ -163,6 +213,7 @@ mod tests {
             ffprobe.to_string_lossy().as_ref(),
             ffmpeg.to_string_lossy().as_ref(),
             &input,
+            Default::default(),
         )
         .unwrap();
 
@@ -193,6 +244,7 @@ mod tests {
             ffprobe.to_string_lossy().as_ref(),
             ffmpeg.to_string_lossy().as_ref(),
             &input,
+            Default::default(),
         )
         .unwrap();
 

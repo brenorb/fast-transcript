@@ -47,6 +47,7 @@ pub(crate) fn usage() -> String {
         "Examples:".to_string(),
         "  fscript lecture.mp3".to_string(),
         "  fscript lecture.mp3 notes/".to_string(),
+        "  fscript lecture.mp3 --last 5:00".to_string(),
         "  cat lecture.wav | fscript - --text=plain".to_string(),
         "  fscript lecture.mp3 --text=plain --stdout".to_string(),
         "  fscript lecture.mp3 --model parakeet-ultra".to_string(),
@@ -106,6 +107,9 @@ pub(crate) fn usage() -> String {
         String::new(),
         "Input:".to_string(),
         option("- (as input)", "Read piped media; defaults to transcript stdout."),
+        option("--start TIME", "Start at seconds, MM:SS, or HH:MM:SS."),
+        option("--end TIME", "Stop at this source timestamp (exclusive)."),
+        option("--last TIME", "Transcribe only the final duration; e.g. 5:00."),
         String::new(),
         "Remote input:".to_string(),
         option(
@@ -261,6 +265,9 @@ pub(crate) fn command() -> Command {
         ("chunk", None),
         ("overlap", None),
         ("set-default-model", None),
+        ("start", None),
+        ("end", None),
+        ("last", None),
     ] {
         let mut arg = Arg::new(name)
             .long(name)
@@ -520,6 +527,11 @@ fn parse_args_with_diarization_status_and_default(
     }
     let clean_output = !matches.get_flag("raw");
     let force_local_for_remote = matches.get_flag("local");
+    let media_range = crate::media_range::MediaRange::parse(
+        last_value(&matches, "start").as_deref(),
+        last_value(&matches, "end").as_deref(),
+        last_value(&matches, "last").as_deref(),
+    )?;
     let chunk_seconds_override = number(&matches, "chunk")?;
     let chunk_overlap_seconds_override = number(&matches, "overlap")?;
     for (flag, value) in [
@@ -659,6 +671,7 @@ fn parse_args_with_diarization_status_and_default(
         output_format,
         clean_output,
         force_local_for_remote,
+        media_range,
         chunk_seconds,
         chunk_overlap_seconds,
         diarization_notice,
