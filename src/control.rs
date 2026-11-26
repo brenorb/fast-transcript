@@ -18,7 +18,7 @@ fn command() -> Command {
             .arg(Arg::new("destination").help("Output file or directory; - writes to stdout"))
             .arg(Arg::new("output").long("output").short('o').conflicts_with("destination").help("Explicit output file or directory"))
             .arg(Arg::new("stdout").long("stdout").action(ArgAction::SetTrue).conflicts_with_all(["output","destination"]).help("Print the export without saving"))
-            .arg(Arg::new("format").long("format").default_value("text").value_parser(["text","plain","compact","speakers","srt","vtt","json"]).help("Completed document format; text includes timestamps")))
+            .arg(Arg::new("format").long("format").default_value("text").value_parser(["text","plain","compact","speakers","srt","vtt","json","markdown"]).help("Completed document format; text includes timestamps")))
         .subcommand(Command::new("models").about("Inspect models and the shared saved preference")
             .subcommand_required(true).arg_required_else_help(true)
             .subcommand(Command::new("list").about("List the built-in catalog without downloading models"))

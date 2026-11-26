@@ -88,7 +88,8 @@ Explicit per-transcription --model still takes precedence over these defaults.
 Export reads a full fscript JSON transcript, a completed event, or a complete
 version 1 JSONL stream from a file or stdin. It uses the same Rust renderer as
 transcription and never loads a model or decodes media. Plain text input cannot
-recover segment timing and is rejected. Incomplete or failed streams are rejected.
+recover segment timing and is rejected by transcript formats. Incomplete or
+failed streams are rejected.
 
 The default format is text (timestamped); --format also accepts plain, compact,
 speakers (timestamped), srt, vtt, and json. Repetition cleanup follows the usual
@@ -106,6 +107,12 @@ compares document/completed-event/JSONL input, and checks failed writes preserve
 existing files. A 500-case Unicode property test checks that serializing and
 reloading transcripts preserves all seven renderings.
 JSON float parsing preserves round-trip timestamp precision.
+
+Use --format markdown to export existing UTF-8 notes without calling an agent or
+parsing transcript JSON. It preserves the notes, including existing final blank
+lines, and adds a final newline when absent. Its default destination is
+INPUT.export.md. The same atomic writer, source-overwrite guard, stdout, and JSON
+metadata options apply. Empty Markdown is rejected.
 
 ## Errors and cancellation
 

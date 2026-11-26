@@ -86,6 +86,18 @@ class TranscriptExportCLI(unittest.TestCase):
         self.export(self.source, link, success=False)
         self.assertEqual(self.source.read_bytes(), before)
 
+    def test_explicit_markdown_export_preserves_notes_without_calling_an_agent(self):
+        source = self.root / 'notes.md'
+        text = '# Summary\n\nDecisions: ship Friday. 🦀\n\n'
+        source.write_text(text, encoding='utf-8')
+        result = self.export(source, '--format', 'markdown')
+        saved = Path(result.stdout.decode().strip())
+        self.assertEqual(saved, (self.root / 'notes.export.md').resolve())
+        self.assertEqual(saved.read_text(), text)
+        self.assertEqual(self.export(source, '--format', 'markdown', '--stdout').stdout.decode(), text)
+        self.export(source, source, '--format', 'markdown', success=False)
+        self.assertEqual(source.read_text(), text)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -12,21 +12,32 @@ pub(crate) fn run(
     format: &str,
     json: bool,
 ) -> Result<()> {
-    let format = match format {
-        "plain" => OutputFormat::Text(TextFormat::Plain),
-        "compact" => OutputFormat::Text(TextFormat::Compact),
-        "speakers" => OutputFormat::Speakers(SpeakersFormat::Timestamped),
-        "srt" => OutputFormat::Subtitle(SubtitleFormat::Srt),
-        "vtt" => OutputFormat::Subtitle(SubtitleFormat::Vtt),
-        "json" => OutputFormat::Json,
-        _ => OutputFormat::Text(TextFormat::Timestamped),
+    let format = if format == "markdown" {
+        None
+    } else {
+        Some(match format {
+            "plain" => OutputFormat::Text(TextFormat::Plain),
+            "compact" => OutputFormat::Text(TextFormat::Compact),
+            "speakers" => OutputFormat::Speakers(SpeakersFormat::Timestamped),
+            "srt" => OutputFormat::Subtitle(SubtitleFormat::Srt),
+            "vtt" => OutputFormat::Subtitle(SubtitleFormat::Vtt),
+            "json" => OutputFormat::Json,
+            _ => OutputFormat::Text(TextFormat::Timestamped),
+        })
     };
     let source = crate::notes_input::read_transcript(input)?;
-    let result: BenchmarkResult = serde_json::from_value(crate::notes_input::completed_document(
-        &source,
-    )?)
-    .context("export requires a complete fscript JSON transcript or completed JSONL stream")?;
-    let content = crate::output::render_output(&result, format, true)?;
+    let content = if let Some(format) = format {
+        let result: BenchmarkResult = serde_json::from_value(
+            crate::notes_input::completed_document(&source)?,
+        )
+        .context("export requires a complete fscript JSON transcript or completed JSONL stream")?;
+        crate::output::render_output(&result, format, true)?
+    } else {
+        if source.trim().is_empty() {
+            anyhow::bail!("Markdown input is empty");
+        }
+        source.strip_suffix('\n').unwrap_or(&source).to_owned()
+    };
     let output_path = if stdout || output == Some("-") || (input == "-" && output.is_none()) {
         None
     } else {
@@ -41,7 +52,9 @@ pub(crate) fn run(
                 .filter(|stem| !stem.is_empty())
                 .unwrap_or(stem)
         ));
-        let default = crate::delivery::default_output_path(&normalized, format);
+        let default = format
+            .map(|format| crate::delivery::default_output_path(&normalized, format))
+            .unwrap_or_else(|| source.with_extension("export.md"));
         let destination = crate::delivery::OutputDestination::file(
             output.map(Path::new),
             &default,

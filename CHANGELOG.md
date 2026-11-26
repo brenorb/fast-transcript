@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Export generated Markdown notes through `fscriptctl export --format markdown`, preserving the document and reusing atomic output without another agent invocation.
+
 - Reject missing local media and directory inputs before model setup or decoding, with the same direct path errors in batch, streaming, and desktop use.
 
 - Add the native macOS process/protocol client for the desktop app milestone, with pre-EOF pipe delivery, strict JSONL lifecycle checks, cancellation, and CLI/batch differential tests. The desktop interface remains in development.
