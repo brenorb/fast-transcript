@@ -81,6 +81,7 @@ pub(crate) fn run(raw_args: Vec<String>) -> Result<()> {
         std::eprintln!("{notice}");
     }
     let input_source = infer_input_source(&args.input);
+    crate::input::validate_source(&input_source)?;
     if args.stream {
         return crate::streaming::run(&args, input_source);
     }

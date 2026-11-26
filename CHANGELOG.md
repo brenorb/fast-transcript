@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Reject missing local media and directory inputs before model setup or decoding, with the same direct path errors in batch, streaming, and desktop use.
+
 - Add the native macOS process/protocol client for the desktop app milestone, with pre-EOF pipe delivery, strict JSONL lifecycle checks, cancellation, and CLI/batch differential tests. The desktop interface remains in development.
 
 - Export completed JSON/JSONL transcripts with `fscriptctl export`, reusing text, speaker, SRT, VTT, and JSON renderers without rerunning inference.

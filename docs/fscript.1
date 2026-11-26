@@ -328,6 +328,9 @@ or select
 .PP
 If audio inspection fails, install ffmpeg and ffprobe and check the input
 path.
+Missing local files and directory inputs are rejected before model setup or
+media
+decoding, with a direct path error. This applies to batch and streaming jobs.
 For remote download failures, check yt\-dlp or uvx and network access.
 .PP
 If speaker labels are required, pass \fB\-\-diarize coreml\fR. Set

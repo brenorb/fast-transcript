@@ -127,6 +127,17 @@ class StreamingCLI(unittest.TestCase):
         batch = self.fixture.run_cli(self.fixture.source, "--chunk", "2.5", "--overlap", "0.5", "--raw")
         self.assertEqual(stdout.decode().strip(), batch["text"])
 
+    def test_missing_or_directory_input_fails_before_model_and_media_tools(self):
+        self.env['PATH'] = '/missing/media-tools'
+        for source, message in [(self.root / 'missing.wav', b'input file does not exist'),
+                                (self.root, b'input path is a directory')]:
+            result = subprocess.run(self.command(source, '--stream'), env=self.env, capture_output=True, timeout=5)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(result.stdout, b'')
+            self.assertIn(message, result.stderr)
+            self.assertNotIn(b'FFmpeg', result.stderr)
+            self.assertFalse(self.worker_log.exists())
+
     def test_compressed_media_matches_batch_and_empty_input_fails(self):
         for extension in ("flac", "mp3", "m4a"):
             with self.subTest(format=extension):

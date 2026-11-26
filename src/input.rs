@@ -4,6 +4,28 @@ use anyhow::{bail, Context, Result};
 use std::io::{self, Read, Write};
 use tempfile::NamedTempFile;
 
+pub(crate) fn validate_source(source: &crate::types::InputSource) -> Result<()> {
+    if let crate::types::InputSource::LocalPath(path) = source {
+        let metadata = match std::fs::metadata(path) {
+            Ok(metadata) => metadata,
+            Err(error) if error.kind() == io::ErrorKind::NotFound => {
+                bail!("input file does not exist: {}", path.display());
+            }
+            Err(error) => {
+                return Err(error)
+                    .with_context(|| format!("cannot access input file {}", path.display()))
+            }
+        };
+        if metadata.is_dir() {
+            bail!(
+                "input path is a directory: {}; choose an audio or video file",
+                path.display()
+            );
+        }
+    }
+    Ok(())
+}
+
 pub(crate) fn spool_stdin(reader: &mut impl Read, interactive: bool) -> Result<NamedTempFile> {
     if interactive {
         bail!("stdin is a terminal; pass a media path or pipe media: cat lecture.wav | fscript -");

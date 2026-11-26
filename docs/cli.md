@@ -212,6 +212,8 @@ If saved settings are malformed, run `fscript --reset-default-model`, or select
 `--model NAME` explicitly for that invocation.
 
 If audio inspection fails, install ffmpeg and ffprobe and check the input path.
+Missing local files and directory inputs are rejected before model setup or media
+decoding, with a direct path error. This applies to batch and streaming jobs.
 For remote download failures, check yt-dlp or uvx and network access.
 
 If speaker labels are required, pass `--diarize coreml`. Set
