@@ -29,7 +29,7 @@ def run_cli(binary: Path, *args: str) -> str:
 
 class ReleaseArtifactTests(unittest.TestCase):
     def test_release_binary_reports_package_version(self) -> None:
-        for name in ("fscript", "fscriptctl"):
+        for name in ("fscript",):
             with self.subTest(name=name):
                 binary = RELEASE_BINARY.with_name(name)
                 self.assertTrue(binary.exists(), f"missing release binary: {binary}")
@@ -58,8 +58,9 @@ class ReleaseArtifactTests(unittest.TestCase):
                 entrypoints = next(name for name in archive.namelist() if name.endswith(".dist-info/entry_points.txt"))
                 entrypoints = archive.read(entrypoints).decode("utf-8")
                 self.assertIn("fscript = fscript._cli:main", entrypoints)
-                self.assertIn("fscriptctl = fscript._cli:control_main", entrypoints)
-                for name in ("fscript", "fscriptctl"):
+                self.assertEqual([line for line in entrypoints.splitlines() if " = " in line], ["fscript = fscript._cli:main"])
+                self.assertFalse(any(member.endswith("/bin/fscriptctl") for member in archive.namelist()))
+                for name in ("fscript",):
                     with self.subTest(name=name):
                         members = [member for member in archive.namelist() if member.endswith(f"/bin/{name}")]
                         self.assertEqual(len(members), 1, f"expected one bundled {name} in {wheel.name}")

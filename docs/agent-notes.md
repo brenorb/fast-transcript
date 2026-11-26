@@ -1,23 +1,22 @@
 # External agent notes
 
-`fscriptctl notes meeting.txt` saves `meeting.notes.md` and prints its absolute
+`fscript notes meeting.txt` saves `meeting.notes.md` and prints its absolute
 path. It uses the saved agent, otherwise the first installed agent in Codex,
-Claude Code, omp order. Select once with `fscriptctl agents set claude`, or override
+Claude Code, omp order. Select once with `fscript agents set claude`, or override
 one run with `--agent omp`. Discovery never starts an agent or verifies login.
 An unavailable saved agent fails instead of silently switching providers.
 
 ```bash
-fscript meeting.m4a --json
-fscriptctl notes meeting.json
-fscript meeting.m4a --stream --json | fscriptctl notes -
-fscriptctl notes meeting.json --agent codex --model MODEL --stdout --json
-fscriptctl agents add local -- /absolute/path/to/agent --non-interactive
+fscript meeting.m4a
+fscript notes meeting.speakers.txt
+fscript meeting.m4a --stream --json | fscript notes -
+fscript notes meeting.json --agent codex --model MODEL --stdout --json
+fscript agents add local -- /absolute/path/to/agent --non-interactive
 ```
 
 The [offline control manual](control-cli.md) documents all flags, settings,
-environment overrides, output destinations, and exit behavior. Both release
-archives and Python wheels include `fscript` and `fscriptctl`; `cargo install
-fast-transcript` installs both. Existing `fscript MEDIA` behavior is preserved.
+environment overrides, output destinations, and exit behavior. Release archives, Python wheels, and `cargo install fast-transcript` install
+only `fscript`. Everyday `fscript MEDIA` behavior is preserved.
 
 The shared notes input layer accepts UTF-8 text, fscript JSON transcripts, completed
 version 1 stream event objects, or complete version 1 JSONL streams. Timed JSON
@@ -64,8 +63,8 @@ stream lifecycles before any agent is started. Eleven process E2E tests use
 deterministic executable fixtures to compare all three adapters, file/stdin and
 JSON/JSONL paths, literal custom arguments, saved selection, failures, timeouts,
 and descendant cleanup. They do not use paid models or authenticate in CI.
-Packaging checks compare both bundled binaries' versions, help, and offline
-manuals with their release counterparts and exercise both Python entrypoints.
+Packaging checks compare the bundled binary's version, help, and offline manual
+with the release binary and exercise the single Python entrypoint.
 
 Real CLI process validation on Apple M5 Max arm64, 2026-11-26, used a four-line
 synthetic planning transcript for Codex and omp. Elapsed time includes CLI startup, normalization,

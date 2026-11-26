@@ -13,7 +13,15 @@ use crate::types::{CliArgs, OutputFormat, SpeakersFormat, SubtitleFormat, TextFo
 const DEFAULT_LSEEND_THRESHOLD: f64 = 0.3;
 
 pub(crate) fn introduction() -> &'static str {
-    "fscript — transcribe local audio/video and remote media URLs.\n\nUsage:\n  fscript <media-or-url> [destination] [options]\n\nExamples:\n  fscript lecture.mp3\n  fscript lecture.mp3 --text=plain --stdout\n\nRun fscript --help for all options and defaults."
+    "fscript — transcribe local media and create notes.\n\nUsage:\n  fscript <media-or-url> [destination] [options]\n  fscript <action> [options]\n\nExamples:\n  fscript lecture.mp3\n  fscript notes meeting.json\n  fscript models\n\nRun fscript --help for all options and defaults."
+}
+
+pub(crate) fn manual() -> String {
+    format!(
+        "{}\n\n{}",
+        include_str!("../docs/cli.md"),
+        include_str!("../docs/control-cli.md")
+    )
 }
 
 pub(crate) fn usage() -> String {
@@ -172,6 +180,8 @@ pub(crate) fn usage() -> String {
         "Report issues: https://github.com/brenorb/fast-transcript/issues".to_string(),
     ]
     .join("\n")
+        + "\n\n"
+        + &crate::control::usage_summary()
 }
 
 pub(crate) fn version_string() -> String {

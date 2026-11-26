@@ -54,18 +54,15 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--check', action='store_true', help='fail if the generated page is stale')
     args = parser.parse_args()
-    for source, target, program, date in [
-        ('cli.md', 'fscript.1', 'FSCRIPT', 'October 22, 2026'),
-        ('control-cli.md', 'fscriptctl.1', 'FSCRIPTCTL', 'November 26, 2026'),
-    ]:
-        output = ROOT / 'docs' / target
-        generated = render((ROOT / 'docs' / source).read_text(), program, date)
-        if args.check:
-            if not output.exists() or output.read_text() != generated:
-                print(f'{target} is stale; run python3 scripts/generate_man_page.py', file=sys.stderr)
-                return 1
-        else:
-            output.write_text(generated)
+    output = ROOT / 'docs/fscript.1'
+    source = (ROOT / 'docs/cli.md').read_text() + '\n\n' + (ROOT / 'docs/control-cli.md').read_text()
+    generated = render(source, 'FSCRIPT', 'November 26, 2026')
+    if args.check:
+        if not output.exists() or output.read_text() != generated:
+            print('fscript.1 is stale; run python3 scripts/generate_man_page.py', file=sys.stderr)
+            return 1
+    else:
+        output.write_text(generated)
     return 0
 
 

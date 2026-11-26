@@ -1,26 +1,27 @@
-# fscriptctl
+# fscript actions
 
-## Name
+## Additional actions
 
-fscriptctl - noninteractive transcription controls and external-agent notes.
+These subcommands are part of the same fscript executable as file/URL transcription.
 
-## Synopsis
 
 ```text
-fscriptctl notes TRANSCRIPT [destination] [options]
-fscriptctl export TRANSCRIPT [destination] [--format FORMAT] [options]
-fscriptctl agents list [--json]
-fscriptctl agents set NAME
-fscriptctl agents add NAME -- COMMAND [ARGS...]
-fscriptctl agents remove NAME
-fscriptctl agents reset
-fscriptctl models list [--json]
-fscriptctl models get [--json]
-fscriptctl models set NAME
-fscriptctl models reset
+fscript notes TRANSCRIPT [destination] [options]
+fscript export TRANSCRIPT [destination] [--format FORMAT] [options]
+fscript agents [--json]
+fscript agents set NAME
+fscript agents add NAME -- COMMAND [ARGS...]
+fscript agents remove NAME
+fscript agents reset
+fscript models [--json]
+fscript models get [--json]
+fscript models set NAME
+fscript models reset
+fscript skill
+fscript skill path
 ```
 
-## Description
+## Action defaults
 
 Notes use an installed Codex, Claude Code, omp, or saved custom command. The agent
 receives transcript data on stdin and returns Markdown. Default selection is the
@@ -28,7 +29,7 @@ saved agent, otherwise the first available built-in in codex/claude/omp order.
 Agent availability does not verify login. Sign in using the agent's own CLI;
 Fast Transcript never starts an interactive login flow.
 
-## Options
+## Action options
 
 - `--agent NAME`: override the selected note agent; auto uses automatic detection.
 - `--model NAME`: override a built-in agent's language model. Custom commands own their model arguments.
@@ -43,7 +44,7 @@ Fast Transcript never starts an interactive login flow.
 - `--manual`: complete offline control manual.
 - `--man-page`: export this manual in roff format.
 
-## Output
+## Action output
 
 File input saves INPUT.notes.md and prints its absolute path. Piped input defaults
 to stdout. A JSON transcript or complete JSONL stream retains source timestamps
@@ -52,9 +53,19 @@ one completion object instead of a path; the default Markdown file is still save
 unless --stdout or piped-input defaults select stdout. Failed generation leaves
 an existing destination unchanged and cannot overwrite the source transcript.
 
+## Agent skill
+
+Run fscript skill to print the bundled SKILL.md as Markdown. It needs no model,
+login, network, or configuration and does not install anything. For tools that
+need a file path, fscript skill path materializes the same bundled content in
+the application configuration directory under skills/fast-transcript/SKILL.md.
+FSCRIPT_SKILL_DIR overrides that cache directory. With --json, skill returns
+version, name, content, and an optional path. This follows Say It's skill/path
+convention while keeping bare skill useful with no additional arguments.
+
 ## Agent settings
 
-Use agents set NAME to save a built-in or custom agent, or agents set auto to clear
+Use fscript agents set NAME to save a built-in or custom agent, or agents set auto to clear
 the preference. Agents add stores a literal program/argument array; no shell is
 used. Custom commands read the prompt on stdin and write only Markdown to stdout.
 They run in an isolated temporary working directory, so use absolute argument
@@ -70,7 +81,7 @@ FSCRIPT_OMP_BINARY override built-in executables.
 
 ## Models
 
-Models list uses the same catalog as fscript --list-models. Models set accepts
+Models uses the same catalog as fscript --list-models. Models set accepts
 the same names and aliases as fscript --set-default-model and saves to the same
 configuration file. Models reset clears only the saved preference and can recover
 malformed settings. These commands never download a model or start inference.

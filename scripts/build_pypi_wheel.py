@@ -41,7 +41,6 @@ def binary_version(binary_path: Path, name: str = "fscript") -> str:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--binary", type=Path, default=DEFAULT_BINARY)
-    parser.add_argument("--control-binary", type=Path, help="Matching fscriptctl binary; defaults to the sibling of --binary")
     parser.add_argument("--out-dir", type=Path, default=REPO_ROOT / "dist-pypi")
     return parser.parse_args()
 
@@ -69,20 +68,16 @@ def main() -> int:
         raise SystemExit(f"missing built binary: {binary_path}")
 
     expected_version = cargo_version()
-    control_binary = (args.control_binary or binary_path.with_name("fscriptctl.exe" if os.name == "nt" else "fscriptctl")).resolve()
-    for name, executable in [("fscript", binary_path), ("fscriptctl", control_binary)]:
-        if not executable.is_file():
-            raise SystemExit(f"missing built binary: {executable}; build both binaries with cargo build --release")
-        actual_version = binary_version(executable, name)
-        if actual_version != expected_version:
-            raise SystemExit(f"{name} version {actual_version} does not match Cargo.toml {expected_version}; rebuild both binaries")
+    actual_version = binary_version(binary_path)
+    if actual_version != expected_version:
+        raise SystemExit(f"fscript version {actual_version} does not match Cargo.toml {expected_version}; rebuild the binary")
 
     out_dir.mkdir(parents=True, exist_ok=True)
 
     with tempfile.TemporaryDirectory(prefix="fscript-pypi-") as temp_dir:
         stage_root = Path(temp_dir) / "stage"
         stage_root.mkdir()
-        copy_stage_tree(stage_root, [binary_path, control_binary])
+        copy_stage_tree(stage_root, [binary_path])
         subprocess.run(
             [sys.executable, "-m", "build", "--wheel", "--outdir", str(out_dir)],
             cwd=stage_root,

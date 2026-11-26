@@ -10,6 +10,7 @@ The CLI binary is called **`fscript`**:
 
 ```bash
 fscript lecture.mp3
+fscript "https://example.com/video"
 fscript lecture.mp3 notes/
 fscript lecture.mp3 --last 5:00
 fscript lecture.mp3 --stream
@@ -29,33 +30,36 @@ fscript lecture.mp3 --model parakeet-ultra
 fscript --list-models
 ```
 
-Create notes from a completed transcript with the companion control CLI:
+Create notes from a completed transcript with the same command:
 
 ```bash
-fscriptctl notes lecture.speakers.txt
-fscript lecture.mp3 --stream --json | fscriptctl notes -
-fscriptctl agents list
-fscriptctl agents set claude
+fscript notes lecture.speakers.txt
+fscript lecture.mp3 --stream --json | fscript notes -
+fscript agents
+fscript agents set claude
 ```
 
 Notes use your installed Codex, Claude Code, omp, or a saved custom command.
 The default requires no flags and saves `lecture.speakers.notes.md`. Sign in with
 the agent's own CLI first. Its configured provider handles the language model;
 Fast Transcript keeps transcription local. See [agent notes](docs/agent-notes.md)
-and `fscriptctl notes --help` for model overrides, stdout/JSON, and custom agents.
+and `fscript notes --help` for model overrides, stdout/JSON, and custom agents.
 
-`fscriptctl models list --json` exposes the same model catalog for desktop clients
-and agents. `fscriptctl models set ultra` saves the same preference as
+`fscript models --json` exposes the same model catalog for desktop clients
+and agents. `fscript models set ultra` saves the same preference as
 `fscript --set-default-model ultra`; `models get --json` distinguishes the saved
 choice from an active `FSCRIPT_MODEL_URL` override.
 
 Export a completed transcript without running the model again:
-`fscriptctl export lecture.transcript.json --format srt`. The default export is
+`fscript export lecture.transcript.json --format srt`. The default export is
 timestamped text; `--stdout` prints it, and JSONL from `--stream --json` also works.
 
 `--srt` and `--vtt` subtitle output are experimental.
 
 That is the whole point of this project. One command. Large audio. No babysitting.
+
+For agent instructions, run `fscript skill`. Like Say It's skill interface,
+`fscript skill path` returns a local Markdown file path when a tool needs one.
 
 ## Desktop app
 

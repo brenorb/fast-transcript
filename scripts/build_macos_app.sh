@@ -48,7 +48,7 @@ with tempfile.TemporaryDirectory(prefix='.fast-transcript-app-', dir=output.pare
     for directory in (executables, helpers, resources):
         directory.mkdir(parents=True)
     shutil.copy2(app_binary, executables / 'FastTranscriptApp')
-    for name in ('fscript', 'fscriptctl'):
+    for name in ('fscript',):
         binary = root / 'target' / configuration / name
         actual = subprocess.check_output([str(binary), '--version'], text=True).strip()
         if actual != f'{name} {version}':

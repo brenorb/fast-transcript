@@ -1,32 +1,87 @@
-//! Explicit control commands; fscript's filename-based interface stays separate.
+//! Explicit actions under the single fscript executable; all jobs share Rust services.
 
 use anyhow::{bail, Context, Result};
 use clap::{Arg, ArgAction, ArgMatches, Command};
 use std::path::PathBuf;
 
+/// Known action names are reserved. Use ./notes or -- notes for a literal file.
+/// Recognize only flags shared by both interfaces, never skip option values.
+pub(crate) fn arguments(raw: &[String]) -> Option<Vec<String>> {
+    let position = raw
+        .iter()
+        .position(|arg| !matches!(arg.as_str(), "--json" | "--quiet" | "-q"))?;
+    let command = command();
+    let is_action = |name: &str| {
+        command
+            .get_subcommands()
+            .any(|action| action.get_name() == name)
+    };
+    if is_action(&raw[position]) {
+        return Some(raw.to_vec());
+    }
+    if raw[position] == "help" && raw.get(position + 1).is_some_and(|arg| is_action(arg)) {
+        let mut args = raw[..position].to_vec();
+        args.extend_from_slice(&raw[position + 1..]);
+        args.push("--help".into());
+        return Some(args);
+    }
+    None
+}
+
+pub(crate) fn validate_arguments(raw: &[String]) -> std::result::Result<(), clap::Error> {
+    matches(raw).map(|_| ())
+}
+
+#[cfg(test)]
+mod routing_tests {
+    use super::*;
+
+    fn args(values: &[&str]) -> Vec<String> {
+        values.iter().map(|value| (*value).into()).collect()
+    }
+
+    #[test]
+    fn actions_share_one_entrypoint_without_consuming_media_option_values() {
+        for action in ["notes", "export", "models", "agents", "skill"] {
+            assert_eq!(arguments(&args(&[action])), Some(args(&[action])));
+            assert!(arguments(&args(&["--quiet", "--json", action])).is_some());
+            assert!(arguments(&args(&["--", action])).is_none());
+            assert!(arguments(&args(&["--model", action, "audio.wav"])).is_none());
+            for index in 0..250 {
+                assert!(arguments(&[format!("./{action}"), format!("/tmp/{index}")]).is_none());
+                assert!(arguments(&[format!("{action}-{index}.wav")]).is_none());
+            }
+        }
+        assert_eq!(
+            arguments(&args(&["help", "models", "set"])),
+            Some(args(&["models", "set", "--help"]))
+        );
+    }
+}
+
 fn command() -> Command {
-    Command::new("fscriptctl").version(env!("CARGO_PKG_VERSION"))
+    Command::new("fscript").version(env!("CARGO_PKG_VERSION"))
         .about("Transcription jobs and external-agent notes")
         .color(clap::ColorChoice::Never)
         .arg(Arg::new("quiet").long("quiet").short('q').global(true).action(ArgAction::SetTrue).help("Suppress status; keep results and errors"))
         .arg(Arg::new("json").long("json").global(true).action(ArgAction::SetTrue).help("Print machine-readable completion data"))
         .arg(Arg::new("manual").long("manual").global(true).action(ArgAction::SetTrue).help("Read the complete offline control manual"))
         .arg(Arg::new("man-page").long("man-page").action(ArgAction::SetTrue).help("Export the control manual for man(1)"))
+        .subcommand(Command::new("skill").about("Print the bundled agent skill")
+            .subcommand(Command::new("path").about("Print a local path to the bundled skill")))
         .subcommand(Command::new("export").about("Export a completed transcript without transcribing again")
-            .after_help("Examples:\n  fscriptctl export meeting.json\n  fscriptctl export meeting.json --format srt\n  fscript media.wav --stream --json | fscriptctl export - --format plain")
+            .after_help("Examples:\n  fscript export meeting.json\n  fscript export meeting.json --format srt\n  fscript media.wav --stream --json | fscript export - --format plain")
             .arg(Arg::new("input").required(true).help("Complete fscript JSON/JSONL file, or - for stdin"))
             .arg(Arg::new("destination").help("Output file or directory; - writes to stdout"))
             .arg(Arg::new("output").long("output").short('o').conflicts_with("destination").help("Explicit output file or directory"))
             .arg(Arg::new("stdout").long("stdout").action(ArgAction::SetTrue).conflicts_with_all(["output","destination"]).help("Print the export without saving"))
             .arg(Arg::new("format").long("format").default_value("text").value_parser(["text","plain","compact","speakers","srt","vtt","json","markdown"]).help("Completed document format; text includes timestamps")))
         .subcommand(Command::new("models").about("Inspect models and the shared saved preference")
-            .subcommand_required(true).arg_required_else_help(true)
-            .subcommand(Command::new("list").about("List the built-in catalog without downloading models"))
             .subcommand(Command::new("get").about("Show the effective model and preference sources"))
             .subcommand(Command::new("set").about("Save a predefined model or alias").arg(Arg::new("name").required(true)))
             .subcommand(Command::new("reset").about("Clear the saved preference; leave cached models untouched")))
         .subcommand(Command::new("notes").about("Create notes using an installed headless agent")
-            .after_help("Examples:\n  fscriptctl notes meeting.txt\n  fscriptctl notes meeting.json --agent claude\n  fscript media.wav --stream --json | fscriptctl notes -\n  fscriptctl notes meeting.txt --stdout --json")
+            .after_help("Examples:\n  fscript notes meeting.txt\n  fscript notes meeting.json --agent claude\n  fscript media.wav --stream --json | fscript notes -\n  fscript notes meeting.txt --stdout --json")
             .arg(Arg::new("input").required(true).help("UTF-8 transcript file, fscript JSON/JSONL, or - for stdin"))
             .arg(Arg::new("destination").help("Notes file or directory; - writes notes to stdout"))
             .arg(Arg::new("output").long("output").short('o').conflicts_with("destination").help("Explicit notes file or directory"))
@@ -36,19 +91,16 @@ fn command() -> Command {
             .arg(Arg::new("input-format").long("input-format").default_value("auto").value_parser(["auto", "text", "json", "jsonl"]).help("Transcript input format"))
             .arg(Arg::new("timeout").long("timeout").default_value("300").help("Agent execution timeout in seconds")))
         .subcommand(Command::new("agents").about("Inspect or choose headless note agents")
-            .subcommand_required(true).arg_required_else_help(true)
-            .subcommand(Command::new("list").about("List agents and the effective default without starting them"))
             .subcommand(Command::new("set").about("Save the default agent; auto restores automatic detection").arg(Arg::new("name").required(true)))
             .subcommand(Command::new("add").about("Save a custom stdin-to-Markdown command")
-                .after_help("Example: fscriptctl agents add local -- /absolute/path/to/agent --non-interactive")
+                .after_help("Example: fscript agents add local -- /absolute/path/to/agent --non-interactive")
                 .arg(Arg::new("name").required(true)).arg(Arg::new("command").required(true).last(true).num_args(1..)))
             .subcommand(Command::new("remove").about("Remove a saved custom command").arg(Arg::new("name").required(true)))
             .subcommand(Command::new("reset").about("Reset note-agent settings; leave models and agent logins untouched")))
 }
 
 fn matches(raw: &[String]) -> std::result::Result<ArgMatches, clap::Error> {
-    command()
-        .try_get_matches_from(std::iter::once("fscriptctl".to_owned()).chain(raw.iter().cloned()))
+    command().try_get_matches_from(std::iter::once("fscript".to_owned()).chain(raw.iter().cloned()))
 }
 
 pub(crate) fn needs_supervision(raw: &[String]) -> bool {
@@ -77,27 +129,79 @@ pub(crate) fn run(raw: Vec<String>) -> Result<()> {
     };
     let _scope = crate::diagnostics::Scope::enter(matches.get_flag("quiet"));
     if matches.get_flag("manual") {
-        return print(include_str!("../docs/control-cli.md"));
+        return print(&crate::cli::manual());
     }
     if matches.get_flag("man-page") {
-        return print(include_str!("../docs/fscriptctl.1"));
+        return print(include_str!("../docs/fscript.1"));
     }
     let json = matches.get_flag("json");
     match matches.subcommand() {
+        Some(("skill", values)) => {
+            let content = include_str!("../skills/fast-transcript/SKILL.md");
+            let path = if values.subcommand_name() == Some("path") {
+                let directory = std::env::var_os("FSCRIPT_SKILL_DIR")
+                    .map(PathBuf::from)
+                    .unwrap_or_else(|| {
+                        crate::settings::config_directory().join("skills/fast-transcript")
+                    });
+                let target = directory.join("SKILL.md");
+                if std::fs::read_to_string(&target).ok().as_deref() != Some(content) {
+                    crate::delivery::write_output_file(
+                        content.strip_suffix('\n').unwrap_or(content),
+                        &target,
+                    )?;
+                }
+                Some(std::path::absolute(target)?)
+            } else {
+                None
+            };
+            if json {
+                print(&format!(
+                    "{}\n",
+                    serde_json::to_string_pretty(
+                        &serde_json::json!({"version":1,"name":"fast-transcript","content":content,"path":path})
+                    )?
+                ))
+            } else if let Some(path) = path {
+                print(&format!("{}\n", path.display()))
+            } else {
+                print(content)
+            }
+        }
         Some(("notes", values)) => {
-            let timeout: f64 = values.get_one::<String>("timeout").unwrap().parse().context("--timeout requires positive finite seconds")?;
-            if !timeout.is_finite() || timeout <= 0.0 { bail!("--timeout must be positive finite seconds"); }
-            let destination = values.get_one::<String>("output").or(values.get_one::<String>("destination"));
+            let timeout: f64 = values
+                .get_one::<String>("timeout")
+                .unwrap()
+                .parse()
+                .context("--timeout requires positive finite seconds")?;
+            if !timeout.is_finite() || timeout <= 0.0 {
+                bail!("--timeout must be positive finite seconds");
+            }
+            let destination = values
+                .get_one::<String>("output")
+                .or(values.get_one::<String>("destination"));
             let stdout = values.get_flag("stdout") || destination.is_some_and(|path| path == "-");
-            let format = match values.get_one::<String>("input-format").map(String::as_str).unwrap() {
-                "text" => crate::notes_input::InputFormat::Text, "json" => crate::notes_input::InputFormat::Json,
-                "jsonl" => crate::notes_input::InputFormat::Jsonl, _ => crate::notes_input::InputFormat::Auto,
+            let format = match values
+                .get_one::<String>("input-format")
+                .map(String::as_str)
+                .unwrap()
+            {
+                "text" => crate::notes_input::InputFormat::Text,
+                "json" => crate::notes_input::InputFormat::Json,
+                "jsonl" => crate::notes_input::InputFormat::Jsonl,
+                _ => crate::notes_input::InputFormat::Auto,
             };
             let result = crate::notes::generate(crate::notes::NotesOptions {
-                input: values.get_one::<String>("input").unwrap().clone(), format,
-                agent: values.get_one::<String>("agent").cloned(), model: values.get_one::<String>("model").cloned(),
-                output: destination.filter(|path| path.as_str() != "-").map(PathBuf::from), stdout,
-                timeout: std::time::Duration::try_from_secs_f64(timeout).context("--timeout is outside the supported duration range")?,
+                input: values.get_one::<String>("input").unwrap().clone(),
+                format,
+                agent: values.get_one::<String>("agent").cloned(),
+                model: values.get_one::<String>("model").cloned(),
+                output: destination
+                    .filter(|path| path.as_str() != "-")
+                    .map(PathBuf::from),
+                stdout,
+                timeout: std::time::Duration::try_from_secs_f64(timeout)
+                    .context("--timeout is outside the supported duration range")?,
             })?;
             crate::notes::emit(&result, json)
         }
@@ -105,16 +209,38 @@ pub(crate) fn run(raw: Vec<String>) -> Result<()> {
         Some(("models", values)) => run_models(values, json),
         Some(("export", values)) => crate::export::run(
             values.get_one::<String>("input").unwrap(),
-            values.get_one::<String>("output").or(values.get_one::<String>("destination")).map(String::as_str),
-            values.get_flag("stdout"), values.get_one::<String>("format").unwrap(), json,
+            values
+                .get_one::<String>("output")
+                .or(values.get_one::<String>("destination"))
+                .map(String::as_str),
+            values.get_flag("stdout"),
+            values.get_one::<String>("format").unwrap(),
+            json,
         ),
-        _ => print("fscriptctl — transcription controls and external-agent notes\n\nUsage: fscriptctl <command> [options]\n\nExamples:\n  fscriptctl notes meeting.txt\n  fscriptctl agents list\n\nRun fscriptctl --help for all commands.\n"),
+        _ => print(&crate::cli::usage()),
     }
+}
+
+pub(crate) fn usage_summary() -> String {
+    let command = command();
+    let mut lines = vec!["Actions (run fscript ACTION --help for details):".to_owned()];
+    for action in command.get_subcommands() {
+        lines.push(format!(
+            "  {:<25} {}",
+            action.get_name(),
+            action
+                .get_about()
+                .map(ToString::to_string)
+                .unwrap_or_default()
+        ));
+    }
+    lines.push("  Use an explicit path, such as ./notes, for files named after actions.".into());
+    lines.join("\n")
 }
 
 fn run_models(matches: &ArgMatches, json: bool) -> Result<()> {
     let store = crate::settings::DefaultModelStore::configured();
-    let (operation, values) = matches.subcommand().context("choose a models command")?;
+    let (operation, values) = matches.subcommand().unwrap_or(("list", matches));
     match operation {
         "set" => {
             let model = store.save(values.get_one::<String>("name").unwrap())?;
@@ -159,7 +285,7 @@ fn print(text: &str) -> Result<()> {
 
 fn run_agents(matches: &ArgMatches, json: bool) -> Result<()> {
     let store = crate::agents::AgentStore::configured();
-    let (operation, values) = matches.subcommand().context("choose an agents command")?;
+    let (operation, values) = matches.subcommand().unwrap_or(("list", matches));
     if operation == "reset" {
         store.reset()?;
         if json {

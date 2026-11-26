@@ -43,9 +43,9 @@ jobs:
           version="${GITHUB_REF_NAME:-dev}"
           archive="fast-transcript-${version}-${{ matrix.asset_suffix }}.tar.gz"
           mkdir -p dist/staging
-          cp target/release/fscript target/release/fscriptctl dist/staging/
+          cp target/release/fscript dist/staging/
           cp README.md LICENSE dist/staging/
-          tar -C dist/staging -czf "dist/${archive}" fscript fscriptctl README.md LICENSE
+          tar -C dist/staging -czf "dist/${archive}" fscript README.md LICENSE
           shasum -a 256 "dist/${archive}" > "dist/${archive}.sha256"
       - name: Build PyPI wheel
         run: uv run --no-project --with build python scripts/build_pypi_wheel.py --out-dir dist-pypi
@@ -60,8 +60,6 @@ jobs:
           python -m pip install dist-pypi/*.whl
           fscript --version
           fscript --help >/dev/null
-          fscriptctl --version
-          fscriptctl --help >/dev/null
       - uses: actions/upload-artifact@v5
         with:
           name: ${{ matrix.artifact_name }}

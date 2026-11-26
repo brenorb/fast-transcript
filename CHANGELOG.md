@@ -2,22 +2,26 @@
 
 ## Unreleased
 
+- Add fscript skill for bundled agent instructions and fscript skill path for a Say It-style local skill path, without model startup or login.
+
+- Consolidate every action under fscript, removing fscriptctl from binaries, packages, and the desktop. Everyday file/URL transcription still needs no subcommand or extra flags; model/agent catalogs default to listing.
+
 - Add the native macOS file/URL app with incremental text, partial selection, shared model/agent preferences, copy/export, external notes, cancellation, and supervised cleanup on Quit.
 - Build a local ad-hoc-signed app containing matching CLI helpers; add native drag transport properties and app-bundle checks to macOS CI.
 
-- Export generated Markdown notes through `fscriptctl export --format markdown`, preserving the document and reusing atomic output without another agent invocation.
+- Export generated Markdown notes through `fscript export --format markdown`, preserving the document and reusing atomic output without another agent invocation.
 
 - Reject missing local media and directory inputs before model setup or decoding, with the same direct path errors in batch, streaming, and desktop use.
 
 - Add the native macOS process/protocol client for the desktop app milestone, with pre-EOF pipe delivery, strict JSONL lifecycle checks, cancellation, and CLI/batch differential tests. The desktop interface remains in development.
 
-- Export completed JSON/JSONL transcripts with `fscriptctl export`, reusing text, speaker, SRT, VTT, and JSON renderers without rerunning inference.
+- Export completed JSON/JSONL transcripts with `fscript export`, reusing text, speaker, SRT, VTT, and JSON renderers without rerunning inference.
 
-- Expose the shared model catalog, saved preference, and effective environment override through noninteractive `fscriptctl models` commands and versioned JSON.
+- Expose the shared model catalog, saved preference, and effective environment override through noninteractive `fscript models` commands and versioned JSON.
 
-- Add `fscriptctl notes TRANSCRIPT` for English summaries, key points, decisions, action items, and open questions using installed Codex, Claude Code, omp, or literal custom commands.
+- Add `fscript notes TRANSCRIPT` for English summaries, key points, decisions, action items, and open questions using installed Codex, Claude Code, omp, or literal custom commands.
 - Save agent preferences, accept complete text/JSON/JSONL input through files or stdin, preserve source timestamps, and share timeout/cancellation and atomic output behavior across providers.
-- Bundle `fscriptctl` beside `fscript` in release archives and Python wheels, with offline command manuals and matching artifact checks.
+- Bundle the single `fscript` executable with offline help/manuals and matching artifact checks.
 
 - Stream local files, piped media, and remote audio through a shared bounded chunk pipeline with early text and versioned JSONL events.
 - Reuse the loaded model for a streaming job, support final exports and optional final diarization, and clean up job processes on cancellation or closed stdout.

@@ -10,13 +10,21 @@ fscript - transcribe local audio, video, and remote media URLs.
 fscript <media-or-url> [destination] [options]
 fscript - [destination] [options]
 fscript help [manual]
-fscript --list-models
+fscript models
+fscript notes TRANSCRIPT
+fscript export TRANSCRIPT
+fscript agents
+fscript skill
 fscript --set-default-model NAME
 fscript --get-default-model
 fscript --reset-default-model
 ```
 
 ## Description
+
+Everyday use is `fscript video.mp4` or `fscript "https://example.com/video"`; no
+extra flags or subcommands are required. Distinct actions use the same executable.
+Files named after actions use an explicit path such as `./notes`.
 
 With a local file or URL, fscript writes a transcript file and prints its absolute
 path to stdout. Progress, warnings, and completion notices go to stderr. Animated progress

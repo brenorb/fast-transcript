@@ -18,7 +18,10 @@ pub(crate) fn run(raw_args: Vec<String>) -> Result<()> {
     } else {
         raw_args
     };
-    if raw_args.is_empty() {
+    if raw_args
+        .iter()
+        .all(|arg| matches!(arg.as_str(), "--quiet" | "-q"))
+    {
         return write_stdout(
             &mut io::stdout().lock(),
             format_args!("{}\n", crate::cli::introduction()),
@@ -56,7 +59,7 @@ pub(crate) fn run(raw_args: Vec<String>) -> Result<()> {
     if matches.get_flag("manual") {
         return write_stdout(
             &mut io::stdout().lock(),
-            format_args!("{}", include_str!("../docs/cli.md")),
+            format_args!("{}", crate::cli::manual()),
         );
     }
     if matches.get_flag("man-page") {

@@ -7,7 +7,7 @@ import unittest
 
 from tests import test_media_range_cli as media_fixture
 
-CONTROL = Path(os.environ.get('FSCRIPTCTL_TEST_BINARY', Path(__file__).resolve().parents[1] / 'target/release/fscriptctl')).resolve()
+CONTROL = Path(os.environ.get('FSCRIPT_TEST_BINARY', Path(__file__).resolve().parents[1] / 'target/release/fscript')).resolve()
 
 
 class TranscriptExportCLI(unittest.TestCase):

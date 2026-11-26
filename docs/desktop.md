@@ -23,7 +23,7 @@ open 'target/desktop/Fast Transcript.app'
 
 Use --debug for a faster development build or --output APP_PATH to choose another
 bundle location. The builder stages a complete app beside its destination,
-checks both command versions, copies the matching fscript/fscriptctl executables,
+checks the command version, copies the matching fscript executable,
 and applies an ad-hoc signature. It replaces only a prior Fast Transcript bundle.
 This is a local development build; signing/notarization and release distribution
 are a separate roadmap milestone.
@@ -41,18 +41,18 @@ first transcription when needed, not during application startup or model selecti
 | Open/drop/paste/Transcribe | `fscript MEDIA --stream --json --output RESULT.json` |
 | Last duration | Add `--last 5:00`. |
 | Start/end | Add `--start 10:00 --end 15:00`. |
-| Model picker | `fscriptctl models list --json`, `fscriptctl models set NAME`. |
-| Agent picker | `fscriptctl agents list --json`, `fscriptctl agents set NAME`. |
-| Create notes | `fscriptctl notes RESULT.json --output notes.md --json`. |
-| Export transcript | `fscriptctl export RESULT.json --format srt --output transcript.srt`. |
-| Export notes | `fscriptctl export notes.md --format markdown --output exported.md`. |
-| Copy | Read the CLI-provided text; scripts can pipe `fscriptctl export RESULT.json --format compact --stdout` to a clipboard tool. |
+| Model picker | `fscript models --json`, `fscript models set NAME`. |
+| Agent picker | `fscript agents --json`, `fscript agents set NAME`. |
+| Create notes | `fscript notes RESULT.json --output notes.md --json`. |
+| Export transcript | `fscript export RESULT.json --format srt --output transcript.srt`. |
+| Export notes | `fscript export notes.md --format markdown --output exported.md`. |
+| Copy | Read the CLI-provided text; scripts can pipe `fscript export RESULT.json --format compact --stdout` to a clipboard tool. |
 | Cancel/Quit during work | Send SIGTERM to the CLI supervisor; owned helpers are reaped. |
 
 Model choice saves the same preference used by the CLI. A FSCRIPT_MODEL_URL
 environment override still wins and is identified in the model menu. Notes use
 the installed agent's own login and configured model provider. Configure custom
-agent commands through fscriptctl; ordinary use requires only Create notes.
+agent commands through fscript; ordinary use requires only Create notes.
 
 The app keeps one current job. Completed JSON transcripts and Markdown notes are
 saved under ~/Library/Application Support/fast-transcript/desktop/UUID. Export
@@ -62,7 +62,7 @@ not label it complete or allow a completed-document export. A transcript is only
 successful after a completed event and zero process status.
 
 FSCRIPT_APP_DATA_DIR overrides desktop output storage. FSCRIPT_APP_HELPERS points
-to a directory containing both commands for development; normal bundles locate
+to a directory containing fscript for development; normal bundles locate
 Contents/Helpers. Existing CLI configuration/cache/runtime environment overrides
 remain supported. Test settings must be isolated with FSCRIPT_CONFIG_FILE and
 FSCRIPT_NOTES_CONFIG_FILE rather than changing the user's saved defaults.
@@ -102,7 +102,7 @@ transport cases. The real CLI and FFmpeg run with a deterministic ASR worker;
 these checks download no model and call no paid agent. Running swift test directly
 skips the three fixture-dependent integration cases unless their environment is
 supplied. macOS CI runs the full script and verifies the built app signature and
-bundled commands. See [desktop-validation.md](desktop-validation.md) for actual
+bundled command. See [desktop-validation.md](desktop-validation.md) for actual
 GUI controls and local ONNX inference evidence.
 
 Microphone dictation, live meeting capture, calendar/call detection, session

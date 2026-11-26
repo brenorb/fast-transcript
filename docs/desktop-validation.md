@@ -2,7 +2,7 @@
 
 Checked on 2026-11-26 on Apple M5 Max arm64, macOS 27.0.1. The application is the
 local Fast Transcript bundle built from this repository, with its own matching
-fscript/fscriptctl helpers. GUI tests used isolated model/agent settings and
+fscript helper. GUI tests used isolated model/agent settings and
 output storage under /tmp/fast-transcript-desktop-e2e; the user's defaults were
 not modified. The selected speech model was the cached parakeet-v3-int8 ONNX
 model running locally on CPU.
@@ -82,3 +82,13 @@ Notarization, release installers, microphone/system capture, meeting recovery,
 and calendar/call detection belong to later milestones. Tests do not establish
 compatibility with every remote host, file container, window size, or external
 agent version.
+
+## Single-command follow-up
+
+All actions now use fscript; no second executable or wrapper is bundled. The
+clean source passed 210 Rust tests, 50 affected Python checks, nine native tests,
+and release/wheel artifact checks. New E2E coverage runs a file and a remote URL
+with no flags, verifies explicit paths for reserved filenames, and checks skill
+text/path output without inference or agent startup. The rebuilt app contains
+only fscript; its model picker and reset were exercised again through that helper.
+The bundled skill passed the skill-creator validator.

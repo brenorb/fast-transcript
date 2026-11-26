@@ -12,39 +12,45 @@ interrupts work. See [basics](https://clig.dev/#the-basics),
 [future-proofing](https://clig.dev/#future-proofing), and
 [signals](https://clig.dev/#signals-and-control-characters).
 
-## Entry points
+## One command and everyday defaults
 
-`fscript <media-or-url>` remains the primary operation. It already accepts an
-arbitrary filename, so adding catch-all subcommand routing would steal filenames
-such as `record` or `models`. Preserve this contract. New transcription options,
-including `--start`, `--end`, `--last`, and `--stream`, belong to this operation.
+There is one executable: `fscript`. The common operation stays `fscript video.mp4`
+or `fscript "https://example.com/video"`, with the saved/default model and normal
+output delivery. Users do not need a subcommand or extra flags to transcribe.
+The desktop invokes this same executable for every operation.
 
-`fscriptctl` is the separate control entry point with explicit commands, shipped
-with external agent notes. It is a second thin binary in the same Rust package,
-using the same library. This avoids ambiguous dispatch and preserves the existing
-CLI. Other command families below remain planned until their roadmap milestone.
+Distinct actions use subcommands; flags modify their behavior. This follows the
+[clig.dev subcommand guidance](https://clig.dev/#subcommands), which recommends
+combining closely related tools for discoverability and shared configuration.
+Flags are also valid; this is a product choice, not a rule that clig.dev forbids
+flag-based actions. We do not add a second flag spelling for each new action.
 
-| Surface | Planned command | Default behavior |
+| Surface | Command | Default behavior |
 | --- | --- | --- |
 | Files and URLs | `fscript recording.m4a` | Save a transcript and print its path. |
-| Incremental file/URL results | `fscript recording.m4a --stream` | Shipped: live text; `--json` selects versioned events shared with GUI/agents. |
-| Dictation | `fscriptctl record` | Microphone capture and live text until stopped. |
-| Meetings | `fscriptctl record --source meeting` | Separate mic/system tracks and a durable session. |
-| Session control | `fscriptctl sessions list`, `sessions stop ID`, `sessions show ID` | Explicit target; no interactive selection. |
-| Models | `fscriptctl models list`, `models set NAME`, `models get`, `models reset` | Shipped: same catalog and saved preference as existing flags; `--json` identifies saved/environment/effective selection. |
-| External notes | `fscriptctl notes TRANSCRIPT` | Shipped: save Markdown using the saved/first installed agent; `--agent` overrides, stdin defaults to stdout. |
-| Agent preference | `fscriptctl agents list`, `agents set NAME`, `agents add NAME -- COMMAND` | Shipped: inspect or save literal headless commands; no login or model startup during discovery. |
-| Completed export | `fscriptctl export TRANSCRIPT --format srt` | Shipped: render saved JSON/JSONL through the same output core without inference; stdin defaults to stdout. |
-| Detection | `fscriptctl calls watch`, `calendar list` | Inspect native adapter evidence without recording. |
+| Incremental results | `fscript recording.m4a --stream` | Live text; add --json for versioned events. |
+| External notes | `fscript notes TRANSCRIPT` | Save Markdown using the saved/first available agent. |
+| Agent instructions | `fscript skill`, `fscript skill path` | Print bundled Markdown, or materialize it and print its path. |
+| Models | `fscript models`, `fscript models set NAME` | Show catalog/default or save a preference without model loading. |
+| Agents | `fscript agents`, `fscript agents set NAME` | Inspect available agents or save the preferred one. |
+| Export | `fscript export TRANSCRIPT --format srt` | Render a completed document without inference. |
+| Dictation (planned) | `fscript record` | Capture microphone audio. |
+| Meetings (planned) | `fscript record --source meeting` | Separate mic/system tracks and a durable session. |
+| Session control (planned) | `fscript sessions list`, `fscript sessions stop ID` | Explicit noninteractive control. |
+| Detection (planned) | `fscript calls watch`, `fscript calendar list` | Inspect native adapter evidence. |
 
-The current model flags remain supported as compatibility interfaces. Add nested
-help to control commands as they ship, with no model loading or permission request
-on help paths. Keep Clap as the parser. Do not turn unknown commands into files or
-silently start recording on a typo.
+Action names are reserved in command position. Files named notes, models, agents,
+export, or skill use explicit paths such as `./notes`, or `fscript -- notes`. This is
+an intentional breaking choice for this young app, avoiding a separate command
+and filesystem-dependent guessing. Normal filenames and URLs remain unchanged.
+Root --help discovers actions; `fscript notes --help` and `fscript help notes`
+show nested help. One --manual and one --man-page cover the whole executable.
+Existing model preference flags remain compatibility aliases to the same store;
+the canonical new interface is fscript models. No fscriptctl wrapper is installed.
 
 ## Shared execution and output
 
-Both binaries invoke the same Rust services. The GUI launches those binaries and
+The executable invokes the shared Rust services. The GUI launches it and
 consumes their versioned JSONL protocol; native capture/calendar helpers also
 provide noninteractive commands. No GUI-specific transcription, chunking,
 configuration, or external-agent implementation is allowed.

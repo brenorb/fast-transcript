@@ -31,15 +31,14 @@ struct AgentCatalog: Decodable {
 struct NotesResponse: Decodable { let notes: String }
 
 struct CLIInstallation {
-    let transcribe: URL
-    let control: URL
+    let executable: URL
 
     static func locate() throws -> Self {
         let helpers = ProcessInfo.processInfo.environment["FSCRIPT_APP_HELPERS"].map { URL(fileURLWithPath: $0) }
             ?? Bundle.main.bundleURL.appendingPathComponent("Contents/Helpers", isDirectory: true)
-        let installation = Self(transcribe: helpers.appendingPathComponent("fscript"), control: helpers.appendingPathComponent("fscriptctl"))
-        guard [installation.transcribe, installation.control].allSatisfy({ FileManager.default.isExecutableFile(atPath: $0.path) }) else {
-            throw ClientError("Fast Transcript's command helpers are missing. Reinstall the app or rebuild it with scripts/build_macos_app.sh.")
+        let installation = Self(executable: helpers.appendingPathComponent("fscript"))
+        guard [installation.executable].allSatisfy({ FileManager.default.isExecutableFile(atPath: $0.path) }) else {
+            throw ClientError("Fast Transcript's command helper is missing. Reinstall the app or rebuild it with scripts/build_macos_app.sh.")
         }
         return installation
     }
@@ -106,12 +105,9 @@ final class Workspace {
         defer { loading = false }
         do {
             let installation = try CLIInstallation.locate()
-            let transcribeVersion = try await CLIProcess().output(executable: installation.transcribe, arguments: ["--version"])
-            let controlVersion = try await CLIProcess().output(executable: installation.control, arguments: ["--version"])
-            let version: (Data) -> String? = { String(decoding: $0, as: UTF8.self).split(separator: " ").last.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) } }
-            guard version(transcribeVersion) == version(controlVersion), version(controlVersion) != nil else {
-                throw ClientError("The app's command helpers have different versions. Reinstall the app.")
-            }
+            let output = try await CLIProcess().output(executable: installation.executable, arguments: ["--version"])
+            let version = String(decoding: output, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
+            guard version.hasPrefix("fscript ") else { throw ClientError("The app's command helper is invalid. Reinstall the app.") }
             self.installation = installation
             try await refreshModels()
             await refreshAgents()
@@ -131,17 +127,17 @@ final class Workspace {
 
     private func control(_ arguments: [String]) async throws -> Data {
         guard let installation else { throw ClientError("The app is still preparing.") }
-        return try await CLIProcess().output(executable: installation.control, arguments: arguments)
+        return try await CLIProcess().output(executable: installation.executable, arguments: arguments)
     }
 
     private func refreshModels() async throws {
-        let catalog = try JSONDecoder().decode(ModelCatalog.self, from: await control(["models", "list", "--json"]))
+        let catalog = try JSONDecoder().decode(ModelCatalog.self, from: await control(["models", "--json"]))
         guard catalog.version == 1 else { throw ClientError("Unsupported model catalog version. Update the app.") }
         models = catalog
     }
 
     func refreshAgents() async {
-        let catalog = try? await JSONDecoder().decode(AgentCatalog.self, from: control(["agents", "list", "--json"]))
+        let catalog = try? await JSONDecoder().decode(AgentCatalog.self, from: control(["agents", "--json"]))
         agents = catalog?.version == 1 ? catalog : nil
     }
 
@@ -178,7 +174,7 @@ final class Workspace {
             defer { savingPreference = false }
             do {
                 let installation = try CLIInstallation.locate()
-                _ = try await CLIProcess().output(executable: installation.control, arguments: ["models", "reset", "--quiet"])
+                _ = try await CLIProcess().output(executable: installation.executable, arguments: ["models", "reset", "--quiet"])
                 self.installation = installation
                 try await refreshModels()
                 status = "Ready"
@@ -241,7 +237,7 @@ final class Workspace {
                 var decoder = TranscriptStreamDecoder()
                 var diagnostics = Data()
                 var status: Int32?
-                for try await event in process.events(executable: installation.transcribe, arguments: arguments) {
+                for try await event in process.events(executable: installation.executable, arguments: arguments) {
                     switch event {
                     case .stdout(let bytes):
                         for message in try decoder.append(bytes) {
@@ -313,7 +309,7 @@ final class Workspace {
             defer { finishOperation() }
             do {
                 let output = completedURL.deletingLastPathComponent().appendingPathComponent("notes.md")
-                let data = try await process.output(executable: installation.control, arguments: ["notes", completedURL.path, "--output", output.path, "--json"])
+                let data = try await process.output(executable: installation.executable, arguments: ["notes", completedURL.path, "--output", output.path, "--json"])
                 if cancelRequested { status = "Notes cancelled"; return }
                 notes = try JSONDecoder().decode(NotesResponse.self, from: data).notes
                 notesURL = output
@@ -357,9 +353,9 @@ final class Workspace {
                         // Notes are already Markdown produced by the shared notes job.
                         // The save action uses the CLI's atomic delivery, like transcripts.
                         guard let notesURL = self.notesURL else { return }
-                        _ = try await process.output(executable: installation.control, arguments: ["export", notesURL.path, "--format", "markdown", "--output", target.path])
+                        _ = try await process.output(executable: installation.executable, arguments: ["export", notesURL.path, "--format", "markdown", "--output", target.path])
                     } else {
-                        _ = try await process.output(executable: installation.control, arguments: ["export", completedURL.path, "--format", format.rawValue, "--output", target.path])
+                        _ = try await process.output(executable: installation.executable, arguments: ["export", completedURL.path, "--format", format.rawValue, "--output", target.path])
                     }
                     self.status = "Exported \(target.lastPathComponent)"
                     self.error = nil

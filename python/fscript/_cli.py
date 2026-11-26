@@ -14,10 +14,6 @@ def bundled_binary_path() -> Path:
     return Path(files("fscript").joinpath("bin", bundled_binary_name()))
 
 
-def bundled_control_binary_path() -> Path:
-    return Path(files("fscript").joinpath("bin", bundled_binary_name("fscriptctl")))
-
-
 def ensure_executable(path: Path) -> None:
     mode = path.stat().st_mode
     if mode & stat.S_IXUSR:
@@ -40,7 +36,3 @@ def run_binary(binary: Path) -> int:
 
 def main() -> int:
     return run_binary(bundled_binary_path())
-
-
-def control_main() -> int:
-    return run_binary(bundled_control_binary_path())

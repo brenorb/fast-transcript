@@ -54,7 +54,7 @@ impl AgentSettings {
 
     pub(crate) fn require_name(&self, name: &str) -> Result<()> {
         if !BUILTINS.contains(&name) && !self.commands.contains_key(name) {
-            bail!("unknown agent {name:?}; run fscriptctl agents list");
+            bail!("unknown agent {name:?}; run fscript agents");
         }
         Ok(())
     }
@@ -84,7 +84,7 @@ impl AgentStore {
         };
         let settings: AgentSettings = serde_json::from_slice(&bytes).with_context(|| {
             format!(
-                "invalid agent settings {}; use fscriptctl agents reset to recover",
+                "invalid agent settings {}; use fscript agents reset to recover",
                 self.path.display()
             )
         })?;
@@ -222,7 +222,7 @@ pub(crate) fn select(settings: &AgentSettings, requested: Option<&str>) -> Resul
     let entry = match name {
         Some(name) => entries.into_iter().find(|entry| entry.name == name),
         None => entries.into_iter().find(|entry| entry.available && entry.kind == "builtin"),
-    }.context("no agent is installed; install/sign in to codex, claude, or omp, or add a command with fscriptctl agents add")?;
+    }.context("no agent is installed; install/sign in to codex, claude, or omp, or add a command with fscript agents add")?;
     let executable = entry.executable.with_context(|| {
         format!(
             "agent {} is unavailable; check its executable or choose another with --agent",

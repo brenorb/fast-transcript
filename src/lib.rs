@@ -57,22 +57,30 @@ pub fn version_text() -> String {
 }
 
 pub fn run_from_args(raw_args: Vec<String>) -> Result<()> {
-    app::run(raw_args)
+    if let Some(arguments) = control::arguments(&raw_args) {
+        control::run(arguments)
+    } else {
+        app::run(raw_args)
+    }
 }
 
 /// Binary entry point with process ownership and cancellation for streaming jobs.
 pub fn run_cli_from_args(raw_args: Vec<String>) -> Result<i32> {
-    let stream = cli::parse_command(&raw_args).is_ok_and(|matches| matches.get_flag("stream"));
-    job::run(raw_args, app::run, stream)
+    if let Some(arguments) = control::arguments(&raw_args) {
+        let supervised = control::needs_supervision(&arguments);
+        job::run(arguments, control::run, supervised)
+    } else {
+        let stream = cli::parse_command(&raw_args).is_ok_and(|matches| matches.get_flag("stream"));
+        job::run(raw_args, app::run, stream)
+    }
 }
 
 pub fn fuzz_parse_args(raw_args: &[String]) {
-    let _ = cli::parse_args(raw_args);
-}
-
-pub fn run_control_from_args(raw_args: Vec<String>) -> Result<i32> {
-    let supervised = control::needs_supervision(&raw_args);
-    job::run(raw_args, control::run, supervised)
+    if let Some(arguments) = control::arguments(raw_args) {
+        let _ = control::validate_arguments(&arguments);
+    } else {
+        let _ = cli::parse_args(raw_args);
+    }
 }
 
 pub fn cli_exit(result: Result<i32>) -> std::process::ExitCode {

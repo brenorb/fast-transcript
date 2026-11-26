@@ -9,7 +9,7 @@ from unittest import mock
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "python"))
 
-from fscript._cli import bundled_binary_name, control_main, main  # noqa: E402
+from fscript._cli import bundled_binary_name, main  # noqa: E402
 
 
 class PyPiWrapperTests(unittest.TestCase):
@@ -42,17 +42,17 @@ class PyPiWrapperTests(unittest.TestCase):
             rc = main()
         self.assertEqual(rc, 1)
 
-    def test_control_entrypoint_preserves_argv_and_status(self) -> None:
+    def test_action_arguments_preserve_argv_and_status(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
-            binary = Path(tmpdir) / bundled_binary_name("fscriptctl")
+            binary = Path(tmpdir) / bundled_binary_name()
             binary.touch()
             with (
-                mock.patch("fscript._cli.bundled_control_binary_path", return_value=binary),
+                mock.patch("fscript._cli.bundled_binary_path", return_value=binary),
                 mock.patch("fscript._cli.ensure_executable") as ensure_exec,
                 mock.patch("subprocess.run", return_value=subprocess.CompletedProcess([], 130)) as run,
-                mock.patch.object(sys, "argv", ["fscriptctl", "notes", "file with spaces.txt", "--json"]),
+                mock.patch.object(sys, "argv", ["fscript", "notes", "file with spaces.txt", "--json"]),
             ):
-                self.assertEqual(control_main(), 130)
+                self.assertEqual(main(), 130)
             ensure_exec.assert_called_once_with(binary)
             run.assert_called_once_with([str(binary), "notes", "file with spaces.txt", "--json"], check=False)
 

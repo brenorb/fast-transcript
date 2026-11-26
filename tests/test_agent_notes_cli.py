@@ -10,7 +10,7 @@ import time
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
-BINARY = Path(os.environ.get("FSCRIPTCTL_TEST_BINARY", ROOT / "target/release/fscriptctl")).resolve()
+BINARY = Path(os.environ.get("FSCRIPT_TEST_BINARY", ROOT / "target/release/fscript")).resolve()
 NOTES = "# Summary\nShip version 2.\n\n## Key points\n- Tests first.\n\n## Decisions\n- Ship Friday.\n\n## Action items\n- Ben: tests by Thursday.\n\n## Open questions\n- Support owner."
 
 AGENT = r'''#!/usr/bin/env python3
@@ -44,7 +44,7 @@ class AgentNotesCLI(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         if not BINARY.is_file():
-            raise RuntimeError("Build fscriptctl or set FSCRIPTCTL_TEST_BINARY")
+            raise RuntimeError("Build fscript or set FSCRIPT_TEST_BINARY")
 
     def setUp(self):
         temp = tempfile.TemporaryDirectory(prefix="fscript-notes-e2e-")
@@ -85,7 +85,7 @@ class AgentNotesCLI(unittest.TestCase):
         self.assertFalse(self.config.exists())
         self.run_cli("nots", str(self.source), success=False)
         self.assertFalse(self.log.exists())
-        result = self.run_cli("agents", "list", json_output=True)
+        result = self.run_cli("agents", json_output=True)
         self.assertEqual(result["default_agent"], "codex")
         self.assertEqual([agent["name"] for agent in result["agents"]], ["codex", "claude", "omp"])
         self.assertFalse(self.log.exists())
@@ -145,14 +145,14 @@ class AgentNotesCLI(unittest.TestCase):
         self.assertEqual(json.loads(self.log.read_text())["args"], arguments)
         self.assertFalse((self.root / "NEVER").exists())
         self.run_cli("agents", "remove", "local")
-        self.assertEqual(self.run_cli("agents", "list", json_output=True)["default_agent"], "codex")
+        self.assertEqual(self.run_cli("agents", json_output=True)["default_agent"], "codex")
         before = self.config.read_bytes()
         self.run_cli("agents", "add", "codex", "--", program, success=False)
         self.assertEqual(self.config.read_bytes(), before)
 
     def test_saved_missing_agent_does_not_silently_send_to_another_provider(self):
         (self.bin / "codex").unlink()
-        self.assertEqual(self.run_cli("agents", "list", json_output=True)["default_agent"], "claude")
+        self.assertEqual(self.run_cli("agents", json_output=True)["default_agent"], "claude")
         self.run_cli("agents", "set", "codex")
         self.run_cli("notes", self.source, success=False)
         self.assertFalse(self.log.exists())
@@ -188,11 +188,11 @@ class AgentNotesCLI(unittest.TestCase):
     def test_malformed_settings_can_be_reset_without_touching_models(self):
         self.config.parent.mkdir()
         self.config.write_text("broken")
-        self.run_cli("agents", "list", success=False)
+        self.run_cli("agents", success=False)
         self.run_cli("--help")
         self.run_cli("agents", "reset")
         self.assertFalse(self.config.exists())
-        self.assertEqual(self.run_cli("agents", "list", json_output=True)["default_agent"], "codex")
+        self.assertEqual(self.run_cli("agents", json_output=True)["default_agent"], "codex")
 
     def test_directory_destination_and_option_like_source(self):
         result = self.run_cli("notes", self.source, "notes/", json_output=True)

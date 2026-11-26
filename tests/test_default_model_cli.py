@@ -9,7 +9,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 BINARY = Path(os.environ.get("FSCRIPT_TEST_BINARY", ROOT / "target/release/fscript"))
-CONTROL = Path(os.environ.get("FSCRIPTCTL_TEST_BINARY", ROOT / "target/release/fscriptctl"))
+CONTROL = Path(os.environ.get("FSCRIPT_TEST_BINARY", ROOT / "target/release/fscript"))
 
 
 class DefaultModelCliTests(unittest.TestCase):
@@ -35,7 +35,7 @@ class DefaultModelCliTests(unittest.TestCase):
         return json.loads(result.stdout)
 
     def test_control_catalog_has_no_setup_side_effect_and_reports_precedence(self):
-        listed = self.control_json("list")
+        listed = self.control_json()
         self.assertEqual(listed["version"], 1)
         self.assertEqual(listed["effective_model"], "parakeet-v3-int8")
         self.assertIsNone(listed["saved_default"])

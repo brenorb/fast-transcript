@@ -39,6 +39,8 @@ jobs:
         run: uv run --no-project --with yt-dlp python -m unittest tests/test_media_range_cli.py
       - name: Streaming E2E, cancellation, and batch differential tests
         run: uv run --no-project --with yt-dlp python -m unittest tests/test_streaming_cli.py
+      - name: Single-command defaults and bundled agent skill E2E
+        run: uv run --no-project --with yt-dlp python -m unittest tests/test_single_cli.py
       - name: External agent notes E2E and control CLI tests
         run: uv run --no-project python -m unittest tests/test_agent_notes_cli.py
       - name: Completed export E2E and batch differential tests
@@ -62,8 +64,6 @@ jobs:
           python -m pip install dist-pypi/*.whl
           fscript --version
           fscript --help >/dev/null
-          fscriptctl --version
-          fscriptctl --help >/dev/null
 
   desktop:
     runs-on: macos-latest
@@ -81,9 +81,9 @@ jobs:
         run: python3 scripts/test_desktop_client.py
       - name: Build development app bundle
         run: bash scripts/build_macos_app.sh --debug
-      - name: Verify app signature and bundled command entrypoints
+      - name: Verify app signature and bundled command entrypoint
         run: |
           codesign --verify --deep --strict 'target/desktop/Fast Transcript.app'
           plutil -lint 'target/desktop/Fast Transcript.app/Contents/Info.plist'
           'target/desktop/Fast Transcript.app/Contents/Helpers/fscript' --version
-          'target/desktop/Fast Transcript.app/Contents/Helpers/fscriptctl' models list --json
+          'target/desktop/Fast Transcript.app/Contents/Helpers/fscript' models --json
