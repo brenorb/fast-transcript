@@ -12,6 +12,7 @@ mod media_range;
 mod model;
 mod model_catalog;
 mod output;
+mod pcm_stream;
 mod progress;
 mod remote;
 mod settings;

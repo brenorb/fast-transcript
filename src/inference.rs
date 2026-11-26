@@ -9,6 +9,7 @@ use crate::types::{BenchmarkChunk, TranscriptSegment};
 use anyhow::{bail, Context, Result};
 use std::time::Instant;
 
+#[derive(Default)]
 pub(crate) struct InferenceOutcome {
     pub(crate) text: String,
     pub(crate) chunks: Vec<BenchmarkChunk>,
@@ -63,52 +64,65 @@ pub(crate) fn transcribe_samples(
     if progress.is_none() {
         eprintln!("transcribing...");
     }
-    let mut outcome = InferenceOutcome {
-        text: String::new(),
-        chunks: Vec::with_capacity(ranges.len()),
-        segments: Vec::new(),
-        transcribe_seconds: 0.0,
-    };
+    let mut outcome = InferenceOutcome::default();
     for (index, (start, end)) in ranges.into_iter().enumerate() {
         if let Some(progress) = &progress {
             progress.set_current_chunk(index + 1);
         }
+        outcome.decode_chunk(engine, &samples[start..end], start, chunk_seconds.is_some())?;
+    }
+    if let Some(progress) = progress {
+        progress.finish();
+    }
+    Ok(outcome)
+}
+
+impl InferenceOutcome {
+    /// Both batch and arriving audio use this exact inference and merge path.
+    pub(crate) fn decode_chunk(
+        &mut self,
+        engine: &mut dyn SpeechEngine,
+        samples: &[f32],
+        start: usize,
+        merge: bool,
+    ) -> Result<()> {
+        let index = self.chunks.len();
+        let end = start
+            .checked_add(samples.len())
+            .context("audio timeline overflow")?;
         let started = Instant::now();
-        let mut transcription = engine.transcribe(&samples[start..end]).with_context(|| {
-            if chunk_seconds.is_some() {
+        let mut transcription = engine.transcribe(samples).with_context(|| {
+            if merge {
                 format!("failed chunk {index} ({start}..{end})")
             } else {
                 "failed to transcribe audio".to_string()
             }
         })?;
         let transcribe_seconds = started.elapsed().as_secs_f64();
-        outcome.transcribe_seconds += transcribe_seconds;
+        self.transcribe_seconds += transcribe_seconds;
         let start_s = start as f64 / crate::SAMPLE_RATE as f64;
         let end_s = end as f64 / crate::SAMPLE_RATE as f64;
-        if chunk_seconds.is_some() {
+        if merge {
             transcription.offset_timestamps(start as f32 / crate::SAMPLE_RATE as f32);
         }
         let text = transcription.text.trim().to_string();
-        outcome.text = merge_chunk_texts(&outcome.text, &text);
+        self.text = merge_chunk_texts(&self.text, &text);
         let segments = transcript_segments_from_transcription(&transcription, start_s, end_s);
-        if chunk_seconds.is_some() {
-            merge_transcript_segments(&mut outcome.segments, segments);
+        if merge {
+            merge_transcript_segments(&mut self.segments, segments);
         } else {
-            outcome.segments = segments;
+            self.segments = segments;
         }
-        outcome.chunks.push(BenchmarkChunk {
+        self.chunks.push(BenchmarkChunk {
             index,
             start_s,
             end_s,
-            audio_seconds: (end - start) as f64 / crate::SAMPLE_RATE as f64,
+            audio_seconds: samples.len() as f64 / crate::SAMPLE_RATE as f64,
             transcribe_seconds,
             text,
         });
+        Ok(())
     }
-    if let Some(progress) = progress {
-        progress.finish();
-    }
-    Ok(outcome)
 }
 
 #[cfg(test)]
