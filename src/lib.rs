@@ -1,23 +1,27 @@
 #[macro_use]
 mod diagnostics;
+mod agents;
 mod app;
 mod audio;
 mod cli;
+mod control;
 mod delivery;
 mod diarization;
 mod engine;
+mod executables;
 mod inference;
 mod input;
+mod job;
 mod media_range;
 mod model;
 mod model_catalog;
+mod notes;
 mod notes_input;
 mod output;
 mod pcm_stream;
 mod progress;
 mod remote;
 mod settings;
-mod stream_supervisor;
 mod streaming;
 mod transcribe;
 mod transcript;
@@ -57,9 +61,26 @@ pub fn run_from_args(raw_args: Vec<String>) -> Result<()> {
 
 /// Binary entry point with process ownership and cancellation for streaming jobs.
 pub fn run_cli_from_args(raw_args: Vec<String>) -> Result<i32> {
-    stream_supervisor::run(raw_args)
+    let stream = cli::parse_command(&raw_args).is_ok_and(|matches| matches.get_flag("stream"));
+    job::run(raw_args, app::run, stream)
 }
 
 pub fn fuzz_parse_args(raw_args: &[String]) {
     let _ = cli::parse_args(raw_args);
+}
+
+pub fn run_control_from_args(raw_args: Vec<String>) -> Result<i32> {
+    let supervised = control::needs_supervision(&raw_args);
+    job::run(raw_args, control::run, supervised)
+}
+
+pub fn cli_exit(result: Result<i32>) -> std::process::ExitCode {
+    use std::io::Write;
+    match result {
+        Ok(code) => std::process::ExitCode::from(code as u8),
+        Err(error) => {
+            let _ = writeln!(std::io::stderr().lock(), "error: {error:#}");
+            std::process::ExitCode::FAILURE
+        }
+    }
 }

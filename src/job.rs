@@ -1,4 +1,4 @@
-//! CLI-only ownership of a streaming job's process group and scratch directory.
+//! CLI-only ownership of a CLI job's process group and scratch directory.
 
 use anyhow::{Context, Result};
 use std::process::{Child, Command};
@@ -7,16 +7,18 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 pub(crate) const JOB_ENV: &str = "FSCRIPT_INTERNAL_STREAM_JOB";
 
-pub(crate) fn run(raw_args: Vec<String>) -> Result<i32> {
-    let streaming =
-        crate::cli::parse_command(&raw_args).is_ok_and(|matches| matches.get_flag("stream"));
-    if !streaming || std::env::var_os(JOB_ENV).is_some() {
-        return crate::app::run(raw_args).map(|()| 0);
+pub(crate) fn run(
+    raw_args: Vec<String>,
+    worker: fn(Vec<String>) -> Result<()>,
+    supervised: bool,
+) -> Result<i32> {
+    if !supervised || std::env::var_os(JOB_ENV).is_some() {
+        return worker(raw_args).map(|()| 0);
     }
 
     static CANCELLED: AtomicBool = AtomicBool::new(false);
     ctrlc::set_handler(|| CANCELLED.store(true, Ordering::SeqCst))
-        .context("cannot install streaming cancellation handler")?;
+        .context("cannot install job cancellation handler")?;
     let scratch = tempfile::Builder::new().prefix("fscript-job-").tempdir()?;
     let job_id = format!(
         "{}-{}",
@@ -33,7 +35,7 @@ pub(crate) fn run(raw_args: Vec<String>) -> Result<i32> {
         use std::os::unix::process::CommandExt;
         command.process_group(0);
     }
-    let child = command.spawn().context("cannot start streaming worker")?;
+    let child = command.spawn().context("cannot start job worker")?;
     let mut worker = Worker(child);
     loop {
         if CANCELLED.load(Ordering::SeqCst) {

@@ -45,7 +45,7 @@ setup(
     package_data={"fscript": ["bin/*"]},
     include_package_data=True,
     python_requires=">=3.9",
-    entry_points={"console_scripts": ["fscript=fscript._cli:main"]},
+    entry_points={"console_scripts": ["fscript=fscript._cli:main", "fscriptctl=fscript._cli:control_main"]},
     cmdclass={"bdist_wheel": bdist_wheel},
     zip_safe=False,
     classifiers=[

@@ -154,28 +154,7 @@ pub(crate) fn missing_diarization_notice(status: &FluidaudioBinaryStatus) -> Opt
 }
 
 fn binary_is_available(binary: &str) -> bool {
-    let path = Path::new(binary);
-    if path.components().count() > 1 {
-        return is_executable_file(path);
-    }
-
-    env::var_os("PATH")
-        .map(|paths| env::split_paths(&paths).any(|dir| is_executable_file(&dir.join(binary))))
-        .unwrap_or(false)
-}
-
-#[cfg(unix)]
-fn is_executable_file(path: &Path) -> bool {
-    use std::os::unix::fs::PermissionsExt;
-
-    std::fs::metadata(path)
-        .map(|metadata| metadata.is_file() && metadata.permissions().mode() & 0o111 != 0)
-        .unwrap_or(false)
-}
-
-#[cfg(not(unix))]
-fn is_executable_file(path: &Path) -> bool {
-    path.is_file()
+    crate::executables::on_path(binary).is_some()
 }
 
 impl<R> FluidAudioDiarizer<R> {

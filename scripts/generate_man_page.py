@@ -18,9 +18,9 @@ def inline(text):
     return re.sub(r'`([^`]+)`', lambda match: r'\fB' + match[1] + r'\fR', escape(text))
 
 
-def render(source):
+def render(source, program="FSCRIPT", date="October 22, 2026"):
     version = re.search(r'^version = "([^"]+)"', (ROOT / 'Cargo.toml').read_text(), re.M)[1]
-    lines = [f'.TH FSCRIPT 1 "October 22, 2026" "fast-transcript {version}" "User Commands"']
+    lines = [f'.TH {program} 1 "{date}" "fast-transcript {version}" "User Commands"']
     code = False
     paragraph = True
     for line in source.splitlines():
@@ -54,14 +54,18 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--check', action='store_true', help='fail if the generated page is stale')
     args = parser.parse_args()
-    output = ROOT / 'docs/fscript.1'
-    generated = render((ROOT / 'docs/cli.md').read_text())
-    if args.check:
-        if not output.exists() or output.read_text() != generated:
-            print('Man page is stale; run python3 scripts/generate_man_page.py', file=sys.stderr)
-            return 1
-    else:
-        output.write_text(generated)
+    for source, target, program, date in [
+        ('cli.md', 'fscript.1', 'FSCRIPT', 'October 22, 2026'),
+        ('control-cli.md', 'fscriptctl.1', 'FSCRIPTCTL', 'November 26, 2026'),
+    ]:
+        output = ROOT / 'docs' / target
+        generated = render((ROOT / 'docs' / source).read_text(), program, date)
+        if args.check:
+            if not output.exists() or output.read_text() != generated:
+                print(f'{target} is stale; run python3 scripts/generate_man_page.py', file=sys.stderr)
+                return 1
+        else:
+            output.write_text(generated)
     return 0
 
 

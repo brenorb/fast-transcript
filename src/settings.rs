@@ -9,6 +9,17 @@ use std::fs;
 use std::io::Write;
 use std::path::PathBuf;
 
+pub(crate) fn config_directory() -> PathBuf {
+    ProjectDirs::from("", "", "fast-transcript")
+        .map(|dirs| dirs.config_dir().to_path_buf())
+        .unwrap_or_else(|| {
+            env::var_os("HOME")
+                .map(PathBuf::from)
+                .unwrap_or_else(|| PathBuf::from("."))
+                .join(".config/fast-transcript")
+        })
+}
+
 #[derive(Deserialize, Serialize)]
 struct SavedDefaultModel {
     model: String,
@@ -26,17 +37,7 @@ impl DefaultModelStore {
     pub(crate) fn configured() -> Self {
         let path = env::var_os("FSCRIPT_CONFIG_FILE")
             .map(PathBuf::from)
-            .unwrap_or_else(|| {
-                let directory = ProjectDirs::from("", "", "fast-transcript")
-                    .map(|dirs| dirs.config_dir().to_path_buf())
-                    .unwrap_or_else(|| {
-                        env::var_os("HOME")
-                            .map(PathBuf::from)
-                            .unwrap_or_else(|| PathBuf::from("."))
-                            .join(".config/fast-transcript")
-                    });
-                directory.join("default-model.json")
-            });
+            .unwrap_or_else(|| config_directory().join("default-model.json"));
         Self::new(path)
     }
 

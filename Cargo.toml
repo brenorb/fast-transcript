@@ -2,6 +2,7 @@
 name = "fast-transcript"
 version = "1.1.3"
 edition = "2021"
+default-run = "fscript"
 description = "Fast local transcription for large lectures with NVIDIA Parakeet ONNX"
 license = "MIT"
 repository = "https://github.com/brenorb/fast-transcript"
@@ -13,6 +14,10 @@ categories = ["command-line-utilities", "multimedia::audio"]
 [[bin]]
 name = "fscript"
 path = "src/main.rs"
+
+[[bin]]
+name = "fscriptctl"
+path = "src/bin/fscriptctl.rs"
 
 [dependencies]
 anyhow = "1.0"

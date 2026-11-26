@@ -1,0 +1,96 @@
+.TH FSCRIPTCTL 1 "November 26, 2026" "fast-transcript 1.1.3" "User Commands"
+.SH NAME
+fscriptctl \- noninteractive transcription controls and external\-agent notes.
+.SH SYNOPSIS
+.nf
+fscriptctl notes TRANSCRIPT [destination] [options]
+fscriptctl agents list [\-\-json]
+fscriptctl agents set NAME
+fscriptctl agents add NAME \-\- COMMAND [ARGS...]
+fscriptctl agents remove NAME
+fscriptctl agents reset
+.fi
+.SH DESCRIPTION
+Notes use an installed Codex, Claude Code, omp, or saved custom command. The
+agent
+receives transcript data on stdin and returns Markdown. Default selection is
+the
+saved agent, otherwise the first available built\-in in codex/claude/omp
+order.
+Agent availability does not verify login. Sign in using the agent's own CLI;
+Fast Transcript never starts an interactive login flow.
+.SH OPTIONS
+.IP \(bu 2
+\fB\-\-agent NAME\fR: override the selected note agent; auto uses automatic
+detection.
+.IP \(bu 2
+\fB\-\-model NAME\fR: override a built\-in agent's language model. Custom
+commands own their model arguments.
+.IP \(bu 2
+\fB\-\-input\-format auto|text|json|jsonl\fR: transcript format; defaults to
+automatic detection.
+.IP \(bu 2
+\fB\-o, \-\-output PATH\fR: notes file or directory, instead of the optional
+destination operand.
+.IP \(bu 2
+\fB\-\-stdout\fR: print notes without saving a file. A destination of \- is
+equivalent.
+.IP \(bu 2
+\fB\-\-timeout SECONDS\fR: positive agent execution timeout; defaults to 300
+seconds.
+.IP \(bu 2
+\fB\-\-json\fR: print completion metadata including the Markdown notes and
+optional saved path.
+.IP \(bu 2
+\fB\-q, \-\-quiet\fR: suppress status; keep results and errors.
+.IP \(bu 2
+\fB\-h, \-\-help\fR: command help and examples. Nested commands support help.
+.IP \(bu 2
+\fB\-V, \-\-version\fR: installed control CLI version.
+.IP \(bu 2
+\fB\-\-manual\fR: complete offline control manual.
+.IP \(bu 2
+\fB\-\-man\-page\fR: export this manual in roff format.
+.SH OUTPUT
+File input saves INPUT.notes.md and prints its absolute path. Piped input
+defaults
+to stdout. A JSON transcript or complete JSONL stream retains source
+timestamps
+and speakers; a provisional or failed stream is rejected. With \-\-json,
+stdout is
+one completion object instead of a path; the default Markdown file is still
+saved
+unless \-\-stdout or piped\-input defaults select stdout. Failed generation
+leaves
+an existing destination unchanged and cannot overwrite the source transcript.
+.SH "AGENT SETTINGS"
+Use agents set NAME to save a built\-in or custom agent, or agents set auto to
+clear
+the preference. Agents add stores a literal program/argument array; no shell
+is
+used. Custom commands read the prompt on stdin and write only Markdown to
+stdout.
+They run in an isolated temporary working directory, so use absolute argument
+paths. Agents remove deletes a custom profile and clears its default if
+selected.
+Agents reset removes only the note\-agent settings, leaving ASR models and
+agent
+logins untouched. Put global \-\-json before the custom command's \-\-
+separator.
+.PP
+Settings live in agents.json in the same platform configuration directory as
+the
+ASR preference. FSCRIPT_NOTES_CONFIG_FILE overrides that filename.
+FSCRIPT_AGENT_PATH
+replaces executable search paths; otherwise PATH and standard
+user/Homebrew/nvm
+locations are searched. FSCRIPT_CODEX_BINARY, FSCRIPT_CLAUDE_BINARY, and
+FSCRIPT_OMP_BINARY override built\-in executables.
+.SH "ERRORS AND CANCELLATION"
+Success is 0; errors are nonzero. Diagnostics use stderr. Notes jobs share the
+streaming CLI's process\-group supervisor on macOS/Linux. Ctrl\-C, SIGTERM, or
+SIGHUP
+returns 130, stops owned helpers, and removes job scratch files. Timeouts fail
+without replacing existing notes. The caller must provide a complete
+transcript;
+literal JSON\-like prose can be forced with \-\-input\-format text.

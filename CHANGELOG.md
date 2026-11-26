@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Add `fscriptctl notes TRANSCRIPT` for English summaries, key points, decisions, action items, and open questions using installed Codex, Claude Code, omp, or literal custom commands.
+- Save agent preferences, accept complete text/JSON/JSONL input through files or stdin, preserve source timestamps, and share timeout/cancellation and atomic output behavior across providers.
+- Bundle `fscriptctl` beside `fscript` in release archives and Python wheels, with offline command manuals and matching artifact checks.
+
 - Stream local files, piped media, and remote audio through a shared bounded chunk pipeline with early text and versioned JSONL events.
 - Reuse the loaded model for a streaming job, support final exports and optional final diarization, and clean up job processes on cancellation or closed stdout.
 

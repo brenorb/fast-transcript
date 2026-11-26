@@ -29,6 +29,21 @@ fscript lecture.mp3 --model parakeet-ultra
 fscript --list-models
 ```
 
+Create notes from a completed transcript with the companion control CLI:
+
+```bash
+fscriptctl notes lecture.speakers.txt
+fscript lecture.mp3 --stream --json | fscriptctl notes -
+fscriptctl agents list
+fscriptctl agents set claude
+```
+
+Notes use your installed Codex, Claude Code, omp, or a saved custom command.
+The default requires no flags and saves `lecture.speakers.notes.md`. Sign in with
+the agent's own CLI first. Its configured provider handles the language model;
+Fast Transcript keeps transcription local. See [agent notes](docs/agent-notes.md)
+and `fscriptctl notes --help` for model overrides, stdout/JSON, and custom agents.
+
 `--srt` and `--vtt` subtitle output are experimental.
 
 That is the whole point of this project. One command. Large audio. No babysitting.

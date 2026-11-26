@@ -24,7 +24,7 @@ def cargo_version() -> str:
     return match.group(1)
 
 
-def binary_version(binary_path: Path) -> str:
+def binary_version(binary_path: Path, name: str = "fscript") -> str:
     completed = subprocess.run(
         [str(binary_path), "--version"],
         check=True,
@@ -32,7 +32,7 @@ def binary_version(binary_path: Path) -> str:
         capture_output=True,
     )
     version = completed.stdout.strip()
-    prefix = "fscript "
+    prefix = name + " "
     if not version.startswith(prefix):
         raise SystemExit(f"unexpected --version output from {binary_path}: {version!r}")
     return version[len(prefix) :]
@@ -41,21 +41,23 @@ def binary_version(binary_path: Path) -> str:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--binary", type=Path, default=DEFAULT_BINARY)
+    parser.add_argument("--control-binary", type=Path, help="Matching fscriptctl binary; defaults to the sibling of --binary")
     parser.add_argument("--out-dir", type=Path, default=REPO_ROOT / "dist-pypi")
     return parser.parse_args()
 
 
-def copy_stage_tree(stage_root: Path, binary_path: Path) -> None:
+def copy_stage_tree(stage_root: Path, binary_paths: list[Path]) -> None:
     for file_name in STAGE_FILES:
         shutil.copy2(REPO_ROOT / file_name, stage_root / file_name)
 
     for dir_name in STAGE_DIRS:
         shutil.copytree(REPO_ROOT / dir_name, stage_root / dir_name)
 
-    bundled_binary = stage_root / "python" / "fscript" / "bin" / binary_path.name
-    bundled_binary.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(binary_path, bundled_binary)
-    bundled_binary.chmod(bundled_binary.stat().st_mode | stat.S_IXUSR)
+    for binary_path in binary_paths:
+        bundled_binary = stage_root / "python" / "fscript" / "bin" / binary_path.name
+        bundled_binary.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(binary_path, bundled_binary)
+        bundled_binary.chmod(bundled_binary.stat().st_mode | stat.S_IXUSR)
 
 
 def main() -> int:
@@ -67,19 +69,20 @@ def main() -> int:
         raise SystemExit(f"missing built binary: {binary_path}")
 
     expected_version = cargo_version()
-    actual_version = binary_version(binary_path)
-    if actual_version != expected_version:
-        raise SystemExit(
-            "built binary version does not match Cargo.toml: "
-            f"{actual_version} != {expected_version}. Rebuild the release binary first."
-        )
+    control_binary = (args.control_binary or binary_path.with_name("fscriptctl.exe" if os.name == "nt" else "fscriptctl")).resolve()
+    for name, executable in [("fscript", binary_path), ("fscriptctl", control_binary)]:
+        if not executable.is_file():
+            raise SystemExit(f"missing built binary: {executable}; build both binaries with cargo build --release")
+        actual_version = binary_version(executable, name)
+        if actual_version != expected_version:
+            raise SystemExit(f"{name} version {actual_version} does not match Cargo.toml {expected_version}; rebuild both binaries")
 
     out_dir.mkdir(parents=True, exist_ok=True)
 
     with tempfile.TemporaryDirectory(prefix="fscript-pypi-") as temp_dir:
         stage_root = Path(temp_dir) / "stage"
         stage_root.mkdir()
-        copy_stage_tree(stage_root, binary_path)
+        copy_stage_tree(stage_root, [binary_path, control_binary])
         subprocess.run(
             [sys.executable, "-m", "build", "--wheel", "--outdir", str(out_dir)],
             cwd=stage_root,

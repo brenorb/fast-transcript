@@ -19,11 +19,10 @@ arbitrary filename, so adding catch-all subcommand routing would steal filenames
 such as `record` or `models`. Preserve this contract. New transcription options,
 including `--start`, `--end`, `--last`, and `--stream`, belong to this operation.
 
-For the upcoming recording and control milestones, use a separate `fscriptctl`
-entry point with explicit commands. It will be a second thin binary in the same
-Rust package, using the same library. This avoids ambiguous dispatch and preserves
-the existing CLI. Planned command families are below; they are not implemented
-merely because they appear here.
+`fscriptctl` is the separate control entry point with explicit commands, shipped
+with external agent notes. It is a second thin binary in the same Rust package,
+using the same library. This avoids ambiguous dispatch and preserves the existing
+CLI. Other command families below remain planned until their roadmap milestone.
 
 | Surface | Planned command | Default behavior |
 | --- | --- | --- |
@@ -33,7 +32,8 @@ merely because they appear here.
 | Meetings | `fscriptctl record --source meeting` | Separate mic/system tracks and a durable session. |
 | Session control | `fscriptctl sessions list`, `sessions stop ID`, `sessions show ID` | Explicit target; no interactive selection. |
 | Models | `fscriptctl models list`, `models set NAME` | Same catalog and saved preference as existing model flags. |
-| External notes | `fscriptctl notes TRANSCRIPT --agent NAME` | Run the selected headless agent on transcript text. |
+| External notes | `fscriptctl notes TRANSCRIPT` | Shipped: save Markdown using the saved/first installed agent; `--agent` overrides, stdin defaults to stdout. |
+| Agent preference | `fscriptctl agents list`, `agents set NAME`, `agents add NAME -- COMMAND` | Shipped: inspect or save literal headless commands; no login or model startup during discovery. |
 | Detection | `fscriptctl calls watch`, `calendar list` | Inspect native adapter evidence without recording. |
 
 The current model flags remain supported as compatibility interfaces. Add nested

@@ -157,8 +157,8 @@ impl<W: Write> Sink<W> {
 
 pub(crate) fn run(args: &CliArgs, source: InputSource) -> Result<()> {
     let started = Instant::now();
-    let job_id = std::env::var(crate::stream_supervisor::JOB_ENV)
-        .unwrap_or_else(|_| std::process::id().to_string());
+    let job_id =
+        std::env::var(crate::job::JOB_ENV).unwrap_or_else(|_| std::process::id().to_string());
     let mut sink = Sink {
         writer: io::stdout().lock(),
         json: matches!(args.output_format, crate::types::OutputFormat::Json),

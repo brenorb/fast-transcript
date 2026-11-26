@@ -29,11 +29,11 @@ def run_cli(binary: Path, *args: str) -> str:
 
 class ReleaseArtifactTests(unittest.TestCase):
     def test_release_binary_reports_package_version(self) -> None:
-        self.assertTrue(RELEASE_BINARY.exists(), f"missing release binary: {RELEASE_BINARY}")
-        self.assertEqual(
-            run_cli(RELEASE_BINARY, "--version").strip(),
-            f"fscript {PACKAGE_VERSION}",
-        )
+        for name in ("fscript", "fscriptctl"):
+            with self.subTest(name=name):
+                binary = RELEASE_BINARY.with_name(name)
+                self.assertTrue(binary.exists(), f"missing release binary: {binary}")
+                self.assertEqual(run_cli(binary, "--version").strip(), f"{name} {PACKAGE_VERSION}")
 
     def test_wheel_binary_matches_release_binary(self) -> None:
         if not DIST_DIR.exists():
@@ -53,26 +53,21 @@ class ReleaseArtifactTests(unittest.TestCase):
         )
         wheel = wheels[0]
 
-        release_version = run_cli(RELEASE_BINARY, "--version")
-        release_help = run_cli(RELEASE_BINARY, "--help")
-
         with tempfile.TemporaryDirectory(prefix="fscript-wheel-check-") as tmpdir:
-            extracted = Path(tmpdir) / "fscript"
             with zipfile.ZipFile(wheel) as archive:
-                binary_members = [
-                    name for name in archive.namelist() if name.endswith("/bin/fscript")
-                ]
-                self.assertEqual(
-                    len(binary_members),
-                    1,
-                    f"expected exactly one bundled binary in {wheel.name}, found {binary_members}",
-                )
-                extracted.write_bytes(archive.read(binary_members[0]))
-
-            extracted.chmod(extracted.stat().st_mode | stat.S_IXUSR)
-
-            self.assertEqual(run_cli(extracted, "--version"), release_version)
-            self.assertEqual(run_cli(extracted, "--help"), release_help)
+                entrypoints = next(name for name in archive.namelist() if name.endswith(".dist-info/entry_points.txt"))
+                entrypoints = archive.read(entrypoints).decode("utf-8")
+                self.assertIn("fscript = fscript._cli:main", entrypoints)
+                self.assertIn("fscriptctl = fscript._cli:control_main", entrypoints)
+                for name in ("fscript", "fscriptctl"):
+                    with self.subTest(name=name):
+                        members = [member for member in archive.namelist() if member.endswith(f"/bin/{name}")]
+                        self.assertEqual(len(members), 1, f"expected one bundled {name} in {wheel.name}")
+                        extracted = Path(tmpdir) / name
+                        extracted.write_bytes(archive.read(members[0]))
+                        extracted.chmod(extracted.stat().st_mode | stat.S_IXUSR)
+                        for flag in ("--version", "--help", "--manual", "--man-page"):
+                            self.assertEqual(run_cli(extracted, flag), run_cli(RELEASE_BINARY.with_name(name), flag))
 
 
 if __name__ == "__main__":
