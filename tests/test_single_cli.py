@@ -38,7 +38,7 @@ class SingleCLI(unittest.TestCase):
 
     def test_reserved_filenames_use_explicit_paths_and_action_help_stays_offline(self):
         self.cli('models', 'set', 'ultra')
-        for name in ['notes', 'models', 'agents', 'export', 'skill']:
+        for name in ['notes', 'models', 'agents', 'export', 'skill', 'record']:
             shutil.copyfile(self.fixture.source, self.root / name)
             result = self.cli('./' + name)
             self.assertTrue(Path(result.stdout.strip()).is_file())

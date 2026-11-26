@@ -42,7 +42,7 @@ mod routing_tests {
 
     #[test]
     fn actions_share_one_entrypoint_without_consuming_media_option_values() {
-        for action in ["notes", "export", "models", "agents", "skill"] {
+        for action in ["notes", "export", "models", "agents", "skill", "record"] {
             assert_eq!(arguments(&args(&[action])), Some(args(&[action])));
             assert!(arguments(&args(&["--quiet", "--json", action])).is_some());
             assert!(arguments(&args(&["--", action])).is_none());
@@ -69,6 +69,14 @@ fn command() -> Command {
         .arg(Arg::new("man-page").long("man-page").action(ArgAction::SetTrue).help("Export the control manual for man(1)"))
         .subcommand(Command::new("skill").about("Print the bundled agent skill")
             .subcommand(Command::new("path").about("Print a local path to the bundled skill")))
+        .subcommand(Command::new("record").about("Dictate using the default microphone")
+            .after_help("Examples:\n  fscript record\n  fscript record --duration 10\n  fscript record --control --json\n\nCtrl-C finishes a terminal recording; a second interrupt cancels. Control mode reads JSONL start/stop/cancel/shutdown requests on stdin and keeps the model loaded.")
+            .arg(Arg::new("duration").long("duration").conflicts_with("control").help("Stop automatically after this many seconds of microphone capture"))
+            .arg(Arg::new("control").long("control").action(ArgAction::SetTrue).help("Serve explicit JSONL recording requests on stdin with one warm model"))
+            .arg(Arg::new("output-dir").long("output-dir").help("Save each completed JSON transcript in a unique child directory"))
+            .arg(Arg::new("model").long("model").help("Override the shared speech-model preference"))
+            .arg(Arg::new("device").long("device").default_value("auto").help("Inference device; auto, cpu, mps, mlx, or cuda as supported by the model"))
+            .arg(Arg::new("model-dir").long("model-dir").help("Existing speech-model directory")))
         .subcommand(Command::new("export").about("Export a completed transcript without transcribing again")
             .after_help("Examples:\n  fscript export meeting.json\n  fscript export meeting.json --format srt\n  fscript media.wav --stream --json | fscript export - --format plain")
             .arg(Arg::new("input").required(true).help("Complete fscript JSON/JSONL file, or - for stdin"))
@@ -105,7 +113,15 @@ fn matches(raw: &[String]) -> std::result::Result<ArgMatches, clap::Error> {
 
 pub(crate) fn needs_supervision(raw: &[String]) -> bool {
     matches(raw).is_ok_and(|matches| {
-        matches.subcommand_name() == Some("notes") && !matches.get_flag("manual")
+        matches!(matches.subcommand_name(), Some("notes" | "record")) && !matches.get_flag("manual")
+    })
+}
+
+pub(crate) fn finish_on_interrupt(raw: &[String]) -> bool {
+    matches(raw).is_ok_and(|matches| {
+        matches
+            .subcommand()
+            .is_some_and(|(name, values)| name == "record" && !values.get_flag("control"))
     })
 }
 
@@ -204,6 +220,36 @@ pub(crate) fn run(raw: Vec<String>) -> Result<()> {
                     .context("--timeout is outside the supported duration range")?,
             })?;
             crate::notes::emit(&result, json)
+        }
+        Some(("record", values)) => {
+            let duration = values
+                .get_one::<String>("duration")
+                .map(|value| {
+                    let seconds = value
+                        .parse::<f64>()
+                        .context("--duration requires positive finite seconds")?;
+                    if !seconds.is_finite() || seconds <= 0.0 {
+                        bail!("--duration requires positive finite seconds");
+                    }
+                    std::time::Duration::try_from_secs_f64(seconds)
+                        .context("--duration is outside the supported range")
+                })
+                .transpose()?;
+            // Reuse the media parser's model selection, environment, preference,
+            // text renderer, and chunk defaults instead of inventing another path.
+            let mut args = vec!["microphone".into(), "--text=plain".into()];
+            for name in ["model", "device", "model-dir"] {
+                if let Some(value) = values.get_one::<String>(name) {
+                    args.extend([format!("--{name}"), value.clone()]);
+                }
+            }
+            crate::recording::run(crate::recording::Options {
+                args: crate::cli::parse_args(&args)?,
+                control: values.get_flag("control"),
+                json,
+                duration,
+                output_directory: values.get_one::<String>("output-dir").map(PathBuf::from),
+            })
         }
         Some(("agents", values)) => run_agents(values, json),
         Some(("models", values)) => run_models(values, json),

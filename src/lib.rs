@@ -3,6 +3,7 @@ mod diagnostics;
 mod agents;
 mod app;
 mod audio;
+mod capture;
 mod cli;
 mod control;
 mod delivery;
@@ -21,6 +22,7 @@ mod notes_input;
 mod output;
 mod pcm_stream;
 mod progress;
+mod recording;
 mod remote;
 mod settings;
 mod streaming;
@@ -68,10 +70,11 @@ pub fn run_from_args(raw_args: Vec<String>) -> Result<()> {
 pub fn run_cli_from_args(raw_args: Vec<String>) -> Result<i32> {
     if let Some(arguments) = control::arguments(&raw_args) {
         let supervised = control::needs_supervision(&arguments);
-        job::run(arguments, control::run, supervised)
+        let finish_on_interrupt = control::finish_on_interrupt(&arguments);
+        job::run(arguments, control::run, supervised, finish_on_interrupt)
     } else {
         let stream = cli::parse_command(&raw_args).is_ok_and(|matches| matches.get_flag("stream"));
-        job::run(raw_args, app::run, stream)
+        job::run(raw_args, app::run, stream, false)
     }
 }
 

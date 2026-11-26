@@ -60,6 +60,7 @@ with tempfile.TemporaryDirectory(prefix='.fast-transcript-app-', dir=output.pare
                 CFBundleIdentifier='com.brenorb.fast-transcript', CFBundleExecutable='FastTranscriptApp',
                 CFBundlePackageType='APPL', CFBundleShortVersionString=version, CFBundleVersion=version,
                 LSMinimumSystemVersion='14.0', NSHighResolutionCapable=True,
+                NSMicrophoneUsageDescription='Transcribe your voice locally while you record or hold the dictation button.',
                 CFBundleDocumentTypes=[dict(CFBundleTypeName='Audio and video', CFBundleTypeRole='Viewer',
                                            LSHandlerRank='Alternate', LSItemContentTypes=['public.audio', 'public.movie'])])
     (bundle / 'Contents/Info.plist').write_bytes(plistlib.dumps(info))

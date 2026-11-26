@@ -34,13 +34,13 @@ flag-based actions. We do not add a second flag spelling for each new action.
 | Models | `fscript models`, `fscript models set NAME` | Show catalog/default or save a preference without model loading. |
 | Agents | `fscript agents`, `fscript agents set NAME` | Inspect available agents or save the preferred one. |
 | Export | `fscript export TRANSCRIPT --format srt` | Render a completed document without inference. |
-| Dictation (planned) | `fscript record` | Capture microphone audio. |
+| Dictation | `fscript record` | Capture the default microphone; Ctrl-C finishes. `--duration` or `--control` supports agents. |
 | Meetings (planned) | `fscript record --source meeting` | Separate mic/system tracks and a durable session. |
 | Session control (planned) | `fscript sessions list`, `fscript sessions stop ID` | Explicit noninteractive control. |
 | Detection (planned) | `fscript calls watch`, `fscript calendar list` | Inspect native adapter evidence. |
 
 Action names are reserved in command position. Files named notes, models, agents,
-export, or skill use explicit paths such as `./notes`, or `fscript -- notes`. This is
+export, skill, or record use explicit paths such as `./notes`, or `fscript -- notes`. This is
 an intentional breaking choice for this young app, avoiding a separate command
 and filesystem-dependent guessing. Normal filenames and URLs remain unchanged.
 Root --help discovers actions; `fscript notes --help` and `fscript help notes`

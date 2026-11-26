@@ -19,6 +19,9 @@ fscript models set NAME
 fscript models reset
 fscript skill
 fscript skill path
+fscript record
+fscript record --duration 10
+fscript record --control --json
 ```
 
 ## Action defaults
@@ -62,6 +65,20 @@ the application configuration directory under skills/fast-transcript/SKILL.md.
 FSCRIPT_SKILL_DIR overrides that cache directory. With --json, skill returns
 version, name, content, and an optional path. This follows Say It's skill/path
 convention while keeping bare skill useful with no additional arguments.
+
+## Microphone dictation
+
+Run fscript record to capture the default macOS microphone and print the finished
+plain transcript. Ctrl-C finishes capture and transcribes; a second Ctrl-C cancels.
+SIGTERM/SIGHUP cancel immediately with status 130. For unattended use, supply
+--duration SECONDS, or --control for explicit JSONL start/stop/cancel/shutdown
+requests on stdin. Control mode keeps the loaded model across recordings.
+--json selects version 1 lifecycle events; control mode always emits those events.
+--output-dir DIR saves completed JSON documents in unique child directories.
+Microphone audio is temporary and is removed on completion or cancellation.
+Model/device overrides reuse the file-transcription configuration. Help never
+opens the microphone or loads a model. See docs/recording.md for the protocol,
+permissions, platform coverage, and validation.
 
 ## Agent settings
 

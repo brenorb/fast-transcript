@@ -44,6 +44,12 @@ local audio recognition; it may require more download/model work. Model download
 and SDK setup occur on first use. Inspect `fscript models --json` when choosing a
 model; `fscript models set NAME` saves the same preference used by the desktop.
 
+For microphone dictation on macOS, `fscript record --duration 10 --json` runs
+without terminal interaction. `fscript record --control --json` accepts newline
+JSON objects with action start, stop, cancel, or shutdown and reuses one model.
+Recording events use their own version 1 lifecycle (see `fscript record --help`).
+Use stop to finish; closing the controller mid-recording discards the clip.
+
 Completed JSON/JSONL can be exported without rerunning recognition:
 
 ```bash
@@ -59,6 +65,6 @@ and configured model provider. Use `fscript agents` to inspect availability and
 
 Use `fscript --help`, nested help such as `fscript notes --help`, or the complete
 offline `fscript --manual` when details are needed. Action names are reserved:
-for an actual file named notes, models, agents, export, or skill, pass an explicit
+for an actual file named notes, models, agents, export, skill, or record, pass an explicit
 path such as `./notes` or use `fscript -- notes`. Help/discovery never loads a
 speech model or starts a note agent.
