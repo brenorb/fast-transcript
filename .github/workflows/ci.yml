@@ -64,3 +64,18 @@ jobs:
           fscript --help >/dev/null
           fscriptctl --version
           fscriptctl --help >/dev/null
+
+  desktop:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install native client test dependencies
+        run: brew install ffmpeg
+      - name: Build the shared CLI
+        run: cargo build --locked
+      - name: Native process E2E, protocol properties, and batch differential tests
+        run: python3 scripts/test_desktop_client.py

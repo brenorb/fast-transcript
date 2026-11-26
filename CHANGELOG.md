@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add the native macOS process/protocol client for the desktop app milestone, with pre-EOF pipe delivery, strict JSONL lifecycle checks, cancellation, and CLI/batch differential tests. The desktop interface remains in development.
+
 - Export completed JSON/JSONL transcripts with `fscriptctl export`, reusing text, speaker, SRT, VTT, and JSON renderers without rerunning inference.
 
 - Expose the shared model catalog, saved preference, and effective environment override through noninteractive `fscriptctl models` commands and versioned JSON.
