@@ -11,6 +11,7 @@ mod input;
 mod media_range;
 mod model;
 mod model_catalog;
+mod notes_input;
 mod output;
 mod pcm_stream;
 mod progress;

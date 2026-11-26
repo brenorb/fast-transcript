@@ -10,7 +10,7 @@ outside these commits.
 | 0 | Reference study and architecture | Complete | Pin Handy, Say It, and OpenOats source revisions; document reusable patterns and detection behavior. |
 | 1 | Partial transcription | Complete | `--start`, `--end`, `--last`; local/stdin/remote audio/captions; original timestamps; [validation evidence](partial-transcription-validation.md). |
 | 2 | Incremental transcription | Complete | `--stream` / JSONL protocol, bounded PCM, short opening windows, one loaded model per job, final export/diarization, process cancellation; [validation](streaming-validation.md). |
-| 3 | External agent notes | Planned | Noninteractive headless process adapters for Claude Code, omp, Codex, and custom commands; transcript via stdin; summaries, decisions, action items; no embedded LLM implementation. |
+| 3 | External agent notes | In development | Noninteractive headless process adapters for Claude Code, omp, Codex, and custom commands; transcript via stdin; summaries, decisions, action items; no embedded LLM implementation. |
 | 4 | Desktop file/URL app | Planned | Native macOS shell around the same CLI protocol, drop/open/paste, live transcript, copy/export, cancel, persisted model picker. Button E2E with Computer Use. |
 | 5 | Dictation | Planned | Shared CLI microphone capture; GUI hold-to-talk and global shortcut, release to finish, optional paste, clear recording state, model warm reuse. |
 | 6 | Live meetings | Planned | Microphone and system audio captured separately, local incremental transcription, visible speaker channels, durable recording and recovery, CLI start/stop/status. |

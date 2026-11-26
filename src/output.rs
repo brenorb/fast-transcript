@@ -39,7 +39,7 @@ pub(crate) fn format_hhmmss(seconds: f64) -> String {
     format!("{hours:02}:{minutes:02}:{seconds:02}")
 }
 
-fn format_subtitle_timestamp(seconds: f64, millis_separator: char) -> String {
+pub(crate) fn format_subtitle_timestamp(seconds: f64, millis_separator: char) -> String {
     let total_millis = if seconds.is_finite() {
         (seconds.max(0.0) * 1000.0).round() as u64
     } else {
