@@ -154,7 +154,7 @@ fn cleaned_benchmark_chunk(chunk: &BenchmarkChunk) -> BenchmarkChunk {
     cleaned
 }
 
-fn cleaned_benchmark_result(result: &BenchmarkResult) -> BenchmarkResult {
+pub(crate) fn cleaned_benchmark_result(result: &BenchmarkResult) -> BenchmarkResult {
     let mut cleaned = result.clone();
     cleaned.text = clean_pathological_repeated_words(&cleaned.text);
     cleaned.chunks = cleaned

@@ -45,6 +45,10 @@ impl MediaRange {
         self != Self::default()
     }
 
+    pub(crate) fn needs_duration(self) -> bool {
+        self.last.is_some()
+    }
+
     pub(crate) fn resolve(self, duration: Option<f64>) -> Result<ResolvedRange> {
         let duration = duration.filter(|v| v.is_finite() && *v > 0.0);
         let start_s = match self.last {

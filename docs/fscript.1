@@ -80,6 +80,14 @@ flattens the transcript.
 .IP \(bu 2
 \fB\-\-json\fR: structured transcript, segments, model metadata, and timings.
 .IP \(bu 2
+\fB\-\-stream\fR: transcribe while media is decoded; live text goes to stdout.
+Add \fB\-\-json\fR for versioned JSONL events. Uses two\-second opening chunks
+until text is recognized, then eight\-second chunks with half a second of
+overlap; an explicit \fB\-\-chunk\fR uses that size throughout. Streaming does
+not implicitly enable diarization. Use \fB\-\-diarize\fR for labels after
+decoding finishes. An explicit output path saves the final transcript in
+addition to the live stdout stream.
+.IP \(bu 2
 \fB\-\-srt\fR, \fB\-\-vtt\fR: experimental subtitle formats.
 .IP \(bu 2
 \fB\-o, \-\-output PATH\fR: output file or directory. A trailing slash denotes
@@ -208,6 +216,43 @@ If no cues intersect the selection, the caption transcript is empty.
 .PP
 Selection uses the same default output filename as a whole\-media run. Use a
 different destination to retain both versions.
+.SH STREAMING
+\fBfscript MEDIA \-\-stream\fR prints provisional live text on stdout without
+creating
+a default output file. Add \fB\-\-json\fR for flushed version 1 JSONL events;
+each event
+has \fBversion\fR, \fBjob_id\fR, increasing \fBsequence\fR, \fBtype\fR, and
+\fBdata\fR fields. Events
+are \fBstarted\fR, \fBready\fR, \fBupdate\fR, \fBcompleted\fR, and
+\fBerror\fR. Update data contains a
+full replacement snapshot (\fBtext\fR, \fBsegments\fR, latest \fBchunk\fR),
+not a text delta.
+Only \fBcompleted\fR plus exit status 0 proves a successful complete
+transcript.
+.PP
+Final data uses the ordinary cleanup and speaker assignment. Live human output
+is raw append\-only text; machine consumers should replace provisional
+snapshots
+with \fBcompleted.data.result\fR. An explicit destination saves that final
+transcript
+while keeping live output on stdout. A JSON destination is a JSON document,
+not
+an event log. Errors leave an existing destination unchanged.
+.PP
+Local files, ordinary piped media, and resolved HTTP(S) audio streams decode
+incrementally. Remote captions still take precedence when eligible;
+\fB\-\-local\fR
+forces recognition. Last\-duration selection on stdin first spools the input
+to
+discover its duration. Streaming disables implicit diarization; explicit
+\fB\-\-diarize\fR adds labels to the final result after streamed decoding.
+.PP
+The CLI worker process group is cancelled by Ctrl\-C, SIGTERM, or SIGHUP on
+macOS/Linux; helpers stop, scratch files are removed, and exit status is 130.
+Cancellation can end JSONL without a terminal event. A closed stdout consumer
+stops the job successfully. Use ordinary transcription for SRT/VTT export.
+Full protocol and timing definitions:
+https://github.com/brenorb/fast\-transcript/blob/main/docs/incremental\-transcription.md
 .SH CONFIGURATION
 Model selection precedence is explicit \fB\-\-model\fR or
 \fB\-\-model\-url\fR, then

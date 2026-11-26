@@ -4,8 +4,7 @@ use crate::cli::{parse_args_with_default_model, usage, version_string};
 use crate::delivery::{default_output_path_for_input, write_stdout, OutputDestination};
 use crate::output::render_output;
 use crate::remote::{
-    download_manual_remote_transcript, download_remote_audio, infer_input_source,
-    load_remote_video_info, DirectTranscript,
+    download_remote_audio, infer_input_source, resolve_remote_input, DirectTranscript,
 };
 use crate::transcribe::{transcribe_audio_input, transcribe_prepared_audio};
 use crate::types::{BenchmarkChunk, BenchmarkResult, CliArgs, InputSource};
@@ -82,6 +81,9 @@ pub(crate) fn run(raw_args: Vec<String>) -> Result<()> {
         std::eprintln!("{notice}");
     }
     let input_source = infer_input_source(&args.input);
+    if args.stream {
+        return crate::streaming::run(&args, input_source);
+    }
 
     match &input_source {
         InputSource::Stdin => {
@@ -103,41 +105,21 @@ pub(crate) fn run(raw_args: Vec<String>) -> Result<()> {
 }
 
 fn handle_remote_input(args: &CliArgs, input_source: &InputSource, url: &str) -> Result<()> {
-    let info = load_remote_video_info(url)?;
-    let range = args.media_range.resolve(info.duration)?;
+    let (info, range, transcript) = resolve_remote_input(url, args)?;
     let destination = output_destination_for_args(
         args,
         input_source,
         info.title.as_deref().or(info.id.as_deref()),
     )?;
 
-    if !args.force_local_for_remote && args.diarization.is_none() {
-        match download_manual_remote_transcript(url, &info) {
-            Ok(Some(mut transcript)) => {
-                if args.media_range.is_selected() {
-                    range.clip_segments(&mut transcript.segments);
-                    transcript.text = transcript
-                        .segments
-                        .iter()
-                        .map(|segment| segment.text.as_str())
-                        .collect::<Vec<_>>()
-                        .join(" ");
-                }
-                let result = manual_subtitle_result(url, transcript);
-                return emit_result_with_status(
-                    args,
-                    &result,
-                    destination,
-                    "done: used manual subtitles via yt-dlp",
-                );
-            }
-            Ok(None) => {}
-            Err(error) => {
-                std::eprintln!(
-                    "warning: manual subtitle download failed; falling back to remote audio download: {error}"
-                );
-            }
-        }
+    if let Some(transcript) = transcript {
+        let result = manual_subtitle_result(url, transcript);
+        return emit_result_with_status(
+            args,
+            &result,
+            destination,
+            "done: used manual subtitles via yt-dlp",
+        );
     }
 
     let downloaded_audio = download_remote_audio(url, range)?;
@@ -154,7 +136,7 @@ fn handle_remote_input(args: &CliArgs, input_source: &InputSource, url: &str) ->
     emit_result(args, &result, destination)
 }
 
-fn output_destination_for_args(
+pub(crate) fn output_destination_for_args(
     args: &CliArgs,
     input_source: &InputSource,
     title_hint: Option<&str>,
@@ -173,7 +155,10 @@ fn output_destination_for_args(
     ))
 }
 
-fn manual_subtitle_result(input_source: &str, transcript: DirectTranscript) -> BenchmarkResult {
+pub(crate) fn manual_subtitle_result(
+    input_source: &str,
+    transcript: DirectTranscript,
+) -> BenchmarkResult {
     let start_s = transcript.segments.first().map_or(0.0, |cue| cue.start_s);
     let end_s = transcript.segments.last().map_or(start_s, |cue| cue.end_s);
     BenchmarkResult {

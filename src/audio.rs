@@ -5,7 +5,7 @@ use std::process::Command;
 use crate::media_range::{MediaRange, ResolvedRange};
 use crate::types::{FfprobeOutput, FfprobeStream, PreparedAudio};
 
-fn probe_duration(path: &Path) -> Result<Option<f64>> {
+pub(crate) fn probe_duration(path: &Path) -> Result<Option<f64>> {
     let path_argument = std::path::absolute(path)
         .with_context(|| format!("failed to resolve audio path {}", path.display()))?;
     let output = Command::new("ffprobe")

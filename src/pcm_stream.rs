@@ -2,10 +2,46 @@
 
 use anyhow::{bail, Context, Result};
 
+#[derive(Default)]
+pub(crate) struct Pcm16Decoder {
+    pending: Option<u8>,
+}
+
+impl Pcm16Decoder {
+    pub(crate) fn push(&mut self, bytes: &[u8]) -> Vec<i16> {
+        if bytes.is_empty() {
+            return Vec::new();
+        }
+        let mut samples = Vec::with_capacity(bytes.len() / 2 + 1);
+        let start = if let Some(first) = self.pending.take() {
+            samples.push(i16::from_le_bytes([first, bytes[0]]));
+            1
+        } else {
+            0
+        };
+        let mut pairs = bytes[start..].chunks_exact(2);
+        samples.extend(
+            pairs
+                .by_ref()
+                .map(|pair| i16::from_le_bytes([pair[0], pair[1]])),
+        );
+        self.pending = pairs.remainder().first().copied();
+        samples
+    }
+
+    pub(crate) fn finish(&self) -> Result<()> {
+        if self.pending.is_some() {
+            bail!("FFmpeg produced an incomplete PCM sample");
+        }
+        Ok(())
+    }
+}
+
 pub(crate) struct PcmChunker {
     buffer: Vec<f32>,
     chunk: usize,
     target: usize,
+    next_target: usize,
     overlap: usize,
     start: usize,
     decoded_end: usize,
@@ -21,6 +57,7 @@ impl PcmChunker {
             buffer: Vec::new(),
             chunk,
             target: opening,
+            next_target: chunk,
             overlap,
             start: 0,
             decoded_end: 0,
@@ -30,6 +67,16 @@ impl PcmChunker {
 
     pub(crate) fn received(&self) -> usize {
         self.received
+    }
+
+    /// Keep short opening windows while the model has not recognized any text.
+    pub(crate) fn hold_opening(&mut self) {
+        self.next_target = self.target;
+    }
+
+    pub(crate) fn use_steady_chunks(&mut self) {
+        self.next_target = self.chunk;
+        self.target = self.chunk;
     }
 
     pub(crate) fn push(
@@ -52,7 +99,7 @@ impl PcmChunker {
                 self.start += consumed;
                 self.buffer.copy_within(consumed.., 0);
                 self.buffer.truncate(self.overlap);
-                self.target = self.chunk;
+                self.target = self.next_target;
             }
         }
         Ok(())
@@ -77,6 +124,37 @@ mod tests {
     use crate::engine::SpeechEngine;
     use crate::inference::{build_chunk_ranges, transcribe_samples, InferenceOutcome};
     use transcribe_rs::{TranscriptionResult, TranscriptionSegment};
+
+    #[test]
+    fn property_pcm_byte_fragmentation_preserves_signed_samples() {
+        let mut state = 999u64;
+        let mut random = || {
+            state = state.wrapping_mul(6364136223846793005).wrapping_add(1);
+            state
+        };
+        for _ in 0..1000 {
+            let length = random() as usize % 500;
+            let original: Vec<_> = (0..length).map(|_| random() as i16).collect();
+            let bytes: Vec<_> = original
+                .iter()
+                .flat_map(|sample| sample.to_le_bytes())
+                .collect();
+            let mut decoder = Pcm16Decoder::default();
+            let mut decoded = Vec::new();
+            let mut at = 0;
+            while at < bytes.len() {
+                let end = (at + random() as usize % 37 + 1).min(bytes.len());
+                decoded.extend(decoder.push(&bytes[at..end]));
+                assert!(decoder.push(&[]).is_empty());
+                at = end;
+            }
+            decoder.finish().unwrap();
+            assert_eq!(decoded, original);
+        }
+        let mut decoder = Pcm16Decoder::default();
+        assert!(decoder.push(&[255]).is_empty());
+        assert!(decoder.finish().is_err());
+    }
 
     #[test]
     fn property_arbitrary_arrival_boundaries_match_batch_ranges_and_preserve_every_sample() {
@@ -129,6 +207,23 @@ mod tests {
         assert_eq!(ranges, [(0, 2), (1, 9)]);
         assert!(PcmChunker::new(8, 2, 2).is_err());
         assert!(PcmChunker::new(0, 0, 0).is_err());
+    }
+
+    #[test]
+    fn opening_can_stay_short_until_text_is_available() {
+        let mut chunker = PcmChunker::new(8, 1, 2).unwrap();
+        chunker.hold_opening();
+        let mut ranges = Vec::new();
+        let mut collect = |start, audio: &[f32]| {
+            ranges.push((start, start + audio.len()));
+            Ok(())
+        };
+        chunker.push(&[0.0; 2], &mut collect).unwrap();
+        chunker.push(&[0.0; 1], &mut collect).unwrap();
+        chunker.use_steady_chunks();
+        chunker.push(&[0.0; 7], &mut collect).unwrap();
+        chunker.finish(&mut collect).unwrap();
+        assert_eq!(ranges, [(0, 2), (1, 3), (2, 10)]);
     }
 
     #[test]

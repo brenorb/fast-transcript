@@ -69,6 +69,7 @@ do not reinterpret them as options. To read a file named help, use
 - `--speakers[=plain|timestamps]`: speaker-aware text; timestamps are the default.
 - `--text[=plain|compact|timestamps]`: text without diarization; timestamps are the default. Plain writes one segment per line; compact flattens the transcript.
 - `--json`: structured transcript, segments, model metadata, and timings.
+- `--stream`: transcribe while media is decoded; live text goes to stdout. Add `--json` for versioned JSONL events. Uses two-second opening chunks until text is recognized, then eight-second chunks with half a second of overlap; an explicit `--chunk` uses that size throughout. Streaming does not implicitly enable diarization. Use `--diarize` for labels after decoding finishes. An explicit output path saves the final transcript in addition to the live stdout stream.
 - `--srt`, `--vtt`: experimental subtitle formats.
 - `-o, --output PATH`: output file or directory. A trailing slash denotes a directory even if it does not exist. `--output -` writes transcript contents to stdout.
 - `--stdout`: write transcript contents to stdout. A positional destination of `-` is equivalent.
@@ -131,6 +132,33 @@ If no cues intersect the selection, the caption transcript is empty.
 
 Selection uses the same default output filename as a whole-media run. Use a
 different destination to retain both versions.
+
+## Streaming
+
+`fscript MEDIA --stream` prints provisional live text on stdout without creating
+a default output file. Add `--json` for flushed version 1 JSONL events; each event
+has `version`, `job_id`, increasing `sequence`, `type`, and `data` fields. Events
+are `started`, `ready`, `update`, `completed`, and `error`. Update data contains a
+full replacement snapshot (`text`, `segments`, latest `chunk`), not a text delta.
+Only `completed` plus exit status 0 proves a successful complete transcript.
+
+Final data uses the ordinary cleanup and speaker assignment. Live human output
+is raw append-only text; machine consumers should replace provisional snapshots
+with `completed.data.result`. An explicit destination saves that final transcript
+while keeping live output on stdout. A JSON destination is a JSON document, not
+an event log. Errors leave an existing destination unchanged.
+
+Local files, ordinary piped media, and resolved HTTP(S) audio streams decode
+incrementally. Remote captions still take precedence when eligible; `--local`
+forces recognition. Last-duration selection on stdin first spools the input to
+discover its duration. Streaming disables implicit diarization; explicit
+`--diarize` adds labels to the final result after streamed decoding.
+
+The CLI worker process group is cancelled by Ctrl-C, SIGTERM, or SIGHUP on
+macOS/Linux; helpers stop, scratch files are removed, and exit status is 130.
+Cancellation can end JSONL without a terminal event. A closed stdout consumer
+stops the job successfully. Use ordinary transcription for SRT/VTT export.
+Full protocol and timing definitions: https://github.com/brenorb/fast-transcript/blob/main/docs/incremental-transcription.md
 
 ## Configuration
 

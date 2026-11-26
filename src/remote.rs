@@ -13,6 +13,8 @@ pub(crate) struct YtDlpVideoInfo {
     pub(crate) id: Option<String>,
     pub(crate) title: Option<String>,
     pub(crate) duration: Option<f64>,
+    pub(crate) url: Option<String>,
+    pub(crate) http_headers: Option<BTreeMap<String, String>>,
     pub(crate) subtitles: Option<BTreeMap<String, Vec<YtDlpSubtitleTrack>>>,
 }
 
@@ -219,7 +221,14 @@ pub(crate) fn parse_json3_segments(contents: &str) -> Result<Vec<TranscriptSegme
 
 pub(crate) fn load_remote_video_info(url: &str) -> Result<YtDlpVideoInfo> {
     let output = run_command(
-        yt_dlp_command().args(["--dump-single-json", "--no-warnings", "--no-playlist", url]),
+        yt_dlp_command().args([
+            "--dump-single-json",
+            "--no-warnings",
+            "--no-playlist",
+            "-f",
+            "bestaudio/best",
+            url,
+        ]),
         "yt-dlp to inspect remote media metadata",
     )
     .with_context(|| "install yt-dlp, or make `uvx yt-dlp` available, to transcribe remote URLs")?;
@@ -294,6 +303,35 @@ pub(crate) fn download_manual_remote_transcript(
     }
 
     Ok(Some(DirectTranscript { text, segments }))
+}
+
+/// Shared remote source selection for batch and incremental jobs.
+pub(crate) fn resolve_remote_input(
+    url: &str,
+    args: &crate::types::CliArgs,
+) -> Result<(
+    YtDlpVideoInfo,
+    crate::media_range::ResolvedRange,
+    Option<DirectTranscript>,
+)> {
+    let info = load_remote_video_info(url)?;
+    let range = args.media_range.resolve(info.duration)?;
+    let mut transcript = None;
+    if !args.force_local_for_remote && args.diarization.is_none() {
+        match download_manual_remote_transcript(url, &info) {
+            Ok(found) => transcript = found,
+            Err(error) => std::eprintln!(
+                "warning: manual subtitle download failed; falling back to remote audio: {error}"
+            ),
+        }
+    }
+    if args.media_range.is_selected() {
+        if let Some(transcript) = &mut transcript {
+            range.clip_segments(&mut transcript.segments);
+            transcript.text = join_segment_texts(&transcript.segments);
+        }
+    }
+    Ok((info, range, transcript))
 }
 
 pub(crate) fn download_remote_audio(
@@ -386,6 +424,8 @@ mod tests {
 
         let info = YtDlpVideoInfo {
             duration: None,
+            url: None,
+            http_headers: None,
             id: Some("abc123".to_string()),
             title: Some("Demo".to_string()),
             subtitles: Some(subtitles),

@@ -16,6 +16,8 @@ mod pcm_stream;
 mod progress;
 mod remote;
 mod settings;
+mod stream_supervisor;
+mod streaming;
 mod transcribe;
 mod transcript;
 mod types;
@@ -50,6 +52,11 @@ pub fn version_text() -> String {
 
 pub fn run_from_args(raw_args: Vec<String>) -> Result<()> {
     app::run(raw_args)
+}
+
+/// Binary entry point with process ownership and cancellation for streaming jobs.
+pub fn run_cli_from_args(raw_args: Vec<String>) -> Result<i32> {
+    stream_supervisor::run(raw_args)
 }
 
 pub fn fuzz_parse_args(raw_args: &[String]) {

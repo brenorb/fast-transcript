@@ -73,6 +73,7 @@ pub(crate) fn usage() -> String {
             "Transcript text; text modes never run diarization.",
         ),
         option("--json", "Full JSON result with timings and metadata."),
+        option("--stream", "Live text on stdout; --json selects versioned JSONL events."),
         option("--srt", "Experimental SubRip subtitle output."),
         option("--vtt", "Experimental WebVTT subtitle output."),
         String::new(),
@@ -228,6 +229,7 @@ pub(crate) fn command() -> Command {
     for (name, short) in [
         ("stdout", None),
         ("json", None),
+        ("stream", None),
         ("srt", None),
         ("vtt", None),
         ("raw", None),
@@ -458,6 +460,7 @@ fn parse_args_with_diarization_status_and_default(
 ) -> Result<CliArgs> {
     let matches = parse_command(raw_args)?;
     let fluidaudio_available = matches!(fluidaudio_status, FluidaudioBinaryStatus::Available);
+    let stream = matches.get_flag("stream");
     let input = matches
         .get_one::<String>("input")
         .cloned()
@@ -522,6 +525,9 @@ fn parse_args_with_diarization_status_and_default(
         Some("vtt") => OutputFormat::Subtitle(SubtitleFormat::Vtt),
         _ => OutputFormat::Speakers(SpeakersFormat::Timestamped),
     };
+    if stream && matches!(output_format, OutputFormat::Subtitle(_)) {
+        bail!("--stream supports live text or --json events; export subtitles without --stream");
+    }
     if matches.get_flag("raw") && matches.get_flag("clean") {
         bail!("cannot use both --raw and --clean; remove one");
     }
@@ -601,12 +607,17 @@ fn parse_args_with_diarization_status_and_default(
         let notice = if diarization_backend.is_none()
             && !diarization_backend_explicit
             && !fluidaudio_available
+            && !stream
         {
             missing_diarization_notice(&fluidaudio_status)
         } else {
             None
         };
-        if diarization_backend.is_none() && !diarization_backend_explicit && fluidaudio_available {
+        if diarization_backend.is_none()
+            && !diarization_backend_explicit
+            && fluidaudio_available
+            && !stream
+        {
             diarization_backend = Some(DiarizationBackend::Coreml);
         }
         if diarization_backend.is_none() && diarization_num_speakers.is_some() {
@@ -639,7 +650,14 @@ fn parse_args_with_diarization_status_and_default(
         notice
     };
 
-    let requested_chunk_seconds = chunk_seconds_override.unwrap_or(crate::DEFAULT_CHUNK_SECONDS);
+    let requested_chunk_seconds = chunk_seconds_override.unwrap_or(if stream {
+        8.0
+    } else {
+        crate::DEFAULT_CHUNK_SECONDS
+    });
+    if stream && requested_chunk_seconds == 0.0 {
+        bail!("--stream requires chunking; choose a positive --chunk duration");
+    }
     let (chunk_seconds, chunk_overlap_seconds) = if requested_chunk_seconds == 0.0 {
         let overlap = chunk_overlap_seconds_override.unwrap_or(0.0);
         if overlap > 0.0 {
@@ -647,13 +665,23 @@ fn parse_args_with_diarization_status_and_default(
         }
         (None, 0.0)
     } else {
-        let overlap =
-            chunk_overlap_seconds_override.unwrap_or(crate::DEFAULT_CHUNK_OVERLAP_SECONDS);
+        let overlap = chunk_overlap_seconds_override.unwrap_or(if stream {
+            0.5
+        } else {
+            crate::DEFAULT_CHUNK_OVERLAP_SECONDS
+        });
         if overlap >= requested_chunk_seconds {
             bail!("--overlap must be smaller than --chunk");
         }
         (Some(requested_chunk_seconds), overlap)
     };
+    if stream {
+        let chunk_samples = (requested_chunk_seconds * crate::SAMPLE_RATE as f64).round();
+        let overlap_samples = (chunk_overlap_seconds * crate::SAMPLE_RATE as f64).round();
+        if chunk_samples < 1.0 || overlap_samples >= chunk_samples {
+            bail!("--stream chunk/overlap must remain distinct when rounded to 16 kHz samples");
+        }
+    }
 
     Ok(CliArgs {
         model: ModelConfig::select(
@@ -672,6 +700,14 @@ fn parse_args_with_diarization_status_and_default(
         clean_output,
         force_local_for_remote,
         media_range,
+        stream,
+        stream_opening_seconds: if stream && chunk_seconds_override.is_none() {
+            2.0_f64
+                .max(chunk_overlap_seconds + 1.0 / crate::SAMPLE_RATE as f64)
+                .min(requested_chunk_seconds)
+        } else {
+            requested_chunk_seconds
+        },
         chunk_seconds,
         chunk_overlap_seconds,
         diarization_notice,
@@ -693,6 +729,53 @@ mod tests {
     use crate::types::{OutputFormat, SpeakersFormat, SubtitleFormat, TextFormat};
     use std::path::Path;
     use std::path::PathBuf;
+
+    #[test]
+    fn streaming_defaults_are_bounded_and_do_not_implicitly_load_diarization() {
+        for helper_available in [true, false] {
+            let args = parse_args_with_diarization_availability(
+                &["audio.wav".into(), "--stream".into(), "--json".into()],
+                helper_available,
+            )
+            .unwrap();
+            assert!(args.stream);
+            assert_eq!(args.chunk_seconds, Some(8.0));
+            assert_eq!(args.chunk_overlap_seconds, 0.5);
+            assert_eq!(args.stream_opening_seconds, 2.0);
+            assert!(args.diarization.is_none());
+            assert!(args.diarization_notice.is_none());
+        }
+        for options in [
+            vec!["--chunk", "0"],
+            vec!["--chunk", "0.000001"],
+            vec!["--srt"],
+            vec!["--vtt"],
+        ] {
+            let raw: Vec<String> = ["audio.wav", "--stream"]
+                .into_iter()
+                .chain(options)
+                .map(str::to_owned)
+                .collect();
+            assert!(parse_args_with_diarization_availability(&raw, false).is_err());
+        }
+        let args = parse_args_with_diarization_availability(
+            &[
+                "audio.wav",
+                "--stream",
+                "--chunk",
+                "3",
+                "--overlap",
+                "1",
+                "--diarize",
+                "coreml",
+            ]
+            .map(str::to_owned),
+            true,
+        )
+        .unwrap();
+        assert_eq!(args.stream_opening_seconds, 3.0);
+        assert!(args.diarization.is_some());
+    }
 
     #[test]
     fn saved_default_is_used_and_explicit_selection_skips_loading_settings() {

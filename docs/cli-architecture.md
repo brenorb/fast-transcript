@@ -28,7 +28,7 @@ merely because they appear here.
 | Surface | Planned command | Default behavior |
 | --- | --- | --- |
 | Files and URLs | `fscript recording.m4a` | Save a transcript and print its path. |
-| Incremental file/URL results | `fscript recording.m4a --stream` | Human-readable live text; explicit machine stream option for GUI/agents. |
+| Incremental file/URL results | `fscript recording.m4a --stream` | Shipped: live text; `--json` selects versioned events shared with GUI/agents. |
 | Dictation | `fscriptctl record` | Microphone capture and live text until stopped. |
 | Meetings | `fscriptctl record --source meeting` | Separate mic/system tracks and a durable session. |
 | Session control | `fscriptctl sessions list`, `sessions stop ID`, `sessions show ID` | Explicit target; no interactive selection. |

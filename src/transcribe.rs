@@ -8,7 +8,7 @@ use crate::audio::prepare_audio;
 use crate::diarization::{maybe_diarize_segments, FluidAudioDiarizer};
 use crate::engine::{load_engine, LoadedEngine};
 use crate::inference::{transcribe_samples, InferenceOutcome};
-use crate::types::{BenchmarkResult, CliArgs, PreparedAudio};
+use crate::types::{BenchmarkResult, CliArgs, ModelMetadata, PreparedAudio};
 
 pub(crate) fn transcribe_audio_input(
     args: &CliArgs,
@@ -51,12 +51,7 @@ pub(crate) fn transcribe_prepared_audio(
         directory,
         metadata,
     } = load_engine(&args.model)?;
-    let InferenceOutcome {
-        text,
-        mut chunks,
-        segments: transcript_segments,
-        transcribe_seconds,
-    } = transcribe_samples(
+    let outcome = transcribe_samples(
         engine.as_mut(),
         &samples,
         args.chunk_seconds,
@@ -65,6 +60,51 @@ pub(crate) fn transcribe_prepared_audio(
     drop(engine);
     drop(samples);
 
+    finalize_transcription(
+        args,
+        input_source,
+        audio_path,
+        transcript_source,
+        prepared_audio,
+        CompletedInference {
+            outcome,
+            load_seconds,
+            directory,
+            metadata,
+            audio_seconds,
+        },
+    )
+}
+
+pub(crate) struct CompletedInference {
+    pub(crate) outcome: InferenceOutcome,
+    pub(crate) load_seconds: f64,
+    pub(crate) directory: String,
+    pub(crate) metadata: ModelMetadata,
+    pub(crate) audio_seconds: f64,
+}
+
+pub(crate) fn finalize_transcription(
+    args: &CliArgs,
+    input_source: &str,
+    audio_path: &Path,
+    transcript_source: &str,
+    prepared_audio: PreparedAudio,
+    completed: CompletedInference,
+) -> Result<BenchmarkResult> {
+    let CompletedInference {
+        outcome,
+        load_seconds,
+        directory,
+        metadata,
+        audio_seconds,
+    } = completed;
+    let InferenceOutcome {
+        text,
+        mut chunks,
+        segments: transcript_segments,
+        transcribe_seconds,
+    } = outcome;
     let (mut segments, speaker_diarization) = maybe_diarize_segments(
         &FluidAudioDiarizer::new(),
         &prepared_audio.wav_path,

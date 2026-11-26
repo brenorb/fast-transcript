@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Stream local files, piped media, and remote audio through a shared bounded chunk pipeline with early text and versioned JSONL events.
+- Reuse the loaded model for a streaming job, support final exports and optional final diarization, and clean up job processes on cancellation or closed stdout.
+
 - Transcribe selected media intervals with `--start`, `--end`, or `--last`, keeping original source timestamps.
 - Crop local audio before inference and request remote audio sections through yt-dlp; filter manual captions without loading a model.
 - Document the sequential app roadmap, pinned reference-app study, and CLI architecture guided by clig.dev.

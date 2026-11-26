@@ -132,7 +132,7 @@ fn has_trailing_path_separator(path: &Path) -> bool {
     }
 }
 
-fn write_output_file(contents: &str, output_path: &Path) -> Result<PathBuf> {
+pub(crate) fn write_output_file(contents: &str, output_path: &Path) -> Result<PathBuf> {
     replace_output_file(output_path, |file| writeln!(file, "{contents}"))
 }
 
