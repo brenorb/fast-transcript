@@ -47,7 +47,8 @@ model; `fscript models set NAME` saves the same preference used by the desktop.
 For microphone dictation on macOS, `fscript record --duration 10 --json` runs
 without terminal interaction. `fscript record --control --json` accepts newline
 JSON objects with action start, stop, cancel, or shutdown and reuses one model.
-Recording events use their own version 1 lifecycle (see `fscript record --help`).
+`--hotkey` enables the same warm global hold gesture as the app; ready reports
+the actual selected chord and registration availability. Recording events use their own version 1 lifecycle (see `fscript record --help`).
 Use stop to finish; closing the controller mid-recording discards the clip.
 
 Completed JSON/JSONL can be exported without rerunning recognition:

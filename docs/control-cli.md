@@ -22,6 +22,7 @@ fscript skill path
 fscript record
 fscript record --duration 10
 fscript record --control --json
+fscript record --hotkey
 ```
 
 ## Action defaults
@@ -79,6 +80,15 @@ Microphone audio is temporary and is removed on completion or cancellation.
 Model/device overrides reuse the file-transcription configuration. Help never
 opens the microphone or loads a model. See docs/recording.md for the protocol,
 permissions, platform coverage, and validation.
+
+With --hotkey, record stays warm and captures while the selected global shortcut
+is held. Auto chooses the first available exclusive registration: Control-Shift-
+Space, Control-Shift-D, then Control-Shift-Period. The ready event reports
+shortcut_label and shortcut_available. Supply --hotkey ctrl+shift+d (or the other
+listed chords) to choose explicitly. Shortcut mode may be combined with control;
+a failed registration then leaves control recording usable and reports
+shortcut_error. Without control, registration failure exits nonzero. Ctrl-C
+cancels shortcut mode; it does not finalize an ongoing clip.
 
 ## Agent settings
 
@@ -141,6 +151,25 @@ parsing transcript JSON. It preserves the notes, including existing final blank
 lines, and adds a final newline when absent. Its default destination is
 INPUT.export.md. The same atomic writer, source-overwrite guard, stdout, and JSON
 metadata options apply. Empty Markdown is rejected.
+
+## Clipboard delivery
+
+Export --copy copies the chosen rendering instead of saving another export file.
+The rendered content remains on stdout (or in the --json completion envelope),
+and output_path is null. --paste additionally sends Command-V to the positive
+--target-pid process ID; specifying that explicit target is required. Both flags
+conflict with output paths. Paste requires macOS Accessibility permission and waits
+up to one second for held modifiers to be released. It reports key delivery,
+not an acknowledgement that the receiving application accepted the paste.
+
+Clipboard delivery uses /usr/bin/pbcopy on macOS. FSCRIPT_CLIPBOARD_BINARY may
+point to a literal stdin-to-clipboard executable (also on other platforms),
+without shell evaluation. Failure returns nonzero and never modifies the source
+transcript. The existing transcript remains available if copying/pasting fails.
+Clipboard export jobs use the shared cancellation supervisor. The desktop checks
+that the original app is still active before requesting automatic paste; CLI
+callers supplying target-pid own that focus decision. Default automatic paste is
+off. These APIs are also usable noninteractively by agents.
 
 ## Errors and cancellation
 

@@ -1,8 +1,8 @@
 # Microphone dictation
 
-The shared capture/backend milestone is implemented. The desktop hold button and
-global shortcut are the next part of roadmap milestone 5; that milestone is not
-yet complete.
+The shared backend and native client are implemented. Desktop hold-to-talk and
+the shared global-shortcut/clipboard integration are under end-to-end validation;
+roadmap milestone 5 is not yet complete.
 
 The native process client now supports an explicit two-way control pipe. Writes
 are serialized off the UI thread, bounded to 64 KiB, and protected against SIGPIPE;
@@ -95,6 +95,35 @@ are flushed immediately. The first successful clip includes model load timing;
 later clips report load_seconds 0 and model_reused true. A failed/cancelled clip
 does not unload the model. Exit success is required in addition to a completed
 result when the controller itself has exited.
+
+## Shared shortcut and text delivery
+
+Use fscript record --hotkey for a warm global hold gesture, or combine --hotkey
+with --control for the desktop. Rust owns registration, press/release handling,
+repeat suppression, and microphone/model lifecycle. It uses exclusive Carbon
+registration to detect competing owners, following the [same API behavior
+handled by global-hotkey](https://github.com/tauri-apps/global-hotkey/blob/dev/src/platform_impl/macos/mod.rs).
+Auto tries Control-Shift-Space, Control-Shift-D, then Control-Shift-Period; explicit
+--hotkey ctrl+shift+space, ctrl+shift+d, or ctrl+shift+period selects one chord.
+Ready reports shortcut_label, shortcut_available, and shortcut_error. Control
+clients can still record when global registration fails; bare shortcut mode exits
+nonzero. Cancel/exit unregisters the owned key. A 10,000-pattern property test
+checks repeated input suppression and release edges; queue overflow fails loudly.
+Native event pumping uses a small positive timeout, including while idle.
+Gestures queued during synchronous inference are discarded, avoiding a stale
+press starting capture after the user has already released it.
+
+The desktop's Copy and automatic dictation delivery call fscript export --copy
+with the shared renderer. Optional --paste --target-pid PID adds an explicitly
+targeted Command-V through CoreGraphics. It requires Accessibility permission,
+waits for modifiers to be released, and never types transcript characters as
+shell input. The app additionally checks the originally active application is
+still active; if focus changed or permission is absent, it copies instead.
+The CLI cannot acknowledge that a target accepted paste. Clipboard command
+failures are surfaced; completed transcripts remain saved. The clipboard E2E
+uses a literal fixture executable and compares all rendered bytes without
+changing the real clipboard or injecting keys. Tests reject implicit/invalid
+paste targets and incompatible file destinations before execution.
 
 ## Validation coverage
 

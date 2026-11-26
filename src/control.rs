@@ -71,8 +71,9 @@ fn command() -> Command {
             .subcommand(Command::new("path").about("Print a local path to the bundled skill")))
         .subcommand(Command::new("record").about("Dictate using the default microphone")
             .after_help("Examples:\n  fscript record\n  fscript record --duration 10\n  fscript record --control --json\n\nCtrl-C finishes a terminal recording; a second interrupt cancels. Control mode reads JSONL start/stop/cancel/shutdown requests on stdin and keeps the model loaded.")
-            .arg(Arg::new("duration").long("duration").conflicts_with("control").help("Stop automatically after this many seconds of microphone capture"))
+            .arg(Arg::new("duration").long("duration").conflicts_with_all(["control", "hotkey"]).help("Stop automatically after this many seconds of microphone capture"))
             .arg(Arg::new("control").long("control").action(ArgAction::SetTrue).help("Serve explicit JSONL recording requests on stdin with one warm model"))
+            .arg(Arg::new("hotkey").long("hotkey").num_args(0..=1).default_missing_value("auto").value_parser(["auto", "ctrl+shift+space", "ctrl+shift+d", "ctrl+shift+period"]).help("Keep a warm global hold shortcut; auto chooses the first available chord"))
             .arg(Arg::new("output-dir").long("output-dir").help("Save each completed JSON transcript in a unique child directory"))
             .arg(Arg::new("model").long("model").help("Override the shared speech-model preference"))
             .arg(Arg::new("device").long("device").default_value("auto").help("Inference device; auto, cpu, mps, mlx, or cuda as supported by the model"))
@@ -83,6 +84,9 @@ fn command() -> Command {
             .arg(Arg::new("destination").help("Output file or directory; - writes to stdout"))
             .arg(Arg::new("output").long("output").short('o').conflicts_with("destination").help("Explicit output file or directory"))
             .arg(Arg::new("stdout").long("stdout").action(ArgAction::SetTrue).conflicts_with_all(["output","destination"]).help("Print the export without saving"))
+            .arg(Arg::new("copy").long("copy").action(ArgAction::SetTrue).conflicts_with_all(["output", "destination", "paste"]).help("Copy the rendered text instead of saving another file"))
+            .arg(Arg::new("paste").long("paste").action(ArgAction::SetTrue).requires("target-pid").conflicts_with_all(["output", "destination"]).help("Copy and paste into an explicit target app; requires macOS Accessibility permission"))
+            .arg(Arg::new("target-pid").long("target-pid").requires("paste").value_parser(clap::value_parser!(i32).range(1..)).help("Process ID of the application receiving paste"))
             .arg(Arg::new("format").long("format").default_value("text").value_parser(["text","plain","compact","speakers","srt","vtt","json","markdown"]).help("Completed document format; text includes timestamps")))
         .subcommand(Command::new("models").about("Inspect models and the shared saved preference")
             .subcommand(Command::new("get").about("Show the effective model and preference sources"))
@@ -113,15 +117,21 @@ fn matches(raw: &[String]) -> std::result::Result<ArgMatches, clap::Error> {
 
 pub(crate) fn needs_supervision(raw: &[String]) -> bool {
     matches(raw).is_ok_and(|matches| {
-        matches!(matches.subcommand_name(), Some("notes" | "record")) && !matches.get_flag("manual")
+        (matches!(matches.subcommand_name(), Some("notes" | "record"))
+            || matches.subcommand().is_some_and(|(name, values)| {
+                name == "export" && (values.get_flag("copy") || values.get_flag("paste"))
+            }))
+            && !matches.get_flag("manual")
     })
 }
 
 pub(crate) fn finish_on_interrupt(raw: &[String]) -> bool {
     matches(raw).is_ok_and(|matches| {
-        matches
-            .subcommand()
-            .is_some_and(|(name, values)| name == "record" && !values.get_flag("control"))
+        matches.subcommand().is_some_and(|(name, values)| {
+            name == "record"
+                && !values.get_flag("control")
+                && values.get_one::<String>("hotkey").is_none()
+        })
     })
 }
 
@@ -246,6 +256,7 @@ pub(crate) fn run(raw: Vec<String>) -> Result<()> {
             crate::recording::run(crate::recording::Options {
                 args: crate::cli::parse_args(&args)?,
                 control: values.get_flag("control"),
+                hotkey: values.get_one::<String>("hotkey").cloned(),
                 json,
                 duration,
                 output_directory: values.get_one::<String>("output-dir").map(PathBuf::from),
@@ -262,6 +273,8 @@ pub(crate) fn run(raw: Vec<String>) -> Result<()> {
             values.get_flag("stdout"),
             values.get_one::<String>("format").unwrap(),
             json,
+            values.get_flag("copy"),
+            values.get_one::<i32>("target-pid").copied(),
         ),
         _ => print(&crate::cli::usage()),
     }

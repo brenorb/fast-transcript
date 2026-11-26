@@ -11,6 +11,8 @@ pub(crate) fn run(
     stdout: bool,
     format: &str,
     json: bool,
+    copy: bool,
+    paste_target: Option<i32>,
 ) -> Result<()> {
     let format = if format == "markdown" {
         None
@@ -38,7 +40,15 @@ pub(crate) fn run(
         }
         source.strip_suffix('\n').unwrap_or(&source).to_owned()
     };
-    let output_path = if stdout || output == Some("-") || (input == "-" && output.is_none()) {
+    if copy || paste_target.is_some() {
+        crate::clipboard::deliver(&content, paste_target)?;
+    }
+    let output_path = if copy
+        || paste_target.is_some()
+        || stdout
+        || output == Some("-")
+        || (input == "-" && output.is_none())
+    {
         None
     } else {
         let source = Path::new(if input == "-" { "stdin.json" } else { input });

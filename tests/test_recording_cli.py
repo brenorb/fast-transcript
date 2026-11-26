@@ -137,7 +137,8 @@ class RecordingCLI(unittest.TestCase):
 
     def test_validation_precedes_model_loading(self):
         for args in [[], ['--duration', '0'], ['--duration', 'nan'], ['--duration', '-1'],
-                     ['--duration', '1', '--control']]:
+                     ['--duration', '1', '--control'], ['--duration', '1', '--hotkey'],
+                     ['--hotkey', 'unknown']]:
             result = subprocess.run(self.command(*args), stdin=subprocess.DEVNULL,
                 capture_output=True, env=self.env, timeout=5)
             self.assertNotEqual(result.returncode, 0)

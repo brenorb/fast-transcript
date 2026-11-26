@@ -22,6 +22,7 @@ extern "C" fn stop(_: libc::c_int) {
 pub(crate) struct Options {
     pub(crate) args: CliArgs,
     pub(crate) control: bool,
+    pub(crate) hotkey: Option<String>,
     pub(crate) json: bool,
     pub(crate) duration: Option<Duration>,
     pub(crate) output_directory: Option<PathBuf>,
@@ -72,9 +73,10 @@ struct Active {
     capture: Capture,
     scratch: tempfile::TempDir,
     started: Instant,
+    shortcut: bool,
 }
 impl Active {
-    fn start() -> Result<Self> {
+    fn start(shortcut: bool) -> Result<Self> {
         let scratch = tempfile::Builder::new()
             .prefix("fscript-dictation-")
             .tempdir()?;
@@ -89,12 +91,17 @@ impl Active {
             capture,
             scratch,
             started: Instant::now(),
+            shortcut,
         })
     }
 }
 
 pub(crate) fn run(options: Options) -> Result<()> {
-    if !options.control && options.duration.is_none() && !io::stdin().is_terminal() {
+    if !options.control
+        && options.hotkey.is_none()
+        && options.duration.is_none()
+        && !io::stdin().is_terminal()
+    {
         bail!(
             "record needs a terminal, --duration SECONDS, or --control for unattended start/stop"
         );
@@ -164,16 +171,48 @@ fn run_session(options: &Options, events: &mut Events) -> Result<()> {
     let input = input(options.control);
     eprintln!("loading dictation model...");
     let mut loaded = load_engine(&options.args.model)?;
+    let mut shortcut_error = None;
+    let mut shortcut = if options.hotkey.is_some() {
+        match crate::shortcut::Shortcut::register(options.hotkey.as_deref().unwrap()) {
+            Ok(shortcut) => Some(shortcut),
+            Err(error) if options.control => {
+                shortcut_error = Some(format!("{error:#}"));
+                None
+            }
+            Err(error) => return Err(error),
+        }
+    } else {
+        None
+    };
     events.send(
         "ready",
         None,
-        serde_json::json!({"model":loaded.metadata,"load_seconds":loaded.load_seconds}),
+        serde_json::json!({"model":loaded.metadata,"load_seconds":loaded.load_seconds,"shortcut_available":shortcut.is_some(),"shortcut_error":shortcut_error,"shortcut_label":shortcut.as_ref().map(crate::shortcut::Shortcut::label)}),
     )?;
     let mut active: Option<Active> = None;
-    let mut next = (!options.control).then_some(Request::Start);
+    let mut next = (!options.control && options.hotkey.is_none()).then_some(Request::Start);
+    let mut from_shortcut = false;
     let mut completed = 0usize;
     loop {
-        if !options.control && STOP.swap(false, Ordering::Relaxed) {
+        if let Some(shortcut) = shortcut.as_mut() {
+            for held in shortcut.poll()? {
+                if held && active.is_none() {
+                    next = Some(Request::Start);
+                    from_shortcut = true;
+                } else if !held && active.as_ref().is_some_and(|current| current.shortcut) {
+                    next = Some(Request::Stop);
+                } else if !held
+                    && next
+                        .as_ref()
+                        .is_some_and(|request| matches!(request, Request::Start))
+                    && from_shortcut
+                {
+                    next = None;
+                    from_shortcut = false;
+                }
+            }
+        }
+        if !options.control && options.hotkey.is_none() && STOP.swap(false, Ordering::Relaxed) {
             if active.is_none() {
                 bail!("recording stopped before the microphone started");
             }
@@ -192,7 +231,10 @@ fn run_session(options: &Options, events: &mut Events) -> Result<()> {
             Some(request)
         } else {
             match input.recv_timeout(Duration::from_millis(10)) {
-                Ok(Input::Request(request)) => Some(request),
+                Ok(Input::Request(request)) => {
+                    from_shortcut = false;
+                    Some(request)
+                }
                 Ok(Input::Closed) => {
                     if active.is_some() {
                         bail!("recording controller closed before stop; unfinished audio was discarded");
@@ -209,24 +251,31 @@ fn run_session(options: &Options, events: &mut Events) -> Result<()> {
         };
         let Some(request) = request else { continue };
         match request {
-            Request::Start if active.is_none() => match Active::start() {
+            Request::Start if active.is_none() => match Active::start(from_shortcut) {
                 Ok(current) => {
                     events.send(
                         "recording",
                         Some(&current.id),
-                        serde_json::json!({"source":"microphone"}),
+                        serde_json::json!({"source":"microphone","trigger":if from_shortcut {"shortcut"} else {"control"}}),
                     )?;
                     eprintln!(
                         "recording microphone... {}",
                         if options.control {
                             "send stop to transcribe"
                         } else {
-                            "press Ctrl-C to finish; press again to cancel"
+                            if options.hotkey.is_some() {
+                                "release Control-Shift-Space to finish"
+                            } else {
+                                "press Ctrl-C to finish; press again to cancel"
+                            }
                         }
                     );
                     active = Some(current);
+                    from_shortcut = false;
                 }
-                Err(error) if options.control => {
+                Err(error) if options.control || options.hotkey.is_some() => {
+                    from_shortcut = false;
+                    let _ = writeln!(io::stderr().lock(), "error: {error:#}");
                     events.send(
                         "error",
                         None,
@@ -255,7 +304,7 @@ fn run_session(options: &Options, events: &mut Events) -> Result<()> {
                             )?;
                         }
                     }
-                    Err(error) if options.control => {
+                    Err(error) if options.control || options.hotkey.is_some() => {
                         events.send(
                             "error",
                             Some(&id),
@@ -264,7 +313,10 @@ fn run_session(options: &Options, events: &mut Events) -> Result<()> {
                     }
                     Err(error) => return Err(error),
                 }
-                if !options.control {
+                if let Some(shortcut) = shortcut.as_mut() {
+                    let _ = shortcut.poll()?;
+                }
+                if !options.control && options.hotkey.is_none() {
                     return Ok(());
                 }
             }

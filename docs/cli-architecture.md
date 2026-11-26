@@ -35,6 +35,8 @@ flag-based actions. We do not add a second flag spelling for each new action.
 | Agents | `fscript agents`, `fscript agents set NAME` | Inspect available agents or save the preferred one. |
 | Export | `fscript export TRANSCRIPT --format srt` | Render a completed document without inference. |
 | Dictation | `fscript record` | Capture the default microphone; Ctrl-C finishes. `--duration` or `--control` supports agents. |
+| Warm dictation shortcut | `fscript record --hotkey` | First available exclusive hold chord; explicit chord override supported. |
+| Clipboard | `fscript export transcript.json --copy` | Copy the shared rendering; optional paste requires an explicit target PID. |
 | Meetings (planned) | `fscript record --source meeting` | Separate mic/system tracks and a durable session. |
 | Session control (planned) | `fscript sessions list`, `fscript sessions stop ID` | Explicit noninteractive control. |
 | Detection (planned) | `fscript calls watch`, `fscript calendar list` | Inspect native adapter evidence. |

@@ -86,6 +86,29 @@ class TranscriptExportCLI(unittest.TestCase):
         self.export(self.source, link, success=False)
         self.assertEqual(self.source.read_bytes(), before)
 
+    def test_clipboard_delivery_matches_renderer_and_never_creates_an_export_file(self):
+        import sys
+        program = self.root / 'clipboard'
+        capture = self.root / 'clipboard-content'
+        program.write_text('#!' + sys.executable + "\nimport os, pathlib, sys\nif os.environ.get('COPY_FAIL'): print('clipboard unavailable', file=sys.stderr); sys.exit(7)\npathlib.Path(os.environ['COPY_CAPTURE']).write_bytes(sys.stdin.buffer.read())\n")
+        program.chmod(0o755)
+        self.fixture.env.update(FSCRIPT_CLIPBOARD_BINARY=str(program), COPY_CAPTURE=str(capture))
+        for format in ['plain', 'compact', 'srt', 'vtt', 'json']:
+            expected = self.export(self.source, '--format', format, '--stdout').stdout[:-1]
+            actual = self.export(self.source, '--format', format, '--copy', '--json')
+            metadata = json.loads(actual.stdout)
+            self.assertIsNone(metadata['output_path'])
+            self.assertEqual(capture.read_bytes(), expected)
+            self.assertEqual(metadata['content'].encode(), expected)
+        self.assertFalse((self.root / 'meeting.transcript.txt').exists())
+        for args in [('--paste',), ('--target-pid', '1'), ('--paste', '--target-pid', '0'),
+                     ('--copy', '--output', self.root / 'not-created.txt')]:
+            self.export(self.source, *args, success=False)
+        self.fixture.env['COPY_FAIL'] = '1'
+        result = self.export(self.source, '--copy', success=False)
+        self.assertIn(b'clipboard unavailable', result.stderr)
+        self.assertEqual(json.loads(self.source.read_text()), self.document)
+
     def test_explicit_markdown_export_preserves_notes_without_calling_an_agent(self):
         source = self.root / 'notes.md'
         text = '# Summary\n\nDecisions: ship Friday. 🦀\n\n'
