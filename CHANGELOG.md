@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add the native macOS file/URL app with incremental text, partial selection, shared model/agent preferences, copy/export, external notes, cancellation, and supervised cleanup on Quit.
+- Build a local ad-hoc-signed app containing matching CLI helpers; add native drag transport properties and app-bundle checks to macOS CI.
+
 - Export generated Markdown notes through `fscriptctl export --format markdown`, preserving the document and reusing atomic output without another agent invocation.
 
 - Reject missing local media and directory inputs before model setup or decoding, with the same direct path errors in batch, streaming, and desktop use.

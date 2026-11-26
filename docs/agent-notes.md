@@ -67,16 +67,17 @@ and descendant cleanup. They do not use paid models or authenticate in CI.
 Packaging checks compare both bundled binaries' versions, help, and offline
 manuals with their release counterparts and exercise both Python entrypoints.
 
-Real process validation on Apple M5 Max arm64, 2026-11-26, used a four-line
-synthetic planning transcript. Elapsed time includes CLI startup, normalization,
+Real CLI process validation on Apple M5 Max arm64, 2026-11-26, used a four-line
+synthetic planning transcript for Codex and omp. Elapsed time includes CLI startup, normalization,
 agent startup, provider inference/network time, and result capture, not ASR.
 
 | Installed agent | Result | End-to-end elapsed |
 | --- | --- | --- |
 | Codex CLI 0.158.0 | Generated English sections with correct owners, deadlines, and source timestamps. | 9.186 s |
 | omp 18.20.2 | Generated English sections with correct owners, deadlines, and source timestamps. | 36.277 s |
-| Claude Code 2.1.309 | Accepted adapter flags, then rejected its expired OAuth session; real generation remains unverified pending login refresh. | Not measured |
+| Claude Code 2.1.309 | After the user refreshed its expired login, the desktop Create notes action generated English notes with source timestamps from a locally transcribed 15-second recording. | Not measured; different input and GUI path |
 
 Generated prose is model output, so fixtures validate process contracts and
 normalization rather than claiming deterministic semantic equivalence between
-live providers. No Claude login was changed by this implementation.
+live providers. All three built-in agents have generated real notes. The user
+refreshed Claude's login outside the app; this implementation did not change it.

@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 
@@ -25,11 +26,13 @@ def main():
     fixture = StreamingCLI()
     fixture.setUp()
     try:
-        expected = fixture.fixture.run_cli(fixture.fixture.source, '--chunk', '2.5', '--overlap', '0.5')
+        source = fixture.root / 'speech é 🦀 # %.wav'
+        shutil.copyfile(fixture.fixture.source, source)
+        expected = fixture.fixture.run_cli(source, '--chunk', '2.5', '--overlap', '0.5')
         batch = fixture.root / 'batch.json'
         batch.write_text(json.dumps(expected), encoding='utf-8')
         environment = dict(fixture.env, FSCRIPT_DESKTOP_TEST_CLI=str(binary),
-                           FSCRIPT_DESKTOP_TEST_SOURCE=str(fixture.fixture.source),
+                           FSCRIPT_DESKTOP_TEST_SOURCE=str(source),
                            FSCRIPT_DESKTOP_TEST_BATCH=str(batch))
         subprocess.run(['swift', 'test', '--package-path', str(ROOT / 'desktop'),
                         '--scratch-path', str(ROOT / 'target/desktop-build')],

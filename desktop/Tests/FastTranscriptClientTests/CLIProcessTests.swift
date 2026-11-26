@@ -1,4 +1,6 @@
 import Foundation
+import AppKit
+import UniformTypeIdentifiers
 import XCTest
 @testable import FastTranscriptClient
 
@@ -107,5 +109,20 @@ final class CLIProcessTests: XCTestCase {
         XCTAssertEqual(status, 130)
         XCTAssertFalse(decoder.completed)
         XCTAssertThrowsError(try decoder.finish(exitStatus: 130))
+    }
+
+    func testNativeFileDropProviderFeedsTheSharedCLI() async throws {
+        let (binary, source, batch) = try fixture()
+        let provider = NSItemProvider(item: URL(fileURLWithPath: source) as NSURL, typeIdentifier: UTType.fileURL.identifier)
+        let decoded: String = try await withCheckedThrowingContinuation { continuation in
+            provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier) { item, error in
+                if let error { continuation.resume(throwing: error) }
+                else if let path = droppedMediaSource(item, typeIdentifier: UTType.fileURL.identifier) { continuation.resume(returning: path) }
+                else { continuation.resume(throwing: ClientError("Native drop did not supply a file path.")) }
+            }
+        }
+        XCTAssertEqual(decoded, source)
+        let result = try await CLIProcess().output(executable: binary, arguments: [decoded, "--model", "ultra", "--json", "--stdout", "--no-diarization", "--quiet", "--chunk", "2.5", "--overlap", "0.5"])
+        XCTAssertEqual(try JSONDecoder().decode(TranscriptSnapshot.self, from: result), try JSONDecoder().decode(TranscriptSnapshot.self, from: Data(contentsOf: batch)))
     }
 }

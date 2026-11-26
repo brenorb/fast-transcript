@@ -1,6 +1,6 @@
 # fast-transcript
 
-**`fast-transcript` is a local lecture transcription CLI built to beat the usual Apple Silicon tradeoff: either fast but flaky, or accurate but painfully slow.**
+**`fast-transcript` transcribes large audio and video recordings locally, with a native macOS interface and a noninteractive CLI.**
 
 On the development machine, this project handled **30 minutes in 2!*** while staying around **2.51 GB RSS** on the long run. In the same local test set, it beat **`mlx-whisper`**, **`insanely-fast-whisper`**, and **`parakeet-mlx`**.
 
@@ -56,6 +56,17 @@ timestamped text; `--stdout` prints it, and JSONL from `--stream --json` also wo
 `--srt` and `--vtt` subtitle output are experimental.
 
 That is the whole point of this project. One command. Large audio. No babysitting.
+
+## Desktop app
+
+For the native file/URL app, run `scripts/build_macos_app.sh` from a checkout and
+open `target/desktop/Fast Transcript.app`. Open/drop a file or paste a link to see
+text arrive; copy, export, select a partial interval, choose a model, and create
+notes with an installed external agent. The app uses the same CLI operations.
+See [desktop setup and controls](docs/desktop.md) and the
+[sequential app roadmap](docs/app-roadmap.md) for delivered and upcoming features.
+This build is ad-hoc signed for local development; release distribution follows
+the recording and meeting milestones.
 
 ## Why this exists
 

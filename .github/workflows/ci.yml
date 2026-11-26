@@ -79,3 +79,11 @@ jobs:
         run: cargo build --locked
       - name: Native process E2E, protocol properties, and batch differential tests
         run: python3 scripts/test_desktop_client.py
+      - name: Build development app bundle
+        run: bash scripts/build_macos_app.sh --debug
+      - name: Verify app signature and bundled command entrypoints
+        run: |
+          codesign --verify --deep --strict 'target/desktop/Fast Transcript.app'
+          plutil -lint 'target/desktop/Fast Transcript.app/Contents/Info.plist'
+          'target/desktop/Fast Transcript.app/Contents/Helpers/fscript' --version
+          'target/desktop/Fast Transcript.app/Contents/Helpers/fscriptctl' models list --json
