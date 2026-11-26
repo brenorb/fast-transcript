@@ -41,6 +41,8 @@ jobs:
         run: uv run --no-project --with yt-dlp python -m unittest tests/test_streaming_cli.py
       - name: External agent notes E2E and control CLI tests
         run: uv run --no-project python -m unittest tests/test_agent_notes_cli.py
+      - name: Completed export E2E and batch differential tests
+        run: uv run --no-project --with yt-dlp python -m unittest tests/test_transcript_export_cli.py
       - name: Python wrapper tests
         run: uv run --no-project python -m unittest tests/test_pypi_wrapper.py
       - name: Model worker protocol tests

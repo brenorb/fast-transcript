@@ -45,7 +45,7 @@ pub struct DiarizationRequest {
     pub threshold: Option<f64>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub struct SpeakerDiarizationMetadata {
     pub backend: String,
     #[serde(skip_serializing_if = "Option::is_none")]

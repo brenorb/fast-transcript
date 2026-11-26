@@ -8,6 +8,7 @@ fscriptctl - noninteractive transcription controls and external-agent notes.
 
 ```text
 fscriptctl notes TRANSCRIPT [destination] [options]
+fscriptctl export TRANSCRIPT [destination] [--format FORMAT] [options]
 fscriptctl agents list [--json]
 fscriptctl agents set NAME
 fscriptctl agents add NAME -- COMMAND [ARGS...]
@@ -81,6 +82,30 @@ With --json, each models command returns version 1, saved_default (or null),
 environment_override (or null), effective_model, and the shared models array.
 Each catalog entry includes name, repository, url, revision, runtime, and advice.
 Explicit per-transcription --model still takes precedence over these defaults.
+
+## Transcript export
+
+Export reads a full fscript JSON transcript, a completed event, or a complete
+version 1 JSONL stream from a file or stdin. It uses the same Rust renderer as
+transcription and never loads a model or decodes media. Plain text input cannot
+recover segment timing and is rejected. Incomplete or failed streams are rejected.
+
+The default format is text (timestamped); --format also accepts plain, compact,
+speakers (timestamped), srt, vtt, and json. Repetition cleanup follows the usual
+transcription default. File input saves a sibling with the selected extension and
+prints its absolute path. Stdin defaults to stdout; --stdout or destination - also
+prints the content. A destination file/directory or -o overrides the default.
+Existing destinations are replaced atomically after successful rendering; source
+transcripts cannot be overwritten. With --json, stdout is version 1 completion
+metadata with content and output_path. To obtain a transcript JSON document,
+use --format json --stdout; --json itself selects the metadata envelope.
+Content is the renderer's string; file/stdout delivery adds a trailing newline.
+
+Export validation compares all seven formats with batch output or saved JSON,
+compares document/completed-event/JSONL input, and checks failed writes preserve
+existing files. A 500-case Unicode property test checks that serializing and
+reloading transcripts preserves all seven renderings.
+JSON float parsing preserves round-trip timestamp precision.
 
 ## Errors and cancellation
 

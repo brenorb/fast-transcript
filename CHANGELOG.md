@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Export completed JSON/JSONL transcripts with `fscriptctl export`, reusing text, speaker, SRT, VTT, and JSON renderers without rerunning inference.
+
 - Expose the shared model catalog, saved preference, and effective environment override through noninteractive `fscriptctl models` commands and versioned JSON.
 
 - Add `fscriptctl notes TRANSCRIPT` for English summaries, key points, decisions, action items, and open questions using installed Codex, Claude Code, omp, or literal custom commands.

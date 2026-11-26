@@ -12,6 +12,13 @@ fn command() -> Command {
         .arg(Arg::new("json").long("json").global(true).action(ArgAction::SetTrue).help("Print machine-readable completion data"))
         .arg(Arg::new("manual").long("manual").global(true).action(ArgAction::SetTrue).help("Read the complete offline control manual"))
         .arg(Arg::new("man-page").long("man-page").action(ArgAction::SetTrue).help("Export the control manual for man(1)"))
+        .subcommand(Command::new("export").about("Export a completed transcript without transcribing again")
+            .after_help("Examples:\n  fscriptctl export meeting.json\n  fscriptctl export meeting.json --format srt\n  fscript media.wav --stream --json | fscriptctl export - --format plain")
+            .arg(Arg::new("input").required(true).help("Complete fscript JSON/JSONL file, or - for stdin"))
+            .arg(Arg::new("destination").help("Output file or directory; - writes to stdout"))
+            .arg(Arg::new("output").long("output").short('o').conflicts_with("destination").help("Explicit output file or directory"))
+            .arg(Arg::new("stdout").long("stdout").action(ArgAction::SetTrue).conflicts_with_all(["output","destination"]).help("Print the export without saving"))
+            .arg(Arg::new("format").long("format").default_value("text").value_parser(["text","plain","compact","speakers","srt","vtt","json"]).help("Completed document format; text includes timestamps")))
         .subcommand(Command::new("models").about("Inspect models and the shared saved preference")
             .subcommand_required(true).arg_required_else_help(true)
             .subcommand(Command::new("list").about("List the built-in catalog without downloading models"))
@@ -96,6 +103,11 @@ pub(crate) fn run(raw: Vec<String>) -> Result<()> {
         }
         Some(("agents", values)) => run_agents(values, json),
         Some(("models", values)) => run_models(values, json),
+        Some(("export", values)) => crate::export::run(
+            values.get_one::<String>("input").unwrap(),
+            values.get_one::<String>("output").or(values.get_one::<String>("destination")).map(String::as_str),
+            values.get_flag("stdout"), values.get_one::<String>("format").unwrap(), json,
+        ),
         _ => print("fscriptctl — transcription controls and external-agent notes\n\nUsage: fscriptctl <command> [options]\n\nExamples:\n  fscriptctl notes meeting.txt\n  fscriptctl agents list\n\nRun fscriptctl --help for all commands.\n"),
     }
 }

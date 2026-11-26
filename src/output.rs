@@ -427,6 +427,42 @@ mod tests {
     }
 
     #[test]
+    fn property_serialized_transcripts_preserve_every_rendering() {
+        let mut state = 73u64;
+        let alphabet = ['a', 'é', '🦀', '漢', '\n', '\t', '"', '\\', '$', ';'];
+        let formats = [
+            OutputFormat::Json,
+            OutputFormat::Text(TextFormat::Plain),
+            OutputFormat::Text(TextFormat::Compact),
+            OutputFormat::Text(TextFormat::Timestamped),
+            OutputFormat::Speakers(SpeakersFormat::Timestamped),
+            OutputFormat::Subtitle(SubtitleFormat::Srt),
+            OutputFormat::Subtitle(SubtitleFormat::Vtt),
+        ];
+        for index in 0..500 {
+            let mut text = String::from("Speech: ");
+            for _ in 0..index % 60 {
+                state = state.wrapping_mul(6364136223846793005).wrapping_add(1);
+                text.push(alphabet[state as usize % alphabet.len()]);
+            }
+            let original = sample_result(vec![TranscriptSegment {
+                start_s: index as f64 * 0.123,
+                end_s: index as f64 * 0.123 + 1.25,
+                text,
+                speaker: (index % 2 == 0).then(|| "S1".to_owned()),
+            }]);
+            let restored: BenchmarkResult =
+                serde_json::from_str(&serde_json::to_string(&original).unwrap()).unwrap();
+            for format in formats {
+                assert_eq!(
+                    render_output(&original, format, true).unwrap(),
+                    render_output(&restored, format, true).unwrap()
+                );
+            }
+        }
+    }
+
+    #[test]
     fn normalize_speaker_label_formats_simple_labels() {
         assert_eq!(normalize_speaker_label("S1", "UNKNOWN"), "SPEAKER_01");
         assert_eq!(

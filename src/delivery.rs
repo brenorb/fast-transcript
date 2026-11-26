@@ -63,7 +63,7 @@ fn transcript_filename(stem: &str, output_format: OutputFormat) -> String {
     format!("{stem}.{suffix}")
 }
 
-fn default_output_path(audio_path: &Path, output_format: OutputFormat) -> PathBuf {
+pub(crate) fn default_output_path(audio_path: &Path, output_format: OutputFormat) -> PathBuf {
     let stem = audio_path
         .file_stem()
         .and_then(|value| value.to_str())
@@ -130,6 +130,15 @@ fn has_trailing_path_separator(path: &Path) -> bool {
     {
         value.ends_with(std::path::MAIN_SEPARATOR)
     }
+}
+
+pub(crate) fn require_distinct_output(input: &Path, output: &Path) -> Result<()> {
+    let source = std::fs::canonicalize(input)?;
+    let target = std::fs::canonicalize(output).unwrap_or(std::path::absolute(output)?);
+    if source == target {
+        anyhow::bail!("output would replace its source transcript; choose another destination");
+    }
+    Ok(())
 }
 
 pub(crate) fn write_output_file(contents: &str, output_path: &Path) -> Result<PathBuf> {

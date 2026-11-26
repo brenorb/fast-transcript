@@ -2,7 +2,7 @@
 
 use anyhow::{bail, Context, Result};
 use serde::Serialize;
-use std::io::{self, IsTerminal, Write};
+use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::time::{Duration, Instant};
@@ -38,14 +38,7 @@ pub(crate) fn generate(options: NotesOptions) -> Result<NotesResult> {
         &crate::agents::AgentStore::configured().load()?,
         options.agent.as_deref(),
     )?;
-    let input = if options.input == "-" {
-        if io::stdin().is_terminal() {
-            bail!("stdin is a terminal; pipe a transcript: fscript media.wav --text --stdout | fscriptctl notes -");
-        }
-        io::read_to_string(io::stdin().lock()).context("cannot read UTF-8 transcript from stdin")?
-    } else {
-        std::fs::read_to_string(&options.input).with_context(|| format!("cannot read transcript {}; notes expect UTF-8 text/JSON, not media (transcribe with fscript first)", options.input))?
-    };
+    let input = crate::notes_input::read_transcript(&options.input)?;
     let transcript = NotesTranscript::parse(&input, options.format)?;
     let output = destination(&options)?;
     let scratch = tempfile::Builder::new()
@@ -153,11 +146,7 @@ fn destination(options: &NotesOptions) -> Result<Option<PathBuf>> {
         unreachable!()
     };
     if options.input != "-" {
-        let source = std::fs::canonicalize(input)?;
-        let target = std::fs::canonicalize(&path).unwrap_or(std::path::absolute(&path)?);
-        if source == target {
-            bail!("notes output would replace its source transcript; choose another destination");
-        }
+        crate::delivery::require_distinct_output(input, &path)?;
     }
     Ok(Some(path))
 }

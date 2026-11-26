@@ -106,7 +106,7 @@ pub(crate) struct FfprobeStream {
     pub(crate) sample_fmt: Option<String>,
 }
 
-#[derive(Clone, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
 pub(crate) struct BenchmarkChunk {
     pub(crate) index: usize,
     pub(crate) start_s: f64,
@@ -116,7 +116,7 @@ pub(crate) struct BenchmarkChunk {
     pub(crate) text: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub(crate) struct TranscriptSegment {
     pub(crate) start_s: f64,
     pub(crate) end_s: f64,
@@ -125,7 +125,7 @@ pub(crate) struct TranscriptSegment {
     pub(crate) speaker: Option<String>,
 }
 
-#[derive(Clone, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
 pub(crate) struct ModelMetadata {
     pub(crate) name: String,
     pub(crate) source_url: String,
@@ -137,7 +137,7 @@ pub(crate) struct ModelMetadata {
     pub(crate) artifact_sha256: Option<String>,
 }
 
-#[derive(Clone, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
 pub(crate) struct BenchmarkResult {
     pub(crate) input_source: String,
     pub(crate) model_dir: String,

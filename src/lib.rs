@@ -9,6 +9,7 @@ mod delivery;
 mod diarization;
 mod engine;
 mod executables;
+mod export;
 mod inference;
 mod input;
 mod job;

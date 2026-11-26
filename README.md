@@ -49,6 +49,10 @@ and agents. `fscriptctl models set ultra` saves the same preference as
 `fscript --set-default-model ultra`; `models get --json` distinguishes the saved
 choice from an active `FSCRIPT_MODEL_URL` override.
 
+Export a completed transcript without running the model again:
+`fscriptctl export lecture.transcript.json --format srt`. The default export is
+timestamped text; `--stdout` prints it, and JSONL from `--stream --json` also works.
+
 `--srt` and `--vtt` subtitle output are experimental.
 
 That is the whole point of this project. One command. Large audio. No babysitting.

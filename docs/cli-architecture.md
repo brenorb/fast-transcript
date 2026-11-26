@@ -34,6 +34,7 @@ CLI. Other command families below remain planned until their roadmap milestone.
 | Models | `fscriptctl models list`, `models set NAME`, `models get`, `models reset` | Shipped: same catalog and saved preference as existing flags; `--json` identifies saved/environment/effective selection. |
 | External notes | `fscriptctl notes TRANSCRIPT` | Shipped: save Markdown using the saved/first installed agent; `--agent` overrides, stdin defaults to stdout. |
 | Agent preference | `fscriptctl agents list`, `agents set NAME`, `agents add NAME -- COMMAND` | Shipped: inspect or save literal headless commands; no login or model startup during discovery. |
+| Completed export | `fscriptctl export TRANSCRIPT --format srt` | Shipped: render saved JSON/JSONL through the same output core without inference; stdin defaults to stdout. |
 | Detection | `fscriptctl calls watch`, `calendar list` | Inspect native adapter evidence without recording. |
 
 The current model flags remain supported as compatibility interfaces. Add nested

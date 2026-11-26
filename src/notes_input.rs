@@ -1,8 +1,20 @@
-//! Transcript-only input for external note agents; no audio or model loading.
+//! Complete transcript input and stream validation; no audio or model loading.
 
 use anyhow::{bail, Context, Result};
 use serde::Deserialize;
 use serde_json::Value;
+use std::io::{self, IsTerminal};
+
+pub(crate) fn read_transcript(input: &str) -> Result<String> {
+    if input == "-" {
+        if io::stdin().is_terminal() {
+            bail!("stdin is a terminal; pipe a completed transcript or pass its filename");
+        }
+        io::read_to_string(io::stdin().lock()).context("cannot read UTF-8 transcript from stdin")
+    } else {
+        std::fs::read_to_string(input).with_context(|| format!("cannot read transcript {input}; expected UTF-8 text/JSON, not media (transcribe with fscript first)"))
+    }
+}
 
 #[derive(Debug, Clone, Copy)]
 pub(crate) enum InputFormat {
@@ -26,11 +38,11 @@ impl NotesTranscript {
                 document(serde_json::from_str(input).context("invalid transcript JSON")?)?,
                 "json",
             ),
-            InputFormat::Jsonl => (stream(input)?, "jsonl"),
+            InputFormat::Jsonl => (document(stream_document(input)?)?, "jsonl"),
             InputFormat::Auto if input.trim_start().starts_with('{') => {
                 match serde_json::from_str(input) {
                     Ok(value) => (document(value)?, "json"),
-                    Err(_) => (stream(input).context("expected fscript JSON or a complete JSONL stream; use --input-format text for literal JSON-like text")?, "jsonl"),
+                    Err(_) => (document(stream_document(input).context("expected fscript JSON or a complete JSONL stream; use --input-format text for literal JSON-like text")?)?, "jsonl"),
                 }
             }
             InputFormat::Auto => (input.to_owned(), "text"),
@@ -57,18 +69,23 @@ pub(crate) const NOTES_INSTRUCTIONS: &str = "Create faithful meeting or recordin
 #[derive(Deserialize)]
 struct Document {
     text: String,
-    segments: Option<Vec<Segment>>,
+    segments: Option<Vec<crate::types::TranscriptSegment>>,
 }
 
-#[derive(Deserialize)]
-struct Segment {
-    start_s: f64,
-    end_s: f64,
-    text: String,
-    speaker: Option<String>,
+fn document(value: Value) -> Result<String> {
+    let value = unwrap_completed(value)?;
+    render_document(value)
 }
 
-fn document(mut value: Value) -> Result<String> {
+pub(crate) fn completed_document(input: &str) -> Result<Value> {
+    let input = input.strip_prefix('\u{feff}').unwrap_or(input);
+    match serde_json::from_str(input) {
+        Ok(value) => unwrap_completed(value),
+        Err(_) => stream_document(input),
+    }
+}
+
+fn unwrap_completed(mut value: Value) -> Result<Value> {
     if value.get("type").is_some() {
         if value["version"] != 1 || value["type"] != "completed" {
             bail!(
@@ -81,6 +98,10 @@ fn document(mut value: Value) -> Result<String> {
             .cloned()
             .context("completed transcription event is missing its result")?;
     }
+    Ok(value)
+}
+
+fn render_document(value: Value) -> Result<String> {
     let document: Document = serde_json::from_value(value).context(
         "expected a transcript JSON object with a text field and optional timed segments",
     )?;
@@ -120,7 +141,7 @@ fn document(mut value: Value) -> Result<String> {
     Ok(document.text)
 }
 
-fn stream(input: &str) -> Result<String> {
+fn stream_document(input: &str) -> Result<Value> {
     let mut job = None;
     let mut sequence = 0u64;
     let mut result = None;
@@ -153,7 +174,7 @@ fn stream(input: &str) -> Result<String> {
         match kind {
             "started" if sequence == 0 => {}
             "ready" | "update" => {}
-            "completed" => result = Some(document(event["data"]["result"].clone())?),
+            "completed" => result = Some(event["data"]["result"].clone()),
             "error" => bail!("cannot generate notes from a failed transcription stream"),
             _ => bail!("unsupported transcription JSONL event {kind:?}"),
         }
