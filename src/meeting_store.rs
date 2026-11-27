@@ -60,7 +60,9 @@ fn options() -> OpenOptions {
     #[cfg(unix)]
     {
         use std::os::unix::fs::OpenOptionsExt;
-        options.mode(0o600).custom_flags(libc::O_NOFOLLOW);
+        options
+            .mode(0o600)
+            .custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK);
     }
     options
 }
@@ -82,7 +84,7 @@ impl Lock {
             use std::os::fd::AsRawFd;
             if unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } != 0 {
                 return Err(std::io::Error::last_os_error())
-                    .context("meeting is still owned by another process; stop it before recovery");
+                    .context("meeting is still owned by another process; wait for recording or transcription to finish");
             }
             Ok(Self { _file: file })
         }
@@ -248,11 +250,47 @@ impl Writer {
         result
     }
 
-    pub(crate) fn finish(mut self) -> Result<Manifest> {
+    pub(crate) fn finish(mut self) -> Result<SavedSession> {
         self.checkpoint()?;
         self.manifest.state = State::Stopped;
         save(&self.directory, &self.manifest)?;
-        Ok(self.manifest.clone())
+        Ok(SavedSession {
+            _lock: self._lock,
+            manifest: self.manifest,
+        })
+    }
+}
+
+/// Ownership remains exclusive through final transcript publication.
+pub(crate) struct SavedSession {
+    _lock: Lock,
+    pub(crate) manifest: Manifest,
+}
+
+impl SavedSession {
+    /// Repair an ownerless recording, then validate immutable audio before ASR.
+    pub(crate) fn open(directory: &Path) -> Result<Self> {
+        let lock = Lock::acquire(directory, false)?;
+        let manifest = recover_locked(directory)?;
+        for track in Track::ALL {
+            let file = options()
+                .read(true)
+                .open(directory.join(track.filename()))?;
+            let metadata = file.metadata()?;
+            if !metadata.is_file()
+                || metadata.len() % 2 != 0
+                || metadata.len() / 2 != manifest.track_frames[track.index()]
+            {
+                bail!("saved meeting track length does not match its manifest");
+            }
+        }
+        if manifest.track_frames == [0, 0] {
+            bail!("meeting contains no saved audio to transcribe");
+        }
+        Ok(Self {
+            _lock: lock,
+            manifest,
+        })
     }
 }
 
@@ -260,6 +298,10 @@ impl Writer {
 /// sample, including audio written since the last published checkpoint.
 pub(crate) fn recover(directory: &Path) -> Result<Manifest> {
     let _lock = Lock::acquire(directory, false)?;
+    recover_locked(directory)
+}
+
+fn recover_locked(directory: &Path) -> Result<Manifest> {
     let mut manifest = inspect(directory)?;
     if manifest.state != State::Recording {
         return Ok(manifest);
@@ -337,7 +379,7 @@ mod tests {
             "never recover an owned session"
         );
         assert_eq!(writer.checkpoint().unwrap().track_frames, [8, 3]);
-        assert_eq!(writer.finish().unwrap().state, State::Stopped);
+        assert_eq!(writer.finish().unwrap().manifest.state, State::Stopped);
         assert_eq!(
             read_frames(&directory, Track::Microphone, 0, 100).unwrap(),
             [0, 0, 0, 11, 12, 13, 14, 15]
@@ -347,6 +389,47 @@ mod tests {
             [0, -21, -22]
         );
         assert_eq!(recover(&directory).unwrap().state, State::Stopped);
+    }
+
+    #[test]
+    fn saved_session_keeps_exclusive_ownership_after_capture_and_repair() {
+        let temp = tempfile::tempdir().unwrap();
+        let directory = temp.path().join("meeting");
+        let mut writer = Writer::create(&directory).unwrap();
+        writer.append(Track::Microphone, 0, &[1, 2, 3]).unwrap();
+        let saved = writer.finish().unwrap();
+        assert_eq!(saved.manifest.state, State::Stopped);
+        assert!(recover(&directory).is_err());
+        assert!(SavedSession::open(&directory).is_err());
+        drop(saved);
+        let replay = SavedSession::open(&directory).unwrap();
+        assert_eq!(replay.manifest.track_frames, [3, 0]);
+        assert!(SavedSession::open(&directory).is_err());
+        drop(replay);
+        assert_eq!(recover(&directory).unwrap().state, State::Stopped);
+
+        let interrupted = temp.path().join("interrupted");
+        let mut writer = Writer::create(&interrupted).unwrap();
+        writer.append(Track::System, 0, &[4, 5]).unwrap();
+        drop(writer);
+        let replay = SavedSession::open(&interrupted).unwrap();
+        assert_eq!(replay.manifest.state, State::Interrupted);
+        assert_eq!(replay.manifest.track_frames, [0, 2]);
+        assert!(recover(&interrupted).is_err());
+        drop(replay);
+        assert_eq!(recover(&interrupted).unwrap().state, State::Interrupted);
+    }
+
+    #[test]
+    fn saved_transcription_rejects_empty_or_modified_tracks() {
+        let temp = tempfile::tempdir().unwrap();
+        let directory = temp.path().join("meeting");
+        drop(Writer::create(&directory).unwrap().finish().unwrap());
+        assert!(SavedSession::open(&directory).is_err());
+        std::fs::write(directory.join("system.pcm"), [1, 2]).unwrap();
+        assert!(SavedSession::open(&directory).is_err());
+        std::fs::write(directory.join("system.pcm"), [1]).unwrap();
+        assert!(SavedSession::open(&directory).is_err());
     }
 
     #[test]

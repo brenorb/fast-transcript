@@ -3,8 +3,8 @@
 Roadmap milestone 6 is in progress. The meeting CLI now connects shared capture,
 continuous normalization, durable storage, incremental inference, final export,
 and recovery, with adaptive clock alignment. Native system-audio delivery remains
-unverified. Transcribing recovered recordings, route-change recovery, the meeting
-GUI, and native acceptance are still outstanding; this milestone has no stable
+unverified. Route-change recovery, the meeting GUI, and native acceptance are
+still outstanding; this milestone has no stable
 tag. Dictation is independently complete at stable/dictation. Calendar/call detection remains milestone 7.
 
 ## Everyday use and unattended control
@@ -15,6 +15,7 @@ fscript meeting --duration 60 --json
 fscript meeting --control --json
 fscript meeting status ./meetings/SESSION --json
 fscript meeting recover ./meetings/SESSION --json
+fscript meeting transcribe ./meetings/SESSION
 fscript export ./meetings/SESSION/transcript.json --format speakers
 fscript notes ./meetings/SESSION/transcript.json
 ```
@@ -46,6 +47,42 @@ recognition, and the final backlog pass. If audio has already been saved, its
 manifest remains stopped; cancellation does not relabel successful capture as an
 interrupted recording. One controller process handles exactly one meeting.
 
+## Transcribing retained audio
+
+`fscript meeting transcribe SESSION` transcribes an existing session without
+opening microphone/system devices or using an external audio converter. It needs
+no terminal. The saved model preference and --model/--device/--model-dir overrides
+are the same as live capture. --json emits the same session envelope; --quiet keeps
+only the absolute final transcript path on stdout. Ctrl-C cancels immediately.
+Model flags follow transcribe and its session argument; capture options cannot be
+combined with a subcommand.
+
+The command acquires the existing session lock before reading or repairing files.
+An ownerless recording is automatically recovered, retaining complete samples
+written after its last checkpoint and discarding only an incomplete final PCM
+sample. Stopped/interrupted tracks must exactly match their manifest frame counts.
+Missing, nonregular, linked, malformed, or empty-both-track input fails before model
+loading. A single surviving track can be transcribed; no missing channel is
+fabricated. Recovery never changes interrupted capture into stopped capture.
+
+One loaded engine uses the same 30-second/2-second-overlap final recognition path
+as a live meeting, in bounded disk reads, with no short-context preview pass.
+restored replaces recording/saved events; no devices are opened and no live update
+is implied. The completed result includes optional meeting metadata containing
+the original capture manifest, including capture state and per-channel retained
+frames. A completed transcript means all retained audio was processed; it does
+not establish that an interrupted meeting was recorded in full. Consumers can
+inspect result.meeting.state and result.meeting.track_frames directly. Other job
+types omit this metadata, and old transcript documents remain readable.
+
+The same exclusive lock now remains held from live capture through final
+publication, and throughout saved-session recognition. Another recovery or
+transcription attempt refuses an owned session. Successful recognition atomically
+replaces transcript.json. Failure or cancellation preserves raw audio and any
+previous completed transcript; a crash may leave a private pending file, which is
+never a completed result and is replaced by the next successful attempt. Existing
+partial previews are retained. Retry with another model uses the same command.
+
 ## Events and transcript publication
 
 Session JSONL uses the shared dictation envelope: version 1, sequence (starting
@@ -57,6 +94,7 @@ Diagnostics go to stderr; quiet suppresses status without removing result events
 | --- | --- |
 | ready | Service accepts start; requires_start says whether control mode is enabled |
 | started | Private directory exists; supplies directory and Microphone/System channel labels |
+| restored | Saved-session transcription owns the retained tracks; includes their stopped/interrupted manifest |
 | recording | Both capture adapters are ready, independently of model loading |
 | model_ready | One shared model is loaded for both tracks; includes model metadata and load time |
 | update | Provisional full text/segments, newly printable addition, and transcript.partial.json output_path |
@@ -403,3 +441,24 @@ The completed event replaces the full provisional document; clients must not
 append it to preview text or assume a stable prefix. The internal helper stages
 only a successful final result, and the existing controller still owns its atomic
 publication/cancellation decision. Partial files never masquerade as final files.
+
+## Saved-session validation
+
+Rust ownership tests cover the lock after successful capture, after automatic
+repair, and during saved-session processing. Empty sessions and changed track
+lengths fail preflight. CLI E2E checks repair an incomplete final write, preserve
+all complete samples, retain interrupted state, process unequal channel lengths
+and a single surviving track, and compare a 59-second/31-second recording against
+independent batch recognition with the same final window settings. They also
+check that concurrent attempts cannot start another model, cancellation kills the
+owned model process, failed retries preserve an existing transcript byte for byte,
+and a subsequent successful quiet retry atomically replaces it. These tests use
+explicit stored PCM fixtures and a deterministic model worker, not native capture.
+
+A separate local CPU ONNX check replayed a copy of the verified public JFK session
+after resetting its manifest to an uncheckpointed recording and appending one
+incomplete PCM byte. Both final channel texts and segments exactly matched the
+previous live final result, complete-sample SHA-256 digests were unchanged, preview
+inference time was zero, and the capture manifest remained interrupted. This is
+one English fixture with no native devices, not a general quality benchmark or
+native meeting acceptance.

@@ -1,7 +1,7 @@
 //! Foreground meeting service. The desktop uses this exact CLI protocol.
 
 use anyhow::{bail, Context, Result};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::io::{self, BufRead, BufReader, IsTerminal, Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Child, ChildStdin, Command, Stdio};
@@ -12,7 +12,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use crate::engine::LoadedEngine;
 use crate::inference::InferenceOutcome;
 use crate::meeting_capture::{Capture, Stop};
-use crate::meeting_store::Track;
+use crate::meeting_store::{SavedSession, Track};
 use crate::pcm_stream::PcmChunker;
 use crate::session_events::Events;
 use crate::types::{BenchmarkResult, CliArgs, PreparedAudio};
@@ -34,6 +34,7 @@ pub(crate) struct Options {
     pub(crate) json: bool,
     pub(crate) duration: Option<Duration>,
     pub(crate) output_directory: PathBuf,
+    pub(crate) saved_directory: Option<PathBuf>,
 }
 
 #[derive(Deserialize)]
@@ -106,7 +107,11 @@ fn input(controller: Arc<Controller>) -> mpsc::Receiver<Result<Request>> {
 }
 
 pub(crate) fn run(options: Options) -> Result<()> {
-    if !options.control && options.duration.is_none() && !io::stdin().is_terminal() {
+    if options.saved_directory.is_none()
+        && !options.control
+        && options.duration.is_none()
+        && !io::stdin().is_terminal()
+    {
         bail!(
             "meeting needs a terminal, --duration SECONDS, or --control for unattended start/stop"
         );
@@ -141,47 +146,79 @@ fn run_session(options: &Options, events: &mut Events) -> Result<()> {
             _ => bail!("meeting control requires start before stop or cancel"),
         }
     }
-    std::fs::create_dir_all(&options.output_directory)
-        .context("cannot create meetings output directory")?;
-    let id = format!(
-        "{}-{}",
-        SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis(),
-        std::process::id()
-    );
-    let directory = options.output_directory.join(&id);
-    let capture = Capture::start(&directory, options.duration, signalled)?;
-    controller.attach(Arc::clone(&capture.stop));
+    let mut saved_session = options
+        .saved_directory
+        .as_deref()
+        .map(SavedSession::open)
+        .transpose()?;
+    let directory = if let Some(directory) = &options.saved_directory {
+        directory.clone()
+    } else {
+        std::fs::create_dir_all(&options.output_directory)
+            .context("cannot create meetings output directory")?;
+        options.output_directory.join(format!(
+            "{}-{}",
+            SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis(),
+            std::process::id()
+        ))
+    };
+    let id = directory
+        .file_name()
+        .context("meeting directory has no name")?
+        .to_string_lossy()
+        .into_owned();
+    let mut capture = if saved_session.is_some() {
+        None
+    } else {
+        let capture = Capture::start(&directory, options.duration, signalled)?;
+        controller.attach(Arc::clone(&capture.stop));
+        Some(capture)
+    };
     events.send(
         "started",
         Some(&id),
         serde_json::json!({"directory":directory,"tracks":["Microphone","System"]}),
     )?;
-    eprintln!(
-        "saving meeting to {}; {}",
-        directory.display(),
-        if options.control {
-            "send stop to finish; Ctrl-C cancels"
-        } else {
-            "Ctrl-C finishes; a second interrupt cancels"
-        }
-    );
+    if let Some(session) = &saved_session {
+        events.send(
+            "restored",
+            Some(&id),
+            serde_json::json!({"directory":directory,"manifest":session.manifest}),
+        )?;
+        eprintln!("transcribing saved meeting {}", directory.display());
+    } else {
+        eprintln!(
+            "saving meeting to {}; {}",
+            directory.display(),
+            if options.control {
+                "send stop to finish; Ctrl-C cancels"
+            } else {
+                "Ctrl-C finishes; a second interrupt cancels"
+            }
+        );
+    }
 
-    let mut capture = Some(capture);
     let mut recognition_error = None;
-    let mut worker = match Worker::start(&options.args, &directory) {
+    let mut worker = match Worker::start(
+        &options.args,
+        &directory,
+        saved_session
+            .as_ref()
+            .map(|session| session.manifest.track_frames),
+    ) {
         Ok(worker) => Some(worker),
         Err(error) => {
             recognition_error = Some(format!("cannot start recognition: {error:#}"));
             events.send(
                 "recognition_error",
                 Some(&id),
-                serde_json::json!({"message":recognition_error,"recording_continues":true}),
+                serde_json::json!({"message":recognition_error,"recording_continues":saved_session.is_none()}),
             )?;
             None
         }
     };
     let mut announced = false;
-    let mut saved = false;
+    let mut saved = saved_session.is_some();
     let mut completed = false;
     loop {
         if !announced && capture.as_ref().is_some_and(Capture::ready) {
@@ -221,7 +258,12 @@ fn run_session(options: &Options, events: &mut Events) -> Result<()> {
                         .and_then(serde_json::Value::as_str)
                         .map(str::to_owned);
                     eprintln!(
-                        "recognition failed; continuing to save meeting audio: {}",
+                        "recognition failed; {}: {}",
+                        if saved {
+                            "saved meeting audio is retained"
+                        } else {
+                            "continuing to save meeting audio"
+                        },
                         recognition_error.as_deref().unwrap_or("unknown error")
                     );
                 }
@@ -280,7 +322,8 @@ fn run_session(options: &Options, events: &mut Events) -> Result<()> {
             worker.take();
         }
         if capture.as_ref().is_some_and(Capture::finished) {
-            let manifest = capture.take().unwrap().finish()?;
+            saved_session = Some(capture.take().unwrap().finish()?);
+            let manifest = &saved_session.as_ref().unwrap().manifest;
             saved = true;
             events.send(
                 "saved",
@@ -322,6 +365,12 @@ fn run_session(options: &Options, events: &mut Events) -> Result<()> {
 // This environment entry point is internal; it is not another public command.
 pub(crate) const WORKER_ENV: &str = "FSCRIPT_INTERNAL_MEETING_TRANSCRIBE";
 
+#[derive(Deserialize, Serialize)]
+struct WorkerConfig {
+    directory: PathBuf,
+    final_frames: Option<[u64; 2]>,
+}
+
 struct Worker {
     child: Child,
     input: Option<ChildStdin>,
@@ -332,7 +381,7 @@ struct Worker {
 }
 
 impl Worker {
-    fn start(args: &CliArgs, directory: &Path) -> Result<Self> {
+    fn start(args: &CliArgs, directory: &Path, final_frames: Option<[u64; 2]>) -> Result<Self> {
         let mut command = Command::new(std::env::current_exe()?);
         command.arg("meeting-audio").args([
             "--stream",
@@ -353,7 +402,13 @@ impl Worker {
         }
         let diagnostics = tempfile::NamedTempFile::new()?;
         command
-            .env(WORKER_ENV, directory)
+            .env(
+                WORKER_ENV,
+                serde_json::to_string(&WorkerConfig {
+                    directory: directory.into(),
+                    final_frames,
+                })?,
+            )
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::from(diagnostics.reopen()?));
@@ -421,8 +476,10 @@ impl Drop for Worker {
 }
 
 pub(crate) fn run_worker(raw: Vec<String>) -> Result<()> {
-    let directory =
-        PathBuf::from(std::env::var_os(WORKER_ENV).context("missing meeting directory")?);
+    let config: WorkerConfig = serde_json::from_str(
+        &std::env::var(WORKER_ENV).context("missing meeting worker configuration")?,
+    )?;
+    let directory = config.directory;
     // Descendant model workers must not accidentally enter this service.
     std::env::remove_var(WORKER_ENV);
     let args = crate::cli::parse_args_with_default_model(&raw, || Ok(None))?;
@@ -432,12 +489,13 @@ pub(crate) fn run_worker(raw: Vec<String>) -> Result<()> {
         json: true,
         duration: None,
         output_directory: directory.clone(),
+        saved_directory: None,
     };
     let mut events = Events {
         json: true,
         sequence: 0,
     };
-    let result = transcribe_meeting(&options, &directory, &mut events);
+    let result = transcribe_meeting(&options, &directory, &mut events, config.final_frames);
     if let Err(error) = &result {
         let _ = events.send(
             "recognition_error",
@@ -448,19 +506,26 @@ pub(crate) fn run_worker(raw: Vec<String>) -> Result<()> {
     result
 }
 
-fn transcribe_meeting(options: &Options, directory: &Path, events: &mut Events) -> Result<()> {
+fn transcribe_meeting(
+    options: &Options,
+    directory: &Path,
+    events: &mut Events,
+    mut final_frames: Option<[u64; 2]>,
+) -> Result<()> {
     let (send, finish) = mpsc::sync_channel(1);
-    std::thread::spawn(move || {
-        let mut line = String::new();
-        let result = (|| {
-            let length = io::stdin().lock().take(1025).read_line(&mut line)?;
-            if length == 0 || length > 1024 || !line.ends_with('\n') {
-                bail!("meeting capture control closed before finish");
-            }
-            Ok(serde_json::from_str::<[u64; 2]>(&line)?)
-        })();
-        let _ = send.send(result);
-    });
+    if final_frames.is_none() {
+        std::thread::spawn(move || {
+            let mut line = String::new();
+            let result = (|| {
+                let length = io::stdin().lock().take(1025).read_line(&mut line)?;
+                if length == 0 || length > 1024 || !line.ends_with('\n') {
+                    bail!("meeting capture control closed before finish");
+                }
+                Ok(serde_json::from_str::<[u64; 2]>(&line)?)
+            })();
+            let _ = send.send(result);
+        });
+    }
     let mut loaded = crate::engine::load_engine(&options.args.model)?;
     events.send(
         "model_ready",
@@ -471,7 +536,6 @@ fn transcribe_meeting(options: &Options, directory: &Path, events: &mut Events) 
         LiveTrack::new(Track::Microphone)?,
         LiveTrack::new(Track::System)?,
     ];
-    let mut final_frames = None;
     loop {
         let mut progress = false;
         for index in 0..2 {
@@ -571,6 +635,11 @@ impl LiveTrack {
         }
         let samples =
             crate::meeting_store::read_frames(directory, self.track, self.position, count)?;
+        if samples.len() != count {
+            bail!(
+                "meeting audio was truncated during transcription; saved files were not replaced"
+            );
+        }
         self.position += samples.len() as u64;
         let samples: Vec<_> = samples
             .into_iter()
@@ -665,6 +734,7 @@ fn snapshot(
         result.chunk_seconds = Some(FINAL_CHUNK_SECONDS);
         result.chunk_overlap_seconds = FINAL_OVERLAP_SECONDS;
         result.preview_transcribe_seconds = Some(preview_seconds);
+        result.meeting = Some(crate::meeting_store::inspect(directory)?);
     }
     Ok(if options.args.clean_output {
         crate::output::cleaned_benchmark_result(&result)
@@ -877,6 +947,7 @@ mod tests {
             json: true,
             duration: None,
             output_directory: root.path().into(),
+            saved_directory: None,
         };
         let result = snapshot(&options, &directory, &tracks, &loaded, true).unwrap();
         let preview = result.preview_transcribe_seconds.unwrap();
@@ -898,7 +969,9 @@ mod tests {
             .as_object_mut()
             .unwrap()
             .remove("preview_transcribe_seconds");
+        legacy.as_object_mut().unwrap().remove("meeting");
         let parsed: BenchmarkResult = serde_json::from_value(legacy).unwrap();
         assert!(parsed.preview_transcribe_seconds.is_none());
+        assert!(parsed.meeting.is_none());
     }
 }

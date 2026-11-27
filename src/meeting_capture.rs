@@ -9,7 +9,7 @@ use std::time::{Duration, Instant};
 
 use crate::capture::{host_time_ns, AudioSource};
 use crate::clocked_pcm::ClockedPcm;
-use crate::meeting_store::{Manifest, Track, Writer};
+use crate::meeting_store::{SavedSession, Track, Writer};
 
 fn lock(writer: &Mutex<Writer>) -> Result<MutexGuard<'_, Writer>> {
     writer
@@ -126,7 +126,7 @@ impl Capture {
 
     /// Only a successful explicit finish marks the recording stopped. Drop,
     /// source failures and killed jobs leave an ownerless recoverable session.
-    pub(crate) fn finish(mut self) -> Result<Manifest> {
+    pub(crate) fn finish(mut self) -> Result<SavedSession> {
         self.stop.request();
         self.join()?;
         // All capture threads have relinquished the store now.

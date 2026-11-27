@@ -151,6 +151,9 @@ pub(crate) struct BenchmarkResult {
     /// Included in total transcription time, but not in the final chunk list.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) preview_transcribe_seconds: Option<f64>,
+    /// Capture completeness and retained frame counts, independent of ASR success.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) meeting: Option<crate::meeting_store::Manifest>,
     pub(crate) transcribe_seconds: f64,
     pub(crate) total_inside_seconds: f64,
     pub(crate) seconds_per_audio_second: f64,

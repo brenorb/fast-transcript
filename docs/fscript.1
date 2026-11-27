@@ -694,6 +694,32 @@ from an interrupted, unowned recording, marks it interrupted, and refuses a
 live
 owner. Recovery does not resume capture or claim a complete transcript.
 .PP
+meeting transcribe SESSION repairs an ownerless recording when necessary and
+transcribes its retained audio without opening devices. Use \-\-model,
+\-\-device,
+or \-\-model\-dir after transcribe to override the same speech\-model
+preference.
+No terminal is needed; Ctrl\-C cancels immediately. \-\-json emits session
+events,
+including restored with the saved manifest, then model_ready and completed.
+There is no live preview pass. The shared final recognition profile is used;
+preview_transcribe_seconds is zero. Default stdout is the absolute final path;
+\-\-quiet suppresses status. Capture options cannot be combined with a
+subcommand.
+.PP
+The session lock covers recording and final publication, or the entire saved
+transcription. An owned session refuses another recovery/transcription
+attempt.
+Saved tracks must match their stopped/interrupted manifest. A successful retry
+atomically replaces transcript.json; cancellation/failure preserves any
+previous
+transcript and raw audio. Completed meeting documents include optional meeting
+metadata containing the capture manifest, whose state and track_frames
+distinguish
+successful capture from retained interrupted audio. A completed transcript of
+an
+interrupted recording does not establish complete capture of the meeting.
+.PP
 Completed meeting documents include optional preview_transcribe_seconds, which
 is
 already included in transcribe_seconds but is not represented by the final

@@ -39,7 +39,7 @@ flag-based actions. We do not add a second flag spelling for each new action.
 | Clipboard | `fscript export transcript.json --copy` | Copy the shared rendering; optional paste requires an explicit target PID. |
 | Paste access | `fscript permissions` | Inspect without prompting. Only explicit `--request paste` asks macOS for access. |
 | Meetings | `fscript meeting` | Live preview on stderr, final transcript path on stdout; Ctrl-C finishes capture and final recognition. Native acceptance remains in progress. |
-| Meeting control | `fscript meeting --control`, `meeting status DIR`, `meeting recover DIR` | Explicit JSONL start/stop/cancel and durable inspection/recovery. |
+| Meeting control | `fscript meeting --control`, `meeting status DIR`, `meeting recover DIR`, `meeting transcribe DIR` | Explicit JSONL start/stop/cancel; durable inspection/recovery and shared transcription of retained audio. |
 | Detection (planned) | `fscript calls watch`, `fscript calendar list` | Inspect native adapter evidence. |
 
 Action names are reserved in command position. Files named notes, models, agents,

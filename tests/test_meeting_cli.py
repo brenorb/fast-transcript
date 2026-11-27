@@ -110,6 +110,7 @@ class MeetingCLI(unittest.TestCase):
         self.assertEqual(json.loads((directory / 'transcript.json').read_text()), result)
         manifest = self.inspect(directory)
         self.assertEqual(manifest['state'], 'stopped')
+        self.assertEqual(result['meeting'], manifest)
         self.assertEqual(manifest['track_frames'][0], manifest['track_frames'][1])
         self.assertEqual(len((self.root / 'workers').read_text().splitlines()), 1, 'one warm model handles both tracks')
         labels = {'Microphone': 'microphone.pcm', 'System': 'system.pcm'}
@@ -195,6 +196,7 @@ class MeetingCLI(unittest.TestCase):
         while not (self.root / 'requests').exists() and time.monotonic() < deadline:
             time.sleep(.01)
         self.assertTrue((self.root / 'requests').exists(), 'the final inference request must actually have started')
+        self.inspect(directory, 'recover', success=False)
         began = time.monotonic()
         process.stdin.write(b'{"action":"cancel"}\n'); process.stdin.flush()
         events = self.finish(process, prefix)
@@ -314,6 +316,120 @@ class MeetingCLI(unittest.TestCase):
         self.assertEqual(manifest['state'], 'stopped')
         self.assertTrue(all(frames > .7 * 16000 for frames in manifest['track_frames']))
         self.assertFalse((directory / 'transcript.json').exists())
+
+    def saved_fixture(self, frames=(16000 * 59 + 123, 16000 * 31 + 17), state='recording'):
+        directory = self.root / 'saved meeting é'
+        directory.mkdir(mode=0o700)
+        (directory / '.lock').touch(mode=0o600)
+        for count, name in zip(frames, ('microphone.pcm', 'system.pcm')):
+            (directory / name).write_bytes(b''.join(struct.pack('<h', (i * 137) % 60001 - 30000) for i in range(count)))
+        manifest = dict(version=1, sample_rate=16000, channels=1, sample_format='s16le', started_at_unix_ms=1234567890, state=state, track_frames=list(frames) if state != 'recording' else [0, 0])
+        (directory / 'meeting.json').write_text(json.dumps(manifest))
+        # Replay must never attempt either capture endpoint or an audio converter.
+        self.env['FSCRIPT_CAPTURE_TEST_WAV'] = str(self.root / 'missing-mic.wav')
+        self.env['FSCRIPT_SYSTEM_CAPTURE_TEST_WAV'] = str(self.root / 'missing-system.wav')
+        return directory
+
+    def replay(self, directory, *args):
+        process = subprocess.Popen([str(fixture.BINARY), 'meeting', 'transcribe', str(directory), '--json', '--model', 'ultra', *args], stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=self.env, cwd=self.root, bufsize=0)
+        self.addCleanup(self.stop, process)
+        return process
+
+    def test_saved_transcription_repairs_audio_and_matches_independent_batch_windows(self):
+        directory = self.saved_fixture()
+        original = {name: (directory / name).read_bytes() for name in ('microphone.pcm', 'system.pcm')}
+        # An incomplete crash write is repaired without losing a complete sample.
+        with (directory / 'system.pcm').open('ab') as output: output.write(b'x')
+        events = self.finish(self.replay(directory))
+        self.assertEqual(events[-1]['type'], 'completed')
+        self.assertEqual(events[2]['type'], 'restored')
+        result = events[-1]['data']['result']
+        self.assertEqual(result['meeting']['state'], 'interrupted')
+        self.assertEqual(result['meeting'], self.inspect(directory))
+        self.assertEqual(result['preview_transcribe_seconds'], 0)
+        self.assertFalse(any(e['type'] in ('recording', 'saved', 'update') for e in events))
+        self.assertEqual(len((self.root / 'workers').read_text().splitlines()), 1)
+        for label, name in [('Microphone', 'microphone.pcm'), ('System', 'system.pcm')]:
+            self.assertEqual((directory / name).read_bytes(), original[name])
+            wav = self.root / (name + '.wav')
+            with wave.open(str(wav), 'wb') as output:
+                output.setparams((1, 2, 16000, 0, 'NONE', 'not compressed'))
+                output.writeframes(original[name])
+            batch = self.fixture.run_cli(wav, '--chunk', '30', '--overlap', '2')
+            segments = [{k: v for k, v in segment.items() if k != 'speaker'} for segment in result['segments'] if segment['speaker'] == label]
+            self.assertEqual(segments, batch['segments'])
+        self.assertEqual(json.loads((directory / 'transcript.json').read_text()), result)
+
+    def test_saved_transcription_has_exclusive_ownership_and_cancel_keeps_previous_result(self):
+        directory = self.saved_fixture(frames=(16000, 8000), state='stopped')
+        previous = b'previous transcript remains byte-for-byte'
+        (directory / 'transcript.json').write_bytes(previous)
+        self.env['MEETING_INFERENCE_DELAY'] = '60'
+        process = self.replay(directory)
+        prefix = self.through(process, 'model_ready')
+        self.inspect(directory, 'recover', success=False)
+        conflict = self.replay(directory)
+        self.finish(conflict, status=1)
+        self.assertEqual(len((self.root / 'workers').read_text().splitlines()), 1)
+        process.send_signal(signal.SIGINT)
+        process.communicate(timeout=5)
+        self.assertEqual(process.returncode, 130)
+        self.assertEqual((directory / 'transcript.json').read_bytes(), previous)
+        self.assertEqual(self.inspect(directory, 'recover')['state'], 'stopped')
+        for pid in (self.root / 'workers').read_text().splitlines():
+            with self.assertRaises(ProcessLookupError): os.kill(int(pid), 0)
+
+    def test_failed_saved_transcription_retains_audio_and_previous_result_then_can_retry(self):
+        directory = self.saved_fixture(frames=(16000, 0), state='interrupted')
+        previous = b'previous transcript'
+        (directory / 'transcript.json').write_bytes(previous)
+        audio = (directory / 'microphone.pcm').read_bytes()
+        self.env['MEETING_INFERENCE_FAIL'] = '1'
+        events = self.finish(self.replay(directory), status=1)
+        self.assertEqual(events[-1]['type'], 'error')
+        self.assertFalse(any(e['data']['recording_continues'] for e in events if e['type'] == 'recognition_error'))
+        self.assertEqual((directory / 'transcript.json').read_bytes(), previous)
+        self.assertEqual((directory / 'microphone.pcm').read_bytes(), audio)
+        del self.env['MEETING_INFERENCE_FAIL']
+        command = [str(fixture.BINARY), 'meeting', 'transcribe', str(directory), '--model', 'ultra', '--quiet']
+        result = subprocess.run(command, capture_output=True, env=self.env, timeout=10)
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
+        self.assertEqual(result.stderr, b'')
+        self.assertEqual(result.stdout.decode(), str(directory / 'transcript.json') + '\n')
+        final = json.loads((directory / 'transcript.json').read_text())
+        self.assertEqual(final['meeting']['state'], 'interrupted')
+        self.assertEqual({s['speaker'] for s in final['segments']}, {'Microphone'})
+
+    def test_saved_audio_truncated_during_model_loading_fails_instead_of_waiting(self):
+        directory = self.saved_fixture(frames=(16000, 0), state='stopped')
+        worker = (self.root / 'worker').read_text().replace('print(json.dumps(dict(ready=True', 'time.sleep(1)\nprint(json.dumps(dict(ready=True')
+        (self.root / 'worker').write_text(worker)
+        process = self.replay(directory)
+        prefix = self.through(process, 'restored')
+        (directory / 'microphone.pcm').write_bytes(b'')
+        events = self.finish(process, prefix, status=1)
+        self.assertEqual(events[-1]['type'], 'error')
+        self.assertIn('truncated', str(events))
+        self.assertFalse((directory / 'transcript.json').exists())
+
+    def test_saved_transcription_preflight_and_help_never_load_models(self):
+        directory = self.saved_fixture(frames=(16000, 0), state='stopped')
+        (directory / 'microphone.pcm').write_bytes(b'broken')
+        self.finish(self.replay(directory), status=1)
+        result = subprocess.run([str(fixture.BINARY), 'meeting', 'transcribe', '--help'], capture_output=True, env=self.env, timeout=5)
+        self.assertEqual(result.returncode, 0)
+        self.assertFalse((self.root / 'workers').exists())
+        # A FIFO is invalid storage, not input to wait for indefinitely.
+        (directory / 'microphone.pcm').unlink()
+        os.mkfifo(directory / 'microphone.pcm')
+        self.finish(self.replay(directory), status=1)
+        for option in ('--duration', '--control'):
+            args = [str(fixture.BINARY), 'meeting', option]
+            if option == '--duration': args.append('60')
+            args += ['transcribe', str(directory)]
+            result = subprocess.run(args, capture_output=True, env=self.env, timeout=5)
+            self.assertNotEqual(result.returncode, 0)
+        self.assertFalse((self.root / 'workers').exists())
 
     def test_help_status_and_invalid_duration_have_no_capture_side_effects(self):
         for args in [('--help',), ('--duration', '0'), ('--duration', 'NaN'), ('--duration', '-1'), ()]:

@@ -136,6 +136,7 @@ pub(crate) fn finalize_transcription(
         audio_seconds,
         load_seconds,
         preview_transcribe_seconds: None,
+        meeting: None,
         transcribe_seconds,
         total_inside_seconds,
         seconds_per_audio_second,

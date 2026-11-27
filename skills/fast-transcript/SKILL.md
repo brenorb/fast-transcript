@@ -89,3 +89,12 @@ longer context and can revise the preview. Plain output prints its final path on
 stdout and preview/status on stderr; --json exposes the live protocol. Native
 system capture, transcribing recovered recordings, route changes, and the meeting GUI are still under validation;
 see docs/live-meetings.md for coverage and current limits.
+
+For a stopped or interrupted meeting, run `fscript meeting transcribe SESSION`
+to transcribe retained audio without opening capture devices. It repairs an
+ownerless recording automatically; --model/--device/--model-dir follow transcribe.
+The final path is printed on success; --json emits session events. Ctrl-C cancels
+immediately. Failure retains any previous transcript and saved audio. The completed
+document's optional meeting manifest reports capture state and track_frames: an
+interrupted recording remains interrupted even after all retained audio is
+transcribed. Never infer full-meeting capture from recognition completion alone.

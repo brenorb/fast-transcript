@@ -176,6 +176,7 @@ pub(crate) fn manual_subtitle_result(
         audio_seconds: 0.0,
         load_seconds: 0.0,
         preview_transcribe_seconds: None,
+        meeting: None,
         transcribe_seconds: 0.0,
         total_inside_seconds: 0.0,
         seconds_per_audio_second: 0.0,
