@@ -636,9 +636,13 @@ literal JSON\-like prose can be forced with \-\-input\-format text.
 .SH "LIVE MEETING SESSIONS"
 \fBfscript meeting\fR records the default microphone and system output into
 separate,
-private tracks under a new child of ./meetings and prints channel\-attributed
+private tracks under a new child of ./meetings and shows channel\-attributed
 live
-text. It uses the shared saved model. The capture service requires macOS 14.2+
+preview on stderr. On success, stdout prints only the absolute completed
+transcript
+path. \-\-quiet hides preview/status without removing this path. It uses the
+shared
+saved model. The capture service requires macOS 14.2+
 and OS microphone/system\-audio access. Native delivery and the meeting GUI
 remain
 under validation; see docs/live\-meetings.md for the implemented protocol and
@@ -669,8 +673,14 @@ Audio is written/checkpointed independently of model loading and inference.
 Recognition failure reports recognition_error and keeps capture running until
 stop/duration; saved confirms that audio is durable, not that recognition
 finished.
-Live snapshots use transcript.partial.json. Only successful full recognition
-publishes transcript.json and a completed event, using the existing document
+Live snapshots use transcript.partial.json with short context windows. Final
+recognition uses 30\-second windows with 2\-second overlap on the same loaded
+model,
+including windows processed during capture. It may revise earlier preview
+words.
+Only successful final recognition publishes transcript.json and a completed
+event,
+using the existing document
 schema so export and notes need no meeting\-specific rendering logic.
 Microphone
 and System are source channels, not inferred identities of meeting
@@ -683,3 +693,16 @@ sample
 from an interrupted, unowned recording, marks it interrupted, and refuses a
 live
 owner. Recovery does not resume capture or claim a complete transcript.
+.PP
+Completed meeting documents include optional preview_transcribe_seconds, which
+is
+already included in transcribe_seconds but is not represented by the final
+chunk
+list. Final chunk times plus preview time equal total inference time on both
+tracks. Backend\-reported model load is counted once. Engine calls include
+their
+runtime
+audio\-file/IPC work; capture waiting, capture\-side normalization/storage,
+and
+external notes are excluded. The completed document replaces preview text
+rather than extending its prefix.

@@ -84,6 +84,8 @@ capture and drain recognition. `cancel`/`shutdown` interrupts recognition even
 after capture stops. Do not close stdin before stop. Use `meeting status DIR` to
 inspect a durable checkpoint and `meeting recover DIR` only after an interrupted
 owner exits. Live snapshots are `transcript.partial.json`; only
-`transcript.json` is complete and ready for final export/notes. Native system
-capture, final transcript refinement, route changes, and the meeting GUI are still under validation;
+`transcript.json` is complete and ready for final export/notes. Final text uses
+longer context and can revise the preview. Plain output prints its final path on
+stdout and preview/status on stderr; --json exposes the live protocol. Native
+system capture, transcribing recovered recordings, route changes, and the meeting GUI are still under validation;
 see docs/live-meetings.md for coverage and current limits.

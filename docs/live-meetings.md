@@ -3,9 +3,9 @@
 Roadmap milestone 6 is in progress. The meeting CLI now connects shared capture,
 continuous normalization, durable storage, incremental inference, final export,
 and recovery, with adaptive clock alignment. Native system-audio delivery remains
-unverified. Longer-context final transcript refinement, route-change recovery,
-the meeting GUI, and native acceptance are still outstanding; this milestone has no stable tag. Dictation is independently
-complete at stable/dictation. Calendar/call detection remains milestone 7.
+unverified. Transcribing recovered recordings, route-change recovery, the meeting
+GUI, and native acceptance are still outstanding; this milestone has no stable
+tag. Dictation is independently complete at stable/dictation. Calendar/call detection remains milestone 7.
 
 ## Everyday use and unattended control
 
@@ -19,7 +19,11 @@ fscript export ./meetings/SESSION/transcript.json --format speakers
 fscript notes ./meetings/SESSION/transcript.json
 ```
 
-The default output parent is ./meetings. Each start creates a new private child;
+The default output parent is ./meetings. Live preview text goes to stderr; after
+success, stdout prints only the absolute final transcript path, matching file/URL
+transcription. --quiet suppresses preview/status without removing that path.
+--json keeps the structured event stream on stdout. Each start creates a new
+private child;
 --output-dir overrides that parent. The saved speech model is shared with file
 transcription and dictation, with --model/--model-dir/--device overrides. Normal
 foreground capture finishes on first Ctrl-C; the second cancels owned processes.
@@ -86,10 +90,16 @@ or stalled storage.
 One inference helper belongs to the existing supervised process group. It loads
 one model, reads bounded immutable audio prefixes from disk, and uses the same
 PcmChunker, InferenceOutcome merging, finalizer, and export schema as file jobs.
-Opening windows are 2 seconds; after recognized text they become 8 seconds, with
-0.5-second overlap. Microphone and System are processed in alternating bounded
-reads. Slow recognition accumulates an on-disk backlog; it does not create an
-unbounded queue of audio in RAM. Recognition failures, including startup failures,
+Preview opening windows are 2 seconds; after recognized text they become 8 seconds,
+with 0.5-second overlap. A second chunker receives the same samples in 30-second
+windows with 2-second overlap, using the same loaded engine and inference/merge
+functions. Those longer-context results alone form the final transcript. Microphone
+and System are processed in alternating bounded reads. Final windows are processed
+as they become available during capture; after stop, the helper skips new preview
+work and finishes only the remaining final windows. It does not reprocess the
+entire meeting at the end. Buffers remain bounded by the window sizes. Slow
+recognition accumulates an on-disk backlog, rather than an unbounded audio queue
+in RAM. Recognition failures, including startup failures,
 leave healthy capture running until the requested stop; the command subsequently
 fails with the saved audio directory instead of claiming a complete transcript.
 
@@ -343,7 +353,7 @@ ASR measurements. The existing randomized store/chunker tests remain applicable.
 No check here proves device rerouting, native microphone/system delivery, or
 meeting GUI behavior.
 
-## Real speech cross-check and remaining finalization work
+## Real speech cross-check and final recognition
 
 The public [whisper.cpp JFK fixture](https://github.com/ggml-org/whisper.cpp/blob/master/samples/jfk.wav)
 was verified against Git blob 3184d372cd2f8b804d3a540c70ec50d927b335d2 and SHA-256
@@ -354,10 +364,42 @@ permissions were used. Recognition used the existing cached parakeet-v3-int8
 ONNX model on CPU.
 
 Whole-clip recognition of both saved normalized tracks preserves the original
-word sequence exactly (case and punctuation ignored). Meeting segments also match
-independent streaming recognition of their saved PCM exactly. This separates
-resampling fidelity from recognition context: the short 2/8-second live windows
-produce poorer words on this sample than whole-clip recognition, despite retaining
-all audio. Longer-context final transcript refinement is therefore pending before
-milestone 6 is complete; matching the old streaming core alone is insufficient.
+word sequence exactly (case and punctuation ignored). The initial short-window
+meeting result matched independent streaming recognition of the same saved PCM,
+yet both produced poorer words than whole-clip recognition. This separates
+resampling fidelity from recognition context: the 2/8-second preview profile can
+make recognition errors despite retaining all audio. Final recognition now uses the 30/2-second profile instead. On the same
+fixture, both final channel transcripts preserve the complete original word
+sequence, and their segments exactly match independent batch recognition of the
+saved PCM with those window settings. Preview updates still arrive before stop.
 This single English clip is not a general speech-quality benchmark.
+
+Two additional Rust checks compare final windows against batch across empty,
+short, exact 30/58-second boundaries, and longer inputs, including randomized
+arrival boundaries and stopping preview partway through a backlog. They verify
+bounded input windows, unchanged audio coverage, metadata, and old JSON parsing.
+Meeting E2E tests also check that a different final result replaces provisional
+text, final-only failures retain the partial file, cancellation interrupts final
+recognition, and plain/quiet output returns one final path without preview text
+on stdout.
+
+## Recognition timing metadata
+
+Completed meeting documents use chunk_seconds 30 and chunk_overlap_seconds 2.
+Their chunk list describes final recognition windows only. transcribe_seconds
+counts both preview and final inference on both tracks. The optional
+preview_transcribe_seconds field identifies the preview portion, so the final
+chunk times plus that field equal transcribe_seconds. total_inside_seconds adds
+the backend-reported model load once; derived speed fields use this total.
+Transcription times measure elapsed engine calls, including a runtime's temporary
+audio-file/IPC work and any lazy first-call setup. Capture waiting, capture-side
+normalization/storage, rendering, and external notes are excluded. Backend-reported
+model loading is not a measurement of the entire environment/setup pipeline.
+Provisional snapshot metrics describe only their preview pass and are not final
+processing totals. Other job types omit the new field; older JSON without it
+remains readable.
+
+The completed event replaces the full provisional document; clients must not
+append it to preview text or assume a stable prefix. The internal helper stages
+only a successful final result, and the existing controller still owns its atomic
+publication/cancellation decision. Partial files never masquerade as final files.

@@ -38,7 +38,7 @@ flag-based actions. We do not add a second flag spelling for each new action.
 | Warm dictation shortcut | `fscript record --hotkey` | First available exclusive hold chord; explicit chord override supported. |
 | Clipboard | `fscript export transcript.json --copy` | Copy the shared rendering; optional paste requires an explicit target PID. |
 | Paste access | `fscript permissions` | Inspect without prompting. Only explicit `--request paste` asks macOS for access. |
-| Meetings | `fscript meeting` | Foreground live mic/system capture into a new private session; Ctrl-C finishes. Native acceptance remains in progress. |
+| Meetings | `fscript meeting` | Live preview on stderr, final transcript path on stdout; Ctrl-C finishes capture and final recognition. Native acceptance remains in progress. |
 | Meeting control | `fscript meeting --control`, `meeting status DIR`, `meeting recover DIR` | Explicit JSONL start/stop/cancel and durable inspection/recovery. |
 | Detection (planned) | `fscript calls watch`, `fscript calendar list` | Inspect native adapter evidence. |
 

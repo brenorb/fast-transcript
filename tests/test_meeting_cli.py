@@ -102,6 +102,11 @@ class MeetingCLI(unittest.TestCase):
         events = self.finish(process, prefix)
         result = events[-1]['data']['result']
         self.assertEqual(events[-1]['type'], 'completed')
+        self.assertEqual(result['chunk_seconds'], 30)
+        self.assertEqual(result['chunk_overlap_seconds'], 2)
+        self.assertGreater(result['preview_transcribe_seconds'], 0)
+        self.assertAlmostEqual(result['transcribe_seconds'], sum(chunk['transcribe_seconds'] for chunk in result['chunks']) + result['preview_transcribe_seconds'])
+        self.assertNotEqual(result['text'], prefix[-1]['data']['text'], 'final recognition replaces provisional text')
         self.assertEqual(json.loads((directory / 'transcript.json').read_text()), result)
         manifest = self.inspect(directory)
         self.assertEqual(manifest['state'], 'stopped')
@@ -216,17 +221,37 @@ class MeetingCLI(unittest.TestCase):
         self.assertEqual(self.inspect(directory)['state'], 'stopped')
 
     def test_partial_file_is_kept_separate_when_the_final_decode_fails(self):
-        worker = (self.root / 'worker').read_text().replace('for line in sys.stdin:', 'calls = 0\nfor line in sys.stdin:')
-        worker = worker.replace('    path = json.loads(line)["audio_path"]', '    calls += 1\n    if calls > 2: print(json.dumps({"error":"final inference failed"}), flush=True); continue\n    path = json.loads(line)["audio_path"]')
+        worker = (self.root / 'worker').read_text().replace('        text = hashlib.sha256', '        if seconds > 2.5: print(json.dumps({"error":"final inference failed"}), flush=True); continue\n        text = hashlib.sha256')
         (self.root / 'worker').write_text(worker)
-        process = self.spawn('--duration', '3')
-        events = self.finish(process, status=1)
+        process = self.spawn('--control')
+        prefix = [self.event(process)]
+        process.stdin.write(b'{"action":"start"}\n'); process.stdin.flush()
+        prefix += self.through(process, 'update')
+        time.sleep(1)
+        process.stdin.write(b'{"action":"stop"}\n'); process.stdin.flush()
+        events = self.finish(process, prefix, status=1)
         directory = Path(events[1]['data']['directory'])
         self.assertEqual(self.inspect(directory)['state'], 'stopped')
         self.assertTrue((directory / 'transcript.partial.json').is_file())
         self.assertFalse((directory / 'transcript.json').exists())
         self.assertFalse(any(event['type'] == 'completed' for event in events))
         self.assertTrue(all(not event['data']['recording_continues'] for event in events if event['type'] == 'recognition_error'))
+
+    def test_plain_output_returns_the_final_path_and_keeps_preview_on_stderr(self):
+        for quiet in [False, True]:
+            command = [str(fixture.BINARY), 'meeting', '--duration', '2.4', '--model', 'ultra', '--output-dir', str(self.output / str(quiet))]
+            if quiet: command.append('--quiet')
+            result = subprocess.run(command, capture_output=True, env=self.env, cwd=self.root, timeout=15)
+            self.assertEqual(result.returncode, 0, result.stderr.decode())
+            path = Path(result.stdout.decode().strip())
+            self.assertEqual(path.name, 'transcript.json')
+            self.assertTrue(path.is_file())
+            final = json.loads(path.read_text())
+            self.assertEqual(final['chunk_seconds'], 30)
+            self.assertEqual(final['chunk_overlap_seconds'], 2)
+            self.assertEqual(result.stdout.count(b'\n'), 1)
+            if quiet: self.assertEqual(result.stderr, b'')
+            else: self.assertIn(b'Microphone:', result.stderr)
 
     def test_missing_source_is_interrupted_and_never_fabricated_as_silence(self):
         self.env['FSCRIPT_SYSTEM_CAPTURE_TEST_WAV'] = str(self.root / 'missing.wav')

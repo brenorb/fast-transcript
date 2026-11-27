@@ -148,6 +148,9 @@ pub(crate) struct BenchmarkResult {
     pub(crate) transcript_source: String,
     pub(crate) audio_seconds: f64,
     pub(crate) load_seconds: f64,
+    /// Included in total transcription time, but not in the final chunk list.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) preview_transcribe_seconds: Option<f64>,
     pub(crate) transcribe_seconds: f64,
     pub(crate) total_inside_seconds: f64,
     pub(crate) seconds_per_audio_second: f64,
