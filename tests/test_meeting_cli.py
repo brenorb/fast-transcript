@@ -103,7 +103,9 @@ class MeetingCLI(unittest.TestCase):
         result = events[-1]['data']['result']
         self.assertEqual(events[-1]['type'], 'completed')
         self.assertEqual(json.loads((directory / 'transcript.json').read_text()), result)
-        self.assertEqual(self.inspect(directory)['state'], 'stopped')
+        manifest = self.inspect(directory)
+        self.assertEqual(manifest['state'], 'stopped')
+        self.assertEqual(manifest['track_frames'][0], manifest['track_frames'][1])
         self.assertEqual(len((self.root / 'workers').read_text().splitlines()), 1, 'one warm model handles both tracks')
         labels = {'Microphone': 'microphone.pcm', 'System': 'system.pcm'}
         self.assertEqual({s['speaker'] for s in result['segments']}, set(labels))
@@ -200,19 +202,18 @@ class MeetingCLI(unittest.TestCase):
         for pid in (self.root / 'workers').read_text().splitlines():
             with self.assertRaises(ProcessLookupError): os.kill(int(pid), 0)
 
-    def test_stalled_converter_is_terminated_after_stop_deadline(self):
-        # Both converters keep stdin open without consuming: native packet writes
-        # will fill the pipe, so only the independent deadline can stop them.
+    def test_meeting_normalization_does_not_launch_an_external_converter(self):
         converter = self.root / 'ffmpeg'
-        converter.write_text('#!/usr/bin/env python3\nimport time\ntime.sleep(60)\n')
+        marker = self.root / 'unexpected-converter'
+        converter.write_text('#!/usr/bin/env python3\nfrom pathlib import Path\nPath(' + repr(str(marker)) + ').touch()\nraise SystemExit(2)\n')
         converter.chmod(0o755)
-        began = time.monotonic()
         process = self.spawn('--duration', '.3')
-        events = self.finish(process, status=1)
-        self.assertLess(time.monotonic() - began, 5)
+        events = self.finish(process)
+        self.assertEqual(events[-1]['type'], 'completed')
+        self.assertFalse(marker.exists(), 'meeting normalization must remain inside the Rust capture service')
+        self.assertFalse(events[-1]['data']['result']['used_ffmpeg_normalization'])
         directory = Path(events[1]['data']['directory'])
-        self.assertFalse((directory / 'transcript.json').exists())
-        self.assertEqual(self.inspect(directory, 'recover')['state'], 'interrupted')
+        self.assertEqual(self.inspect(directory)['state'], 'stopped')
 
     def test_partial_file_is_kept_separate_when_the_final_decode_fails(self):
         worker = (self.root / 'worker').read_text().replace('for line in sys.stdin:', 'calls = 0\nfor line in sys.stdin:')

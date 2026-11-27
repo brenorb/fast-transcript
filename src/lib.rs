@@ -6,6 +6,7 @@ mod audio;
 mod capture;
 mod cli;
 mod clipboard;
+mod clocked_pcm;
 mod control;
 mod delivery;
 mod diarization;

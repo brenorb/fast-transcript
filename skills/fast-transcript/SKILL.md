@@ -85,5 +85,5 @@ after capture stops. Do not close stdin before stop. Use `meeting status DIR` to
 inspect a durable checkpoint and `meeting recover DIR` only after an interrupted
 owner exits. Live snapshots are `transcript.partial.json`; only
 `transcript.json` is complete and ready for final export/notes. Native system
-capture, clock drift, route changes, and the meeting GUI are still under validation;
+capture, final transcript refinement, route changes, and the meeting GUI are still under validation;
 see docs/live-meetings.md for coverage and current limits.

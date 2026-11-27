@@ -85,8 +85,8 @@ remaining checks.
 Live meeting capture is available in the development CLI as `fscript meeting`:
 separate microphone/system tracks, live channel-attributed text, durable recovery,
 and the same export/notes commands. `--duration 60 --json` supports unattended
-runs. The meeting GUI, device-clock drift/rerouting, and native system-audio
-acceptance are still in progress; see [current contracts and validation](docs/live-meetings.md).
+runs. Final transcript refinement, the meeting GUI, device changes, and native
+system-audio acceptance are still in progress; see [current contracts and validation](docs/live-meetings.md).
 
 ## Why this exists
 

@@ -2,9 +2,9 @@
 
 Roadmap milestone 6 is in progress. The meeting CLI now connects shared capture,
 continuous normalization, durable storage, incremental inference, final export,
-and recovery. Native system-audio delivery remains unverified. Clock-drift
-compensation, route-change recovery, the meeting GUI, and native acceptance are
-still outstanding; this milestone has no stable tag. Dictation is independently
+and recovery, with adaptive clock alignment. Native system-audio delivery remains
+unverified. Longer-context final transcript refinement, route-change recovery,
+the meeting GUI, and native acceptance are still outstanding; this milestone has no stable tag. Dictation is independently
 complete at stable/dictation. Calendar/call detection remains milestone 7.
 
 ## Everyday use and unattended control
@@ -73,14 +73,15 @@ export/notes input. Channel names do not identify individual remote participants
 
 ## Capture and recognition execution
 
-Each source has its own capture thread and one continuous FFmpeg normalization
-context: native-rate interleaved PCM16 becomes 16 kHz mono PCM16. Output readers
-write directly to the shared private store in bounded blocks; neither native
-callbacks nor disk writes wait for the ASR result. Both source loops checkpoint
-at one-second intervals. A separate stop/deadline watcher acts even if a converter
-blocks its input or shutdown; after two seconds it kills that owned converter.
-A killed/failed converter cannot mark the session successfully stopped. This
-bounds converter stalls, not arbitrary OS permission dialogs or stalled storage.
+Each source has its own capture thread and one continuous Rubato 5.1.0 sinc
+resampler. Native interleaved PCM16 is downmixed with equal channel weights and
+converted to 16 kHz mono PCM16 in Rust. Meeting capture no longer launches FFmpeg;
+file/URL decoding and dictation's completed-WAV normalization retain their existing
+paths. The result's legacy used_ffmpeg_normalization flag is false for meetings.
+Neither native callbacks nor disk writes wait for ASR. Both source loops checkpoint
+at one-second intervals, and an independent timer stamps duration/signal stops
+while inference is blocked. This does not bound arbitrary OS permission dialogs
+or stalled storage.
 
 One inference helper belongs to the existing supervised process group. It loads
 one model, reads bounded immutable audio prefixes from disk, and uses the same
@@ -92,15 +93,35 @@ unbounded queue of audio in RAM. Recognition failures, including startup failure
 leave healthy capture running until the requested stop; the command subsequently
 fails with the saved audio directory instead of claiming a complete transcript.
 
-The current alignment compares cumulative native frames against the host clock,
-keeps small callback jitter contiguous, fills positive discrepancies exceeding
-100 ms, and fails on a backwards discrepancy exceeding 100 ms. This is not an
-adaptive device-clock resampler: gradual independent-clock drift is not yet
-compensated, and a large positive discrepancy can insert silence. Long meetings
-with independent devices therefore still require the upcoming drift work and
-interior-marker simulation before milestone 6 can be considered complete. Default
-device changes are also not followed yet. These limits are deliberately retained
-in the milestone ledger instead of labeling the current capture path stable.
+The resampler tracks cumulative native frames against the first-sample host
+clock. Filtered phase feedback plus integrated frequency error compensate gradual
+independent-clock drift, within a ±0.5% ratio range. A one-second ratio smoothing
+step and an intra-block ramp avoid sudden rate changes. A hard rate derivative
+limit was rejected because it wound up the integrator after timestamp steps.
+Residual phase outside 100 ms fails capture rather than silently accepting an
+untrackable clock.
+
+A genuine positive adjacent-packet discontinuity over 100 ms flushes the previous
+segment and leaves the missing interval silent. A backwards discontinuity over
+100 ms fails with recoverable audio. Small timestamp jitter does not repeatedly
+re-anchor the recording. Every arriving packet reads the shared stop cutoff again,
+including packets drained after a slow disk callback. The tail is clipped to the
+common cutoff; successful tracks end on the same 16 kHz frame. Empty or entirely
+clipped sources cannot be turned into successful silent tracks.
+
+Filter length grows above 48 kHz to preserve stopband rejection through 384 kHz.
+The supported input is PCM16 with 1–64 channels and rates from 8 to 384 kHz.
+Synthetic input preroll aligns the filter's initial sampling grid before integer
+output cropping. It is computed immediately, without waiting for silence; the
+remaining sinc-table phase quantization is below one microsecond. See the pinned
+[Rubato release](https://docs.rs/rubato/5.1.0) and its source in the locked crate.
+
+The resampler's input buffer is fixed at 1,024 mono frames plus filter history. The
+output retains 320 frames (20 ms) before publication, so stop can clip queued audio
+without rewriting saved prefixes. Flush padding has an explicit history bound;
+it cannot accumulate a meeting-length audio buffer. Source packet queues remain
+bounded in the shared transport. Device changes are not followed yet; route-change
+recovery and native hardware acceptance remain part of milestone 6.
 
 ## Storage contract
 
@@ -286,18 +307,57 @@ sample delivery rather than infer success from device creation. CLI control will
 remain under fscript, following [clig.dev](https://clig.dev/#subcommands), with
 machine-readable stdout, diagnostics on stderr, and a fully unattended path.
 
-Controller verification uses explicit WAV transports, real FFmpeg processes, the
+Controller verification uses explicit WAV transports, continuous Rust resampling, the
 actual CLI/service subprocesses, private storage, and a deterministic model worker.
 It checks live pre-stop updates, exact SHA-256 recognition-input equality with saved
 per-channel audio, source separation, one warm model for both tracks, final export,
 durable status, active-owner recovery refusal, stdin interruption/recovery, graceful
 first interrupt and forceful second cancellation, slow-inference-independent disk
 progress/stop, recognition failures, cancellation during blocked final recognition,
-stalled converters, missing/empty sources, and completion/cancellation consistency.
+absence of external meeting converters, missing/empty sources, and
+completion/cancellation consistency.
 
-Three additional Rust checks cover 5 native sample rates × 1/2 channels and random
-input fragmentation against an independent whole-file FFmpeg conversion, source
-jitter/real gaps/cutoff against an independently constructed PCM timeline, and
-idempotent shared cutoff conversion. The existing randomized store/chunker tests
-remain applicable. None of these fixtures prove native microphone/system delivery,
-independent-clock drift compensation, device rerouting, or meeting GUI behavior.
+Clock-alignment verification adds these checks:
+
+| Check | Coverage |
+| --- | --- |
+| Independent FFmpeg differential | 8 native rates from 8–384 kHz × 1/2 channels, random packet sizes; a 300 Hz passband tone exceeds 45 dB direct waveform SNR after edge removal |
+| Stopband rejection | 12 kHz at 48 kHz input; 9 kHz at 96/192/384 kHz input; output RMS below two PCM16 units after edge removal |
+| Randomized clock property | 32 virtual hours, varying packet sizes, ±0.5 ms timestamp jitter and changing skew; analytic host position differs by less than 3 ms |
+| Timestamp steps | Positive/negative 10/80 ms steps settle below 50 μs residual after 120 seconds without a growing oscillation |
+| Unsupported drift | A 2% rate error fails instead of silently diverging beyond the supported correction range |
+| Boundary/failure properties | Genuine gaps, backwards jumps, pre-epoch/post-cutoff input, empty sources, incomplete stereo frames, and failed sinks |
+| Stop during queue drain | A sink requests stop while 128 packets are being delivered; subsequent packets observe the new cutoff and cannot extend the recording |
+| Full-hour waveform acceptance | Two independent one-hour 16 kHz output streams, 16/44.1 kHz native inputs, changing ±150 ppm/constant −100 ppm clocks, jitter, and a 350 ms gap; all 120 interior markers retain amplitude and stay within 3 ms of host time |
+
+The full-hour DSP check probes arriving blocks without retaining an hour of PCM.
+It runs explicitly in optimized mode locally and in CI, rather than counting an
+ignored default test as verified:
+
+```sh
+cargo test --release --locked simulated_hour_markers -- --ignored --nocapture
+```
+
+These are virtual clocks with actual resampling, not native-device or hour-long
+ASR measurements. The existing randomized store/chunker tests remain applicable.
+No check here proves device rerouting, native microphone/system delivery, or
+meeting GUI behavior.
+
+## Real speech cross-check and remaining finalization work
+
+The public [whisper.cpp JFK fixture](https://github.com/ggml-org/whisper.cpp/blob/master/samples/jfk.wav)
+was verified against Git blob 3184d372cd2f8b804d3a540c70ec50d927b335d2 and SHA-256
+59dfb9a4acb36fe2a2affc14bacbee2920ff435cb13cc314a08c13f66ba7860e.
+Explicit WAV transports supplied its original 16 kHz microphone input and an
+independent FFmpeg 48 kHz stereo conversion as system input. No native devices or
+permissions were used. Recognition used the existing cached parakeet-v3-int8
+ONNX model on CPU.
+
+Whole-clip recognition of both saved normalized tracks preserves the original
+word sequence exactly (case and punctuation ignored). Meeting segments also match
+independent streaming recognition of their saved PCM exactly. This separates
+resampling fidelity from recognition context: the short 2/8-second live windows
+produce poorer words on this sample than whole-clip recognition, despite retaining
+all audio. Longer-context final transcript refinement is therefore pending before
+milestone 6 is complete; matching the old streaming core alone is insufficient.
+This single English clip is not a general speech-quality benchmark.

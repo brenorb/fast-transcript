@@ -614,7 +614,9 @@ fn snapshot(
         PreparedAudio {
             wav_path: directory.into(),
             source_start_s: 0.0,
-            normalized: true,
+            // This legacy field specifically reports FFmpeg use. Meeting PCM
+            // is normalized by the shared Rust resampler.
+            normalized: false,
             _tempdir: None,
         },
         crate::transcribe::CompletedInference {
