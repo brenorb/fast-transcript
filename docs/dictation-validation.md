@@ -235,7 +235,7 @@ inspection/request/grant-transition combinations. Nine single-command/export
 process E2E checks passed, including JSON versus human permission status, offline
 help on the request path, and inspection with broken model settings/missing media
 tools. All 16 native process/property/differential checks passed with their real
-CLI fixtures. The updated permission prompt's GUI acceptance remains pending.
+CLI fixtures. Effective grant and targeted-paste acceptance remain pending.
 
 GUI acceptance then confirmed that a saved Paste automatically preference only
 inspected access at startup and showed the missing-grant message. Turning the app
@@ -259,3 +259,27 @@ showed Transcribing and a spinner in both the accessibility tree and screenshot.
 The fixture gate holds actual inference, so this checks the waiting state rather
 than briefly sampling an already-completed transcription. Capture was explicitly
 prerecorded; this check did not request microphone permission.
+
+## Authorized permission refresh follow-up
+
+The user explicitly approved one off/on refresh of Fast Transcript's existing
+Device Control and Data Access entry and completed the macOS Touch ID prompt.
+The entry was observed off, then restored on. The bundled permission check still
+reported no effective grant, including after a full restart of the unchanged app.
+
+A temporary, read-only native diagnostic was launched through the app's normal
+custom-notes runner against a public speech fixture. Both AXIsProcessTrusted and
+CGPreflightPostEventAccess returned false. The macOS audit attributed both queries
+to the exact tested Fast Transcript bundle and explicitly rejected its saved
+Accessibility code requirement: current cdhash e2d013ea… did not match saved
+cdhash 2f36c293…. Thus the off/on change preserved the stale identity; neither a
+restart nor accepting the visible enabled switch established an effective grant.
+The isolated notes configuration was restored after the diagnostic, and no
+external agent or microphone was used for it.
+
+Removing that stale entry to register the current bundle was rejected by automatic
+approval review because the user's confirmation covered off/on, not removal and
+re-addition. The entry remains present and enabled. Explicit approval for that
+separate operation is pending; no TCC reset or indirect workaround was attempted.
+The validated app bundle is unchanged, and milestone 5 remains incomplete until
+effective paste and the remaining acceptance checks pass.
