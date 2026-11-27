@@ -80,7 +80,7 @@ jobs:
       - name: Build the shared CLI
         run: cargo build --locked
       - name: Native shortcut state properties
-        run: cargo test --locked shortcut::
+        run: 'cargo test --locked shortcut::'
       - name: Native process E2E, protocol properties, and batch differential tests
         run: python3 scripts/test_desktop_client.py
       - name: Build development app bundle
