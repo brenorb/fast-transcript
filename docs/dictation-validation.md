@@ -174,8 +174,8 @@ auxiliary-window closures. With the scoped candidate, opening and dismissing the
 app menu left the toggle visibly Listening; the 500-case regression also passed.
 Lifecycle diagnostics record state and intent only, never captured text. The Mac
 locked again before the final combined close/reopen/Quit acceptance check. The
-later live session below covers close/reopen and microphone capture; final Quit
-and effective paste checks remain pending. Native unit and process tests do not
+later live session below covers close/reopen, Quit, and microphone capture;
+effective paste checks remain pending. Native unit and process tests do not
 substitute for them.
 
 ## Live microphone acceptance, 2026-11-27
@@ -197,6 +197,13 @@ No bundle rebuild, permission reset, or fixture capture override was used.
   post=false for this same app process. The microphone grant did not repair the
   separate Accessibility code-requirement mismatch. The enabled Settings switch
   was retained; effective targeted paste remains unverified.
+- Native menu Quit during a third live recording cancelled capture. The app and
+  both recorded supervisor/worker PIDs disappeared; the completed-document count
+  remained two. Lifecycle logs showed cancel at state recording, shutdown, and
+  then main-window close at state off. This distinguishes Quit cancellation from
+  an accidental finish caused by menu dismissal. Reopening the unchanged bundle
+  and a brief prepare-only button press restored the global-shortcut listener
+  without another microphone prompt or additional completed recording.
 
 During this acceptance session, a temporary caffeinate -di -t 7200 process was
 started at the user's request. macOS confirmed idle display/system sleep
