@@ -1,8 +1,9 @@
 # Live meetings
 
 Roadmap milestone 6 is in progress. The shared Rust storage/recovery foundation is
-implemented and the existing microphone transport yields timestamped packets;
-live meeting capture, incremental recognition, CLI control, and the
+implemented, both capture sources share timestamped packets, and the native tap
+adapter compiles. Native system-audio delivery remains unverified; live meeting
+capture, incremental recognition, CLI control, and the
 meeting GUI are not yet available. Dictation is independently complete at
 stable/dictation. Calendar/call detection remains milestone 7.
 
@@ -72,6 +73,67 @@ late draining or a repeated stop cannot extend the captured interval. A consumer
 error stops draining before subsequent packets are consumed. No fixture is
 selected automatically and these tests do not request microphone permission.
 
+## System audio adapter
+
+The macOS adapter in src/system_capture.rs explicitly creates a private,
+unmuted mono tap on the selected output device's UID and stream zero. It excludes
+the recorder's HAL process when available. Its private aggregate is selected by
+the newly created UID, with usable input configurations required before it is
+passed to the same CPAL input transport as the microphone. It does not select a
+different physical input if the intended endpoint is unavailable.
+
+An explicit tap is necessary even though CPAL has a loopback fallback. In the
+locked version, selecting an output device that also supports hardware input
+chooses that input, which can put microphone/line-in audio on the system track.
+The fallback also hard-codes waiting for first playback and lacks a tap guard
+between successful tap creation and failed aggregate creation. See the pinned
+[selection branch](https://github.com/RustAudio/cpal/blob/e1612d5d98152f8dc2a62e1b51ef7cbf4f7f26b7/src/host/coreaudio/macos/device.rs#L684-L735)
+and [loopback lifecycle](https://github.com/RustAudio/cpal/blob/e1612d5d98152f8dc2a62e1b51ef7cbf4f7f26b7/src/host/coreaudio/macos/loopback.rs#L86-L150).
+The adapter supplies the missing selection/ownership policy; packet conversion,
+timestamps, bounded queues, and streaming remain shared with microphone capture.
+
+Aggregate tap auto-start is zero: Apple's SDK documents a nonzero value as making
+device startup wait for playback. This avoids requesting that wait; actual startup
+in silence still needs native acceptance. Stop drops the input stream before
+destroying the aggregate and then the tap. Initialization failures use the same
+ownership guard. Cleanup attempts both resources, propagates errors, and retains
+failed IDs for a final Drop retry rather than reporting an unconditional success.
+The current adapter is bound to the initial output; route-change recovery belongs
+to the upcoming controller and is not claimed here.
+
+Only an explicit system capture start can create devices or trigger its OS
+permission flow. FSCRIPT_SYSTEM_CAPTURE_TEST_WAV explicitly substitutes a WAV
+for that source, independently of the microphone fixture. No native system audio
+has been captured in the checks described here.
+
+## Native permission metadata and build verification
+
+Native macOS builds require 14.2 or later. CPAL already imports the process-tap
+functions in the executable, including when another action is selected; inspecting
+the previous and new binaries established this existing minimum. The CLI's Mach-O
+deployment target and the desktop package now declare it consistently. A local
+symbol lookup would not make an otherwise strongly linked executable compatible
+with older macOS versions.
+
+resources/fscript-Info.plist is the shared source of microphone/system-audio usage
+descriptions. The Rust build script preserves existing Clang runtime discovery
+and embeds a versioned __TEXT,__info_plist section in the CLI. The app builder
+uses the same descriptions. Apple's
+[single-file tool guidance](https://developer.apple.com/library/archive/documentation/Security/Conceptual/CodeSigningGuide/Procedures/Procedures.html)
+explains embedded Info.plist metadata; its presence is not a permission grant.
+
+The builder takes the executable path from Cargo's compiler-artifact message,
+including a configured CARGO_TARGET_DIR, and verifies its actual embedded metadata
+before packaging. A shared Python checker validates both usage descriptions,
+bundle identity, self-reported/embedded version, and the minimum deployment target.
+Native client tests use that same checker. A stale same-version executable is not
+accepted merely because it occupies the usual target/debug path.
+
+Local verification used a separate Cargo target after the shared cache was found
+rerunning a build-script executable from an older packaged checkout. It did not
+remove or clean the user's shared target. The validated dictation app was not
+rebuilt or replaced by this verification.
+
 ## Validation
 
 Nine Rust backend checks cover separate tracks, gaps/overlaps, checkpoint versus
@@ -98,6 +160,17 @@ The extraction passed 226 Rust checks, seven recording CLI E2E cases (one
 additional platform-specific case skipped), and sixteen native client/app checks
 on this Mac. No app bundle rebuild or permission refresh was needed for these
 fixture-only backend checks.
+
+The tap's cleanup property covers all combinations of partial ownership and
+injected first cleanup failures, including idempotent success and retrying only
+failed resources. It uses fake destroy functions and never creates native devices.
+These checks and the metadata checks do not establish real system-audio capture,
+silent startup, output-route following, or the first-use permission experience.
+The adapter integration passed 227 Rust checks, the seven recording E2E cases
+(one additional platform-specific case skipped), and sixteen native client/app
+checks against the freshly isolated executable. A separate debug app bundle built
+with that target passed matching CLI/app permission metadata, deployment minimum,
+and deep strict signature verification. It was not launched.
 
 ## Reference decisions
 

@@ -28,7 +28,7 @@ pub(crate) struct AudioSource {
 
 enum Source {
     #[cfg(target_os = "macos")]
-    Microphone(NativeCapture),
+    Native(NativeCapture),
     Fixture {
         reader: hound::WavReader<BufReader<File>>,
         next: Instant,
@@ -100,7 +100,7 @@ impl Capture {
     }
 
     pub(crate) fn finish(mut self) -> Result<()> {
-        self.source.stop();
+        self.source.stop()?;
         self.poll()?;
         if self.samples / self.channels as usize == 0 {
             bail!("no microphone audio was captured; check microphone permission and the selected system input");
@@ -116,44 +116,61 @@ impl AudioSource {
     pub(crate) fn microphone() -> Result<Self> {
         check_platform()?;
         // Explicit deterministic transport for process tests; never selected automatically.
-        let (source, spec) = if let Some(input) = std::env::var_os("FSCRIPT_CAPTURE_TEST_WAV") {
-            let reader = hound::WavReader::open(input).context("cannot open capture test WAV")?;
-            let spec = reader.spec();
-            if spec.sample_format != hound::SampleFormat::Int
-                || spec.bits_per_sample != 16
-                || spec.channels == 0
-                || spec.sample_rate == 0
-            {
-                bail!(
-                    "capture test WAV must contain 16-bit PCM with a valid rate and channel count"
-                );
-            }
-            let packet_samples = ((spec.sample_rate / 50).max(1) * spec.channels as u32) as usize;
-            (
-                Source::Fixture {
-                    reader,
-                    next: Instant::now(),
-                    packet_samples,
-                    epoch_ns: host_time_ns()?,
-                    delivered_samples: 0,
-                },
-                spec,
-            )
-        } else {
-            #[cfg(target_os = "macos")]
-            {
-                let microphone = NativeCapture::start()?;
-                let spec = microphone.spec;
-                (Source::Microphone(microphone), spec)
-            }
-            #[cfg(not(target_os = "macos"))]
-            bail!("microphone recording currently requires macOS; file and URL transcription work on this platform");
+        if let Some(input) = std::env::var_os("FSCRIPT_CAPTURE_TEST_WAV") {
+            return Self::fixture(Path::new(&input));
+        }
+        #[cfg(target_os = "macos")]
+        {
+            Ok(Self::native(NativeCapture::microphone()?))
+        }
+        #[cfg(not(target_os = "macos"))]
+        bail!("microphone recording currently requires macOS; file and URL transcription work on this platform");
+    }
+
+    pub(crate) fn system() -> Result<Self> {
+        if let Some(input) = std::env::var_os("FSCRIPT_SYSTEM_CAPTURE_TEST_WAV") {
+            return Self::fixture(Path::new(&input));
+        }
+        #[cfg(target_os = "macos")]
+        {
+            Ok(Self::native(NativeCapture::system()?))
+        }
+        #[cfg(not(target_os = "macos"))]
+        bail!("system audio capture requires macOS 14.2 or later");
+    }
+
+    fn fixture(input: &Path) -> Result<Self> {
+        let reader = hound::WavReader::open(input).context("cannot open capture test WAV")?;
+        let spec = reader.spec();
+        if spec.sample_format != hound::SampleFormat::Int
+            || spec.bits_per_sample != 16
+            || spec.channels == 0
+            || spec.sample_rate == 0
+        {
+            bail!("capture test WAV must contain 16-bit PCM with a valid rate and channel count");
+        }
+        let packet_samples = ((spec.sample_rate / 50).max(1) * spec.channels as u32) as usize;
+        let source = Source::Fixture {
+            reader,
+            next: Instant::now(),
+            packet_samples,
+            epoch_ns: host_time_ns()?,
+            delivered_samples: 0,
         };
         Ok(Self {
             source,
             spec,
             cutoff: None,
         })
+    }
+
+    #[cfg(target_os = "macos")]
+    fn native(capture: NativeCapture) -> Self {
+        Self {
+            spec: capture.spec,
+            source: Source::Native(capture),
+            cutoff: None,
+        }
     }
 
     /// Drain bounded native queues, or catch a fixture up to elapsed time. A sink
@@ -164,7 +181,7 @@ impl AudioSource {
     ) -> Result<()> {
         match &mut self.source {
             #[cfg(target_os = "macos")]
-            Source::Microphone(capture) => {
+            Source::Native(capture) => {
                 capture.check()?;
                 for _ in 0..128 {
                     let Ok(packet) = capture.audio.try_recv() else {
@@ -211,33 +228,60 @@ impl AudioSource {
         Ok(())
     }
 
-    pub(crate) fn stop(&mut self) {
+    pub(crate) fn stop(&mut self) -> Result<()> {
         self.cutoff.get_or_insert_with(Instant::now);
         #[cfg(target_os = "macos")]
-        if let Source::Microphone(capture) = &mut self.source {
+        if let Source::Native(capture) = &mut self.source {
             // Stop callbacks before draining the final packets.
             capture.stream.take();
+            if let Some(mut tap) = capture.tap.take() {
+                tap.stop()?;
+            }
         }
+        Ok(())
     }
 }
 
 #[cfg(target_os = "macos")]
 struct NativeCapture {
     stream: Option<cpal::Stream>,
+    // Field order also drops the stream before its device on error/unwind.
+    tap: Option<crate::system_capture::SystemTap>,
     audio: std::sync::mpsc::Receiver<AudioPacket>,
     errors: std::sync::mpsc::Receiver<String>,
     overflow: std::sync::Arc<std::sync::atomic::AtomicBool>,
     spec: hound::WavSpec,
+    label: &'static str,
 }
 
 #[cfg(target_os = "macos")]
 impl NativeCapture {
-    fn start() -> Result<Self> {
-        use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
+    fn microphone() -> Result<Self> {
+        use cpal::traits::HostTrait;
         let device = cpal::default_host().default_input_device().context(
             "no microphone input is available; choose an input in System Settings > Sound",
         )?;
-        let config = device.default_input_config().context("cannot inspect microphone input; check System Settings > Privacy & Security > Microphone")?;
+        Self::open(device, "microphone", "Microphone", None)
+    }
+
+    fn system() -> Result<Self> {
+        let (tap, device) = crate::system_capture::SystemTap::create()?;
+        Self::open(
+            device,
+            "system audio",
+            "Screen & System Audio Recording",
+            Some(tap),
+        )
+    }
+
+    fn open(
+        device: cpal::Device,
+        label: &'static str,
+        permission: &'static str,
+        tap: Option<crate::system_capture::SystemTap>,
+    ) -> Result<Self> {
+        use cpal::traits::{DeviceTrait, StreamTrait};
+        let config = device.default_input_config().with_context(|| format!("cannot inspect {label} input; check System Settings > Privacy & Security > {permission}"))?;
         let spec = hound::WavSpec {
             channels: config.channels() as u16,
             sample_rate: config.sample_rate(),
@@ -274,23 +318,27 @@ impl NativeCapture {
             }
         };
         let stream = device.build_input_stream_raw(config.config(), config.sample_format(), callback, move |error| { let _ = error_sender.try_send(error.to_string()); }, Some(Duration::from_secs(5)))
-            .context("cannot open microphone; allow microphone access in System Settings > Privacy & Security > Microphone")?;
-        stream.play().context("cannot start microphone")?;
+            .with_context(|| format!("cannot open {label}; allow access in System Settings > Privacy & Security > {permission}"))?;
+        stream
+            .play()
+            .with_context(|| format!("cannot start {label}"))?;
         Ok(Self {
             stream: Some(stream),
+            tap,
             audio,
             errors,
             overflow,
             spec,
+            label,
         })
     }
 
     fn check(&self) -> Result<()> {
         if self.overflow.load(std::sync::atomic::Ordering::Relaxed) {
-            bail!("microphone transport overflowed or returned an unsupported format; recording was stopped instead of losing audio silently");
+            bail!("{} transport overflowed or returned an unsupported format; recording was stopped instead of losing audio silently", self.label);
         }
         if let Ok(error) = self.errors.try_recv() {
-            bail!("microphone stopped: {error}");
+            bail!("{} stopped: {error}", self.label);
         }
         Ok(())
     }
@@ -426,7 +474,7 @@ mod tests {
                     .unwrap();
                 assert!(packets > 1);
                 assert_eq!(actual, expected);
-                source.stop();
+                source.stop().unwrap();
                 source
                     .poll(|_| bail!("EOF must never synthesize additional packets"))
                     .unwrap();
@@ -438,15 +486,15 @@ mod tests {
     fn stopped_fixture_does_not_advance_while_a_consumer_finishes() {
         let temp = tempfile::tempdir().unwrap();
         let (mut source, _) = fixture_source(&temp.path().join("source.wav"), 16000, 1);
-        source.stop();
+        source.stop().unwrap();
         let stopped = source.cutoff.unwrap();
         match &mut source.source {
             Source::Fixture { next, .. } => *next = stopped + Duration::from_nanos(1),
             #[cfg(target_os = "macos")]
-            Source::Microphone(_) => unreachable!("explicit fixture cannot open a microphone"),
+            Source::Native(_) => unreachable!("explicit fixture cannot open a native device"),
         }
         std::thread::sleep(Duration::from_millis(1));
-        source.stop();
+        source.stop().unwrap();
         assert_eq!(
             source.cutoff,
             Some(stopped),

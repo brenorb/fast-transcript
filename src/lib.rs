@@ -29,6 +29,8 @@ mod remote;
 mod settings;
 mod shortcut;
 mod streaming;
+#[cfg(target_os = "macos")]
+mod system_capture;
 mod transcribe;
 mod transcript;
 mod types;

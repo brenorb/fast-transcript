@@ -6,8 +6,10 @@ Text appears incrementally. Copy is one click; Export defaults to timestamped te
 with plain text, SRT, WebVTT, and JSON available from its menu. Partial selection
 and model/agent choices stay outside the primary path.
 
-The shell targets macOS 14 or later, using SwiftUI and Observation
+The shell targets macOS 14.2 or later, using SwiftUI and Observation
 ([Apple API availability](https://developer.apple.com/documentation/observation/observable())).
+The bundled capture transport also imports Core Audio tap APIs introduced in
+14.2; the standalone native CLI has the same minimum.
 Rust owns media selection, inference, merging, preferences, rendering, atomic
 transcript delivery, and external notes. The Swift client launches the bundled
 commands and presents their results. It contains no speech model or LLM client.

@@ -5,12 +5,18 @@ use std::process::Command;
 
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
+    println!("cargo:rerun-if-changed=resources/fscript-Info.plist");
     println!("cargo:rerun-if-env-changed=DEVELOPER_DIR");
 
     let target = env::var("TARGET").unwrap_or_default();
     if !target.contains("apple-darwin") {
         return;
     }
+
+    // CPAL imports process-tap APIs even for other CLI actions. Declare their
+    // actual platform minimum instead of advertising an older deployment target.
+    println!("cargo:rustc-link-arg=-mmacosx-version-min=14.2");
+    embed_cli_metadata();
 
     for path in clang_runtime_dirs() {
         println!("cargo:rustc-link-search=native={}", path.display());
@@ -76,4 +82,24 @@ fn runtime_dirs_for_clang_base(base: &Path) -> Vec<PathBuf> {
         }
     }
     dirs
+}
+
+fn embed_cli_metadata() {
+    let root = PathBuf::from(env::var_os("CARGO_MANIFEST_DIR").unwrap());
+    let output = PathBuf::from(env::var_os("OUT_DIR").unwrap()).join("fscript-Info.plist");
+    let template = fs::read_to_string(root.join("resources/fscript-Info.plist"))
+        .expect("read CLI permission descriptions");
+    fs::write(
+        &output,
+        template.replace("@VERSION@", &env::var("CARGO_PKG_VERSION").unwrap()),
+    )
+    .expect("write versioned CLI Info.plist");
+    // Separate linker arguments preserve paths containing spaces or commas.
+    // Embed only in the CLI, not test executables or the Rust library.
+    for argument in ["-sectcreate", "__TEXT", "__info_plist"] {
+        println!("cargo:rustc-link-arg-bin=fscript=-Xlinker");
+        println!("cargo:rustc-link-arg-bin=fscript={argument}");
+    }
+    println!("cargo:rustc-link-arg-bin=fscript=-Xlinker");
+    println!("cargo:rustc-link-arg-bin=fscript={}", output.display());
 }

@@ -2,6 +2,8 @@
 
 **`fast-transcript` transcribes large audio and video recordings locally, with a native macOS interface and a noninteractive CLI.**
 
+Native macOS builds require macOS 14.2 or later.
+
 On the development machine, this project handled **30 minutes in 2!*** while staying around **2.51 GB RSS** on the long run. In the same local test set, it beat **`mlx-whisper`**, **`insanely-fast-whisper`**, and **`parakeet-mlx`**.
 
 <sub>* Benchmark run on a MacBook Pro M1. The exact long-run measurement was **29m47s** of Portuguese lecture audio transcribed in about **2m14s** (**13.38x real-time**).</sub>
