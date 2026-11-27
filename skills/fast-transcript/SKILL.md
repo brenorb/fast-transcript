@@ -51,6 +51,12 @@ JSON objects with action start, stop, cancel, or shutdown and reuses one model.
 the actual selected chord and registration availability. Recording events use their own version 1 lifecycle (see `fscript record --help`).
 Use stop to finish; closing the controller mid-recording discards the clip.
 
+`fscript permissions --json` inspects automatic-paste access without prompting,
+recording, or loading a model. Only an explicit `--request paste` may show macOS's
+permission prompt. Do not request access automatically in unattended workflows.
+Run through the same app/terminal as delivery; ad-hoc rebuilds can invalidate an
+older grant. Missing paste permission does not prevent `export --copy`.
+
 Completed JSON/JSONL can be exported without rerunning recognition:
 
 ```bash

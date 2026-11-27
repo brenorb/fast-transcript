@@ -3,6 +3,48 @@ use anyhow::{bail, Context, Result};
 use std::io::Write;
 use std::process::{Command, Stdio};
 
+#[derive(serde::Serialize)]
+pub(crate) struct PasteAccess {
+    pub supported: bool,
+    pub granted: bool,
+}
+
+/// Inspection never prompts. Only an explicit setup action may request access.
+pub(crate) fn paste_access(request: bool) -> Result<PasteAccess> {
+    #[cfg(target_os = "macos")]
+    return Ok(PasteAccess {
+        supported: true,
+        granted: resolve_access(
+            request,
+            || unsafe { macos::CGPreflightPostEventAccess() },
+            || unsafe {
+                macos::CGRequestPostEventAccess();
+            },
+        ),
+    });
+    #[cfg(not(target_os = "macos"))]
+    {
+        if request {
+            bail!("automatic paste currently requires macOS");
+        }
+        Ok(PasteAccess {
+            supported: false,
+            granted: false,
+        })
+    }
+}
+
+#[cfg(any(target_os = "macos", test))]
+fn resolve_access(request: bool, mut inspect: impl FnMut() -> bool, mut ask: impl FnMut()) -> bool {
+    let granted = inspect();
+    if granted || !request {
+        return granted;
+    }
+    ask();
+    // Requesting access is not proof that it was granted to this process.
+    inspect()
+}
+
 pub(crate) fn deliver(text: &str, paste_target: Option<i32>) -> Result<()> {
     if let Some(pid) = paste_target {
         if pid <= 0 {
@@ -55,6 +97,7 @@ mod macos {
     #[link(name = "ApplicationServices", kind = "framework")]
     extern "C" {
         pub(super) fn CGPreflightPostEventAccess() -> bool;
+        pub(super) fn CGRequestPostEventAccess() -> bool;
         fn CGEventCreateKeyboardEvent(source: *const c_void, key: u16, down: bool) -> *mut c_void;
         fn CGEventSetFlags(event: *mut c_void, flags: u64);
         fn CGEventPostToPid(pid: i32, event: *const c_void);
@@ -99,5 +142,44 @@ mod macos {
             unsafe { CGEventPostToPid(pid, event.0) }
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn permission_inspection_never_prompts_and_requests_require_a_fresh_grant() {
+        for request in [false, true] {
+            for initial in [false, true] {
+                for after_request in [false, true] {
+                    let mut checks = 0;
+                    let mut requests = 0;
+                    let granted = resolve_access(
+                        request,
+                        || {
+                            checks += 1;
+                            if checks == 1 {
+                                initial
+                            } else {
+                                after_request
+                            }
+                        },
+                        || requests += 1,
+                    );
+                    let should_request = request && !initial;
+                    assert_eq!(requests, usize::from(should_request));
+                    assert_eq!(checks, 1 + usize::from(should_request));
+                    assert_eq!(
+                        granted,
+                        if should_request {
+                            after_request
+                        } else {
+                            initial
+                        }
+                    );
+                }
+            }
+        }
     }
 }

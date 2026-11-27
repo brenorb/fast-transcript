@@ -15,6 +15,7 @@ fscript notes TRANSCRIPT
 fscript export TRANSCRIPT
 fscript agents
 fscript skill
+fscript permissions
 fscript --set-default-model NAME
 fscript --get-default-model
 fscript --reset-default-model

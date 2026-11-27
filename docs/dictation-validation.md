@@ -1,7 +1,8 @@
 # Dictation validation
 
 Roadmap milestone 5 remains in progress. Real microphone capture now passes;
-automatic-paste and final physical-shortcut acceptance remain incomplete.
+physical global-shortcut capture also passes. Effective automatic paste remains
+incomplete.
 
 ## Automated coverage
 
@@ -58,7 +59,7 @@ FSCRIPT_CAPTURE_TEST_WAV:
   user's microphone was recorded during these fixture checks.
 
 The physical shortcut check preceded the exclusive-registration/automatic-fallback
-improvement. The latest candidate must still be checked with the selected chord.
+improvement. The later live session below checks the selected chord.
 Native CLI registration checks on 2026-11-27 confirmed that two live controllers
 selected Control-Shift-Space and Control-Shift-D respectively. An explicit attempt
 to claim the occupied Space chord reported shortcut_available false and Carbon
@@ -139,8 +140,8 @@ Still required before marking milestone 5 complete:
   recognition quality has not been measured against a spoken reference.
 - Automatic paste into a blank native test field, focus-change fallback, and actual
   effective permission behavior for the helper doing the paste.
-- Physical keyboard delivery for the latest selected global chord; native
-  exclusive registration, automatic fallback, and release-on-shutdown passed.
+- Physical keyboard delivery for the selected global chord now passes below;
+  native exclusive registration, automatic fallback, and release-on-shutdown passed.
 - All CI green after the implementation/documentation commits are pushed.
 
 A disposable native target lives in tests/fixtures/PasteTarget.swift. It creates
@@ -208,3 +209,30 @@ No bundle rebuild, permission reset, or fixture capture override was used.
 During this acceptance session, a temporary caffeinate -di -t 7200 process was
 started at the user's request. macOS confirmed idle display/system sleep
 assertions. It does not unlock the Mac or change its security configuration.
+
+The user then physically held and released Control-Shift-Space while using an
+external text field. The user reported the recording indicator and no pasted
+text. Two additional live documents contained 1.92 and 3.456 seconds of microphone
+audio and nonempty local recognition; the second reused the loaded model. The
+GUI displayed Dictation copied · automatic paste unavailable and the helper's
+event-posting permission error; the disposable target remained empty. This proves
+physical shortcut capture/release and copy fallback, not successful paste. No
+private transcript content is included in this validation record.
+
+## Explicit paste setup correction
+
+The shared CLI now offers fscript permissions to inspect event-posting access
+without prompting, and only --request paste can ask macOS through
+CGRequestPostEventAccess. The GUI uses this same bundled-helper path when Paste
+automatically is turned on; saved preferences only inspect at startup. It reports
+an absent effective grant immediately. Requests never reset existing permissions,
+and a fresh preflight determines the returned state rather than assuming success.
+Export --paste remains noninteractive. Apple documents the native request API at
+https://developer.apple.com/documentation/coregraphics/cgrequestposteventaccess().
+
+Local validation: all 188 Rust library tests passed, including exhaustive
+inspection/request/grant-transition combinations. Nine single-command/export
+process E2E checks passed, including JSON versus human permission status, offline
+help on the request path, and inspection with broken model settings/missing media
+tools. All 16 native process/property/differential checks passed with their real
+CLI fixtures. The updated permission prompt's GUI acceptance remains pending.

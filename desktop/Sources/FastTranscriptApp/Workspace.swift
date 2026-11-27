@@ -1,10 +1,7 @@
 import AppKit
-import ApplicationServices
-import CoreGraphics
 import FastTranscriptClient
 import Foundation
 import Observation
-import OSLog
 import UniformTypeIdentifiers
 
 struct ModelCatalog: Decodable {
@@ -32,6 +29,12 @@ struct AgentCatalog: Decodable {
 }
 
 struct NotesResponse: Decodable { let notes: String }
+
+struct PermissionStatus: Decodable {
+    let version: Int
+    let paste: Paste
+    struct Paste: Decodable { let supported: Bool; let granted: Bool }
+}
 
 struct CLIInstallation {
     let executable: URL
@@ -83,6 +86,9 @@ final class Workspace {
     @ObservationIgnored private var deliveryProcess: CLIProcess?
     @ObservationIgnored private var deliveryTask: Task<Void, Never>?
     @ObservationIgnored private var deliveryID = UUID()
+    @ObservationIgnored private var permissionProcess: CLIProcess?
+    @ObservationIgnored private var permissionTask: Task<Void, Never>?
+    @ObservationIgnored private var permissionID = UUID()
     var input = ""
     var rangeMode = RangeMode.all
     var rangeStart = ""
@@ -128,6 +134,7 @@ final class Workspace {
             await refreshAgents()
             status = "Ready"
             error = nil
+            if pasteAfterDictation { checkPasteAccess(request: false) }
         } catch {
             self.installation = nil
             self.error = error.localizedDescription
@@ -318,20 +325,48 @@ final class Workspace {
         cancelRequested = true
         deliveryProcess?.cancel()
         deliveryTask?.cancel()
+        permissionProcess?.cancel()
+        permissionTask?.cancel()
         await dictation.shutdown()
         await jobTask?.value
         await deliveryTask?.value
+        await permissionTask?.value
     }
 
     func setAutomaticPaste(_ enabled: Bool) {
         pasteAfterDictation = enabled
-        if enabled {
-            // Diagnose the running process; a Settings switch is not proof of
-            // that process's effective grant, especially for ad-hoc builds.
-            let logger = Logger(subsystem: "com.brenorb.fast-transcript", category: "paste")
-            logger.info("Paste preference enabled: pid=\(ProcessInfo.processInfo.processIdentifier), bundle=\(Bundle.main.bundleIdentifier ?? "unknown", privacy: .public), path=\(Bundle.main.bundlePath, privacy: .public), ax=\(AXIsProcessTrusted()), post=\(CGPreflightPostEventAccess())")
-        }
         error = nil
+        permissionID = UUID()
+        permissionProcess?.cancel()
+        permissionTask?.cancel()
+        if enabled { checkPasteAccess(request: true) }
+    }
+
+    private func checkPasteAccess(request: Bool) {
+        guard let installation else { return }
+        let token = UUID()
+        permissionID = token
+        let process = CLIProcess()
+        permissionProcess = process
+        permissionTask = Task {
+            defer { if permissionID == token { permissionProcess = nil; permissionTask = nil } }
+            do {
+                var args = ["permissions", "--json", "--quiet"]
+                if request { args += ["--request", "paste"] }
+                let response = try await process.output(executable: installation.executable, arguments: args)
+                guard permissionID == token, !Task.isCancelled, pasteAfterDictation else { return }
+                let access = try JSONDecoder().decode(PermissionStatus.self, from: response)
+                guard access.version == 1 else { throw ClientError("Unsupported permission response. Update the app.") }
+                if !access.paste.supported {
+                    error = "Automatic paste is unavailable on this platform. Dictation is copied instead."
+                } else if !access.paste.granted {
+                    error = "Allow Fast Transcript in System Settings > Privacy & Security > Accessibility (Device Control and Data Access). An enabled entry may belong to an earlier build. Dictation is copied until access is granted."
+                }
+            } catch {
+                guard permissionID == token, !Task.isCancelled else { return }
+                self.error = error.localizedDescription
+            }
+        }
     }
 
     private func recordingBegan(shortcut: Bool) {

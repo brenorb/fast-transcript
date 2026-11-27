@@ -140,6 +140,12 @@ Paste automatically is off by default. Shortcut dictation can optionally paste
 into the originally active app when it is still active, otherwise the result is
 copied. The shared CLI checks actual event-posting permission; Settings appearing
 enabled is not by itself proof that this build/process has that permission.
+Turning on Paste automatically explicitly requests access through the bundled
+`fscript permissions --request paste --json` action. Startup only inspects with
+`fscript permissions --json` and never prompts for paste access. The GUI reports
+an absent effective grant immediately, rather than waiting for a failed paste.
+The request uses macOS's normal event-posting API and never resets an enabled
+Settings entry. Quit owns and cancels the permission helper as well.
 Failures preserve the transcript and attempt clipboard delivery. Copy/export/notes
 use the same existing completed-transcript commands. Cancel stops the owned
 recording/model process; Quit also waits for an idle warm helper to exit.

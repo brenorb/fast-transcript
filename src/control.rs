@@ -42,7 +42,15 @@ mod routing_tests {
 
     #[test]
     fn actions_share_one_entrypoint_without_consuming_media_option_values() {
-        for action in ["notes", "export", "models", "agents", "skill", "record"] {
+        for action in [
+            "notes",
+            "export",
+            "models",
+            "agents",
+            "skill",
+            "record",
+            "permissions",
+        ] {
             assert_eq!(arguments(&args(&[action])), Some(args(&[action])));
             assert!(arguments(&args(&["--quiet", "--json", action])).is_some());
             assert!(arguments(&args(&["--", action])).is_none());
@@ -69,6 +77,9 @@ fn command() -> Command {
         .arg(Arg::new("man-page").long("man-page").action(ArgAction::SetTrue).help("Export the control manual for man(1)"))
         .subcommand(Command::new("skill").about("Print the bundled agent skill")
             .subcommand(Command::new("path").about("Print a local path to the bundled skill")))
+        .subcommand(Command::new("permissions").about("Inspect automatic-paste access without prompting")
+            .after_help("Inspection does not open Settings, record audio, or post keys. Only --request paste asks macOS for access; it never resets an existing grant. Run it from the app or terminal that will deliver text, since grants depend on that process's code identity.")
+            .arg(Arg::new("request").long("request").value_parser(["paste"]).help("Explicitly request automatic-paste access; may show a macOS permission prompt")))
         .subcommand(Command::new("record").about("Dictate using the default microphone")
             .after_help("Examples:\n  fscript record\n  fscript record --duration 10\n  fscript record --control --json\n  fscript record --hotkey\n\nCtrl-C finishes bare/duration capture; a second interrupt cancels. In --control/--hotkey mode, Ctrl-C cancels. Control mode reads JSONL start/stop/cancel/shutdown requests on stdin and keeps the model loaded.")
             .arg(Arg::new("duration").long("duration").conflicts_with_all(["control", "hotkey"]).help("Stop automatically after this many seconds of microphone capture"))
@@ -119,7 +130,8 @@ pub(crate) fn needs_supervision(raw: &[String]) -> bool {
     matches(raw).is_ok_and(|matches| {
         (matches!(matches.subcommand_name(), Some("notes" | "record"))
             || matches.subcommand().is_some_and(|(name, values)| {
-                name == "export" && (values.get_flag("copy") || values.get_flag("paste"))
+                (name == "export" && (values.get_flag("copy") || values.get_flag("paste")))
+                    || (name == "permissions" && values.get_one::<String>("request").is_some())
             }))
             && !matches.get_flag("manual")
     })
@@ -162,6 +174,22 @@ pub(crate) fn run(raw: Vec<String>) -> Result<()> {
     }
     let json = matches.get_flag("json");
     match matches.subcommand() {
+        Some(("permissions", values)) => {
+            let access =
+                crate::clipboard::paste_access(values.get_one::<String>("request").is_some())?;
+            if json {
+                print(&format!(
+                    "{}\n",
+                    serde_json::to_string_pretty(&serde_json::json!({"version":1,"paste":access}))?
+                ))
+            } else if !access.supported {
+                print("Automatic paste: unsupported on this platform.\n")
+            } else if access.granted {
+                print("Automatic paste: allowed for this process.\n")
+            } else {
+                print("Automatic paste: not allowed for this process. Text can still be copied.\nUse fscript permissions --request paste to ask macOS for access. If Settings is already enabled, its entry may refer to a different build.\n")
+            }
+        }
         Some(("skill", values)) => {
             let content = include_str!("../skills/fast-transcript/SKILL.md");
             let path = if values.subcommand_name() == Some("path") {

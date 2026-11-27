@@ -23,6 +23,8 @@ fscript record
 fscript record --duration 10
 fscript record --control --json
 fscript record --hotkey
+fscript permissions [--json]
+fscript permissions --request paste [--json]
 ```
 
 ## Action defaults
@@ -66,6 +68,21 @@ the application configuration directory under skills/fast-transcript/SKILL.md.
 FSCRIPT_SKILL_DIR overrides that cache directory. With --json, skill returns
 version, name, content, and an optional path. This follows Say It's skill/path
 convention while keeping bare skill useful with no additional arguments.
+
+## Paste permissions
+
+`fscript permissions` inspects automatic-paste access for the running process.
+It never prompts, opens Settings, posts keys, or starts capture/inference.
+With --json, it returns version 1 and paste.supported/paste.granted booleans;
+inspection succeeds even when access is absent or the platform is unsupported.
+Only the explicit --request paste action asks macOS for event-posting access and
+may show its permission prompt. The response reports the effective grant after
+the request; requesting access does not imply success. Unsupported requests fail.
+No permission is reset, disabled, or automatically granted. Grants depend on the
+responsible app/terminal and code identity, so inspect/request from the same
+execution path that will deliver text. An enabled Settings entry for an older
+ad-hoc build may not authorize the current build. Export --paste stays
+noninteractive and fails clearly if access is absent; --copy remains available.
 
 ## Microphone dictation
 

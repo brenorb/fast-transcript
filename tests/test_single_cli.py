@@ -38,7 +38,7 @@ class SingleCLI(unittest.TestCase):
 
     def test_reserved_filenames_use_explicit_paths_and_action_help_stays_offline(self):
         self.cli('models', 'set', 'ultra')
-        for name in ['notes', 'models', 'agents', 'export', 'skill', 'record']:
+        for name in ['notes', 'models', 'agents', 'export', 'skill', 'record', 'permissions']:
             shutil.copyfile(self.fixture.source, self.root / name)
             result = self.cli('./' + name)
             self.assertTrue(Path(result.stdout.strip()).is_file())
@@ -59,6 +59,30 @@ class SingleCLI(unittest.TestCase):
         self.assertIsNone(metadata['path'])
         self.assertFalse(self.fixture.capture.exists())
         self.assertFalse((self.root / 'config.json').exists())
+
+    def test_permission_inspection_is_noninteractive_and_independent_of_transcription(self):
+        self.env.update(PATH='/missing/tools', FSCRIPT_PYTHON_BINARY='/missing/worker')
+        config = self.root / 'invalid-settings.json'
+        config.write_text('{broken')
+        self.env['FSCRIPT_CONFIG_FILE'] = str(config)
+        before = set(self.root.iterdir())
+        result = self.cli('permissions', '--json')
+        state = json.loads(result.stdout)
+        self.assertEqual(state['version'], 1)
+        self.assertIsInstance(state['paste']['supported'], bool)
+        self.assertIsInstance(state['paste']['granted'], bool)
+        self.assertEqual(result.stderr, '')
+        plain = self.cli('permissions').stdout
+        if not state['paste']['supported']:
+            self.assertIn('unsupported', plain)
+        elif state['paste']['granted']:
+            self.assertIn('allowed for this process', plain)
+        else:
+            self.assertIn('not allowed for this process', plain)
+        self.assertEqual(before, set(self.root.iterdir()))
+        self.assertFalse(self.fixture.capture.exists())
+        self.cli('permissions', '--request', 'microphone', success=False)
+        self.assertIn('--request', self.cli('permissions', '--request', 'paste', '--help').stdout)
 
 
 if __name__ == '__main__':
