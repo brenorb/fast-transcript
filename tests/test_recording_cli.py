@@ -55,6 +55,37 @@ class RecordingCLI(unittest.TestCase):
                 self.assertEqual(final[key], batch[key], key)
         self.assertFalse(events[-1]['data']['model_reused'])
 
+    def test_record_uses_shared_saved_and_environment_model_precedence(self):
+        selected = subprocess.run([str(BINARY), 'models', 'set', 'ultra', '--quiet'],
+            env=self.env, capture_output=True, timeout=5)
+        self.assertEqual(selected.returncode, 0, selected.stderr.decode())
+        for extra, override, expected in [
+            ([], None, 'parakeet-ultra'),
+            ([], 'redux', 'parakeet-redux'),
+            (['--model', 'ultra'], 'redux', 'parakeet-ultra'),
+        ]:
+            with self.subTest(extra=extra, environment=override):
+                environment = dict(self.env)
+                if override is not None:
+                    environment['FSCRIPT_MODEL_URL'] = override
+                result = subprocess.run([str(BINARY), 'record', '--duration', '1.3',
+                    '--json', '--quiet', *extra], env=environment, capture_output=True, timeout=10)
+                self.assertEqual(result.returncode, 0, result.stderr.decode())
+                events = [json.loads(line) for line in result.stdout.splitlines()]
+                self.assertEqual(events[0]['data']['model']['name'], expected)
+                self.assertEqual(events[-1]['data']['result']['model']['name'], expected)
+                batch = self.fixture.run_cli(self.wav)
+                self.assertEqual(events[-1]['data']['result']['text'], batch['text'])
+                self.assertEqual(events[-1]['data']['result']['segments'], batch['segments'])
+
+        self.worker_log.unlink()
+        Path(self.env['FSCRIPT_CONFIG_FILE']).write_text('{invalid')
+        invalid = subprocess.run([str(BINARY), 'record', '--duration', '1', '--json'],
+            env=self.env, capture_output=True, timeout=5)
+        self.assertNotEqual(invalid.returncode, 0)
+        self.assertIn(b'invalid default-model settings', invalid.stderr)
+        self.assertFalse(self.worker_log.exists())
+
     def test_control_reuses_model_cancel_has_no_transcript_and_output_is_exportable(self):
         directory = self.root / 'saved'
         process = self.spawn('--control', '--output-dir', directory, stdin=subprocess.PIPE)

@@ -98,6 +98,12 @@ result when the controller itself has exited.
 
 ## Shared shortcut and text delivery
 
+Recording uses the same model selection as file and URL transcription: an
+explicit --model takes precedence over FSCRIPT_MODEL_URL, the saved model, and
+the built-in default. A model selected in the desktop menu therefore applies to
+the next dictation session without repeating a flag. Invalid saved settings fail
+before loading a model unless an explicit selection overrides them.
+
 Use fscript record --hotkey for a warm global hold gesture, or combine --hotkey
 with --control for the desktop. Rust owns registration, press/release handling,
 repeat suppression, and microphone/model lifecycle. It uses exclusive Carbon

@@ -15,6 +15,10 @@ microphone and automatic-paste acceptance checks are not yet proven complete.
   duration/batch parity, two clips with one worker load, cancellation/export,
   disconnects/invalid transitions, first/second interrupt behavior, and validation
   before model loading. These cover real WAV/FFmpeg and process ownership.
+- A model-precedence regression covers saved selection, environment override,
+  explicit flag precedence, malformed settings before worker loading, and batch
+  parity. GUI acceptance exposed that recording had bypassed the shared saved
+  default lookup; the recording action now uses the same resolver as media jobs.
 - Clipboard export compares renderer bytes through a literal fixture command,
   rejects invalid/implicit paste targets, and preserves source documents on failure.
 - Fifteen native client checks include real-CLI repeated recordings versus an
@@ -55,6 +59,20 @@ improvement. The latest candidate must still be checked with the selected chord.
 The model timings above describe model loading only, not total capture-to-text
 latency. No general model latency/quality claim is derived from one speech fixture.
 
+With prerecorded public speech and an explicitly controlled SDK worker:
+
+- The app reached Transcribing dictation while the worker was blocked after its
+  inference-entry marker. Clicking Cancel returned to Dictation cancelled; the
+  supervisor, recording worker, and marked model worker were absent afterward.
+  No additional completed transcript was written for the cancelled inference.
+- Selecting parakeet-ultra and then parakeet-redux launched distinct model
+  workers with the corresponding repository arguments. The Redux result recorded
+  model name parakeet-redux and runtime photon, displayed the fixture digest, and
+  copied successfully. This verifies routing and lifecycle, not SDK model quality.
+- A latched recording remained active while the blank native test window received
+  a click, then finished through Command-Shift-D. An app-targeted automation click
+  alone is not independent evidence of the system-wide foreground application.
+
 ## Permission investigation and remaining checks
 
 System Settings showed Fast Transcript's Device Control and Data Access enabled,
@@ -89,9 +107,9 @@ loss. The current candidate must validate these controls.
 
 Still required before marking milestone 5 complete:
 
-- Exact current candidate: cancellation during inference, switching inference
-  engines, and toggle behavior across actual app focus changes. Button/toggle,
-  capture cancellation, preference reset, and active Quit checks passed above.
+- Exact current candidate: real SDK engine switching and toggle behavior across
+  independently verified app focus changes. Controlled-worker model switching and
+  inference cancellation passed above; real microphone checks remain separate.
 - Physical microphone transport with first-use/denied-device behavior distinguished
   from the deterministic fixture; no claim of microphone recognition yet.
 - Automatic paste into a blank native test field, focus-change fallback, and actual

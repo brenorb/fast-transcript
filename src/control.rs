@@ -254,7 +254,10 @@ pub(crate) fn run(raw: Vec<String>) -> Result<()> {
                 }
             }
             crate::recording::run(crate::recording::Options {
-                args: crate::cli::parse_args(&args)?,
+                args: crate::cli::parse_args_with_default_model(
+                    &args,
+                    crate::settings::default_model_selection,
+                )?,
                 control: values.get_flag("control"),
                 hotkey: values.get_one::<String>("hotkey").cloned(),
                 json,
