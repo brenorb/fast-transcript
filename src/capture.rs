@@ -90,12 +90,22 @@ impl Capture {
                 next,
                 packet_samples,
             } => {
-                if Instant::now() >= *next {
+                // Match elapsed recording time even when a loaded host delays
+                // the controller loop. One packet per poll truncates fixtures
+                // on slower CI machines and breaks batch parity.
+                let now = Instant::now();
+                while now >= *next {
+                    let mut received = false;
                     for sample in reader.samples::<i16>().take(*packet_samples) {
                         self.writer.write_sample(sample?)?;
                         self.samples += 1;
+                        received = true;
                     }
                     *next += Duration::from_millis(20);
+                    if !received {
+                        *next = now + Duration::from_millis(20);
+                        break;
+                    }
                 }
             }
         }
@@ -200,6 +210,44 @@ fn quantize(value: f64) -> i16 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn delayed_fixture_poll_catches_up_without_extending_audio() {
+        let directory = tempfile::tempdir().unwrap();
+        let source = directory.path().join("source.wav");
+        let output = directory.path().join("captured.wav");
+        let spec = hound::WavSpec {
+            channels: 1,
+            sample_rate: 16000,
+            bits_per_sample: 16,
+            sample_format: hound::SampleFormat::Int,
+        };
+        let mut writer = hound::WavWriter::create(&source, spec).unwrap();
+        let expected: Vec<i16> = (0..16000).map(|sample| sample as i16).collect();
+        for sample in &expected {
+            writer.write_sample(*sample).unwrap();
+        }
+        writer.finalize().unwrap();
+        let mut capture = Capture {
+            source: Source::Fixture {
+                reader: hound::WavReader::open(source).unwrap(),
+                next: Instant::now() - Duration::from_secs(2),
+                packet_samples: 320,
+            },
+            writer: hound::WavWriter::create(&output, spec).unwrap(),
+            samples: 0,
+            channels: 1,
+        };
+        capture.poll().unwrap();
+        assert_eq!(capture.samples, expected.len());
+        capture.finish().unwrap();
+        let actual: Vec<i16> = hound::WavReader::open(output)
+            .unwrap()
+            .samples::<i16>()
+            .collect::<std::result::Result<_, _>>()
+            .unwrap();
+        assert_eq!(actual, expected);
+    }
+
     #[test]
     fn capture_quantization_is_monotone_bounded_and_preserves_pcm_values() {
         for value in i16::MIN..=i16::MAX {

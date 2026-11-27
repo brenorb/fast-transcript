@@ -5,8 +5,12 @@ microphone and automatic-paste acceptance checks are not yet proven complete.
 
 ## Automated coverage
 
-- 212 Rust checks on the staged backend, including 65,536 PCM conversion cases
+- 213 Rust checks on the staged backend, including 65,536 PCM conversion cases
   and 10,000 native hold-edge patterns (repeat suppression and overflow detection).
+  A delayed-poll fixture regression verifies elapsed-time catch-up and exact PCM
+  preservation without extending the source at EOF. The first macOS CI run
+  exposed fixture truncation under scheduling delays; exact batch parity remains
+  required rather than tolerating different transcript hashes.
 - Six recording process E2E cases with deterministic capture and a fixture model:
   duration/batch parity, two clips with one worker load, cancellation/export,
   disconnects/invalid transitions, first/second interrupt behavior, and validation
