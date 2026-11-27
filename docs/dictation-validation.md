@@ -236,3 +236,26 @@ process E2E checks passed, including JSON versus human permission status, offlin
 help on the request path, and inspection with broken model settings/missing media
 tools. All 16 native process/property/differential checks passed with their real
 CLI fixtures. The updated permission prompt's GUI acceptance remains pending.
+
+GUI acceptance then confirmed that a saved Paste automatically preference only
+inspected access at startup and showed the missing-grant message. Turning the app
+preference off cleared the message; turning it on invoked the bundled request
+helper. The macOS audit identified Fast Transcript as the responsible app and its
+bundled fscript as the requester. The OS returned not granted without showing a
+fresh prompt; the GUI retained the warning. No system permission was toggled.
+
+## Compact recording indicator
+
+The previous 390-by-64 indicator with red text is replaced by a 248-by-42 rounded
+pill with white text. Recording uses a small red microphone; processing uses a
+spinner. It remains nonactivating and ignores mouse clicks. An observed
+close-to-finish bug left Listening visible because closing the window cleared
+toggle intent before the processing event. Finish now changes an already-visible
+indicator immediately, and the processing event preserves that visible state.
+
+The release build compiled and a native GUI fixture check showed the compact
+Listening indicator. With inference deliberately blocked, closing the main window
+showed Transcribing and a spinner in both the accessibility tree and screenshot.
+The fixture gate holds actual inference, so this checks the waiting state rather
+than briefly sampling an already-completed transcription. Capture was explicitly
+prerecorded; this check did not request microphone permission.

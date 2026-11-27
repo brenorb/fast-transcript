@@ -127,12 +127,12 @@ final class DictationController {
                                 state = .recording
                                 error = nil
                                 onRecording?(shortcutClip)
-                                if shortcutClip { hud.show("Listening · release \(shortcutLabel) to finish", recording: true) }
-                                else if latched { hud.show("Listening · finish with Command-Shift-D", recording: true) }
+                                if shortcutClip { hud.show("Listening · release to finish", recording: true) }
+                                else if latched { hud.show("Listening · ⌘⇧D to finish", recording: true) }
                                 else if !held { stopClip() }
                             case "processing":
                                 state = .processing
-                                if shortcutClip || latched { hud.show("Transcribing…", recording: false) }
+                                if shortcutClip || latched || hud.isVisible { hud.show("Transcribing…", recording: false) }
                             case "completed":
                                 state = .ready
                                 held = false
@@ -180,7 +180,11 @@ final class DictationController {
     }
 
     private func startClip() { state = .starting; send("start") }
-    private func stopClip() { state = .processing; send("stop") }
+    private func stopClip() {
+        state = .processing
+        if hud.isVisible { hud.show("Transcribing…", recording: false) }
+        send("stop")
+    }
 
     func cancel() {
         logger.info("Dictation cancel; state=\(String(describing: self.state), privacy: .public)")
@@ -205,34 +209,54 @@ final class DictationController {
 private final class DictationHUD {
     private var panel: NSPanel?
     private var label: NSTextField?
+    private var microphone: NSImageView?
+    private var spinner: NSProgressIndicator?
+    var isVisible: Bool { panel?.isVisible == true }
     func show(_ text: String, recording: Bool) {
         if panel == nil {
-            let panel = NSPanel(contentRect: NSRect(x: 0, y: 0, width: 390, height: 64), styleMask: [.nonactivatingPanel, .borderless], backing: .buffered, defer: false)
+            let panel = NSPanel(contentRect: NSRect(x: 0, y: 0, width: 248, height: 42), styleMask: [.nonactivatingPanel, .borderless], backing: .buffered, defer: false)
             panel.level = .floating
             panel.isOpaque = false
             panel.backgroundColor = .clear
             panel.hasShadow = true
+            panel.ignoresMouseEvents = true
             panel.hidesOnDeactivate = false
             panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
             let effect = NSVisualEffectView(frame: panel.contentView!.bounds)
             effect.material = .hudWindow
+            effect.appearance = NSAppearance(named: .vibrantDark)
             effect.state = .active
             effect.wantsLayer = true
-            effect.layer?.cornerRadius = 16
+            effect.layer?.cornerRadius = 21
+            effect.layer?.masksToBounds = true
+            effect.layer?.borderWidth = 0.5
+            effect.layer?.borderColor = NSColor.white.withAlphaComponent(0.15).cgColor
+            let microphone = NSImageView(frame: NSRect(x: 15, y: 12, width: 18, height: 18))
+            microphone.image = NSImage(systemSymbolName: "mic.fill", accessibilityDescription: nil)
+            microphone.contentTintColor = .systemRed
+            effect.addSubview(microphone)
+            let spinner = NSProgressIndicator(frame: microphone.frame)
+            spinner.style = .spinning
+            spinner.controlSize = .small
+            spinner.isDisplayedWhenStopped = false
+            effect.addSubview(spinner)
             let label = NSTextField(labelWithString: text)
-            label.frame = effect.bounds.insetBy(dx: 12, dy: 20)
-            label.alignment = .center
-            label.font = .systemFont(ofSize: 14, weight: .medium)
+            label.frame = NSRect(x: 44, y: 12, width: 190, height: 18)
+            label.font = .systemFont(ofSize: 13, weight: .medium)
+            label.textColor = .white
             effect.addSubview(label)
             panel.contentView = effect
             self.panel = panel; self.label = label
+            self.microphone = microphone; self.spinner = spinner
         }
         label?.stringValue = text
-        label?.textColor = recording ? .systemRed : .labelColor
+        microphone?.isHidden = !recording
+        if recording { spinner?.stopAnimation(nil) }
+        else { spinner?.startAnimation(nil) }
         if let screen = NSScreen.main {
-            panel?.setFrameOrigin(NSPoint(x: screen.visibleFrame.midX - 195, y: screen.visibleFrame.minY + 44))
+            panel?.setFrameOrigin(NSPoint(x: screen.visibleFrame.midX - 124, y: screen.visibleFrame.minY + 28))
         }
         panel?.orderFrontRegardless()
     }
-    func hide() { panel?.orderOut(nil) }
+    func hide() { spinner?.stopAnimation(nil); panel?.orderOut(nil) }
 }
