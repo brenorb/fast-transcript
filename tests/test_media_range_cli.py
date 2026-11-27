@@ -227,9 +227,11 @@ pathlib.Path(sys.argv[sys.argv.index("--output") + 1]).write_text(json.dumps(dic
                     self.send_header("Content-Range", f"bytes {start}-{end}/{len(data)}")
                 self.end_headers()
                 try:
-                    body = data[start:end + 1]
-                    if server_options["truncate"]:
-                        body = body[:len(body) // 2]
+                    # A fixed absolute cutoff must precede the requested end.
+                    # Halving each range response can still deliver the entire
+                    # selected interval (or recover it through another seek).
+                    available_end = min(end + 1, len(data) // 4) if server_options["truncate"] else end + 1
+                    body = data[start:available_end]
                     self.wfile.write(body)
                 except (BrokenPipeError, ConnectionResetError):
                     pass
@@ -239,7 +241,8 @@ pathlib.Path(sys.argv[sys.argv.index("--output") + 1]).write_text(json.dumps(dic
         try:
             result = self.run_cli(f"http://127.0.0.1:{server.server_port}/source.wav", "--start", "1", "--end", "3")
             self.assert_clip(result, 1, 3)
-            # A broken transfer must not silently produce a truncated successful transcript.
+            # Media unavailable before the selected end must fail, even if the
+            # downloader retries with different HTTP byte ranges.
             server_options["truncate"] = True
             self.capture.unlink()
             result = self.run_cli(f"http://127.0.0.1:{server.server_port}/source.wav", "--start", "1", "--end", "3", success=False)

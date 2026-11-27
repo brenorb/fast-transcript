@@ -33,8 +33,9 @@ fixture. CI installs the dependencies explicitly. Eight tests cover:
   before inference/download.
 - Speaker assignment using the selected audio before source timestamps are shifted.
 - Actual yt-dlp section download from controlled HTTP media supporting byte ranges.
-  A server truncating its HTTP responses must fail before inference rather than silently
-  accepting the resulting corrupt/truncated clip.
+  A fixed absolute byte cutoff before the selected interval ends must fail before
+  inference. The cutoff applies to every retry/range request. Halving each response
+  was insufficient: a seek could still obtain the complete selected interval.
 
 The worker fixture reports a digest of the PCM samples it actually receives.
 Compare those bytes with an independent FFmpeg `atrim` filter, rather than another
