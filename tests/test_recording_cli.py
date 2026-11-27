@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import signal
 import subprocess
+import sys
 import time
 import unittest
 import wave
@@ -143,6 +144,15 @@ class RecordingCLI(unittest.TestCase):
                 capture_output=True, env=self.env, timeout=5)
             self.assertNotEqual(result.returncode, 0)
             self.assertFalse(self.worker_log.exists())
+
+    @unittest.skipIf(sys.platform == 'darwin', 'native microphone transport is supported on macOS')
+    def test_unsupported_native_capture_fails_before_loading_model(self):
+        self.env.pop('FSCRIPT_CAPTURE_TEST_WAV')
+        result = subprocess.run(self.command('--duration', '1'), stdin=subprocess.DEVNULL,
+            capture_output=True, env=self.env, timeout=5)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn(b'microphone recording currently requires macOS', result.stderr)
+        self.assertFalse(self.worker_log.exists())
 
 
 if __name__ == '__main__':

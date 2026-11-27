@@ -1,7 +1,10 @@
 import AppKit
+import ApplicationServices
+import CoreGraphics
 import FastTranscriptClient
 import Foundation
 import Observation
+import OSLog
 import UniformTypeIdentifiers
 
 struct ModelCatalog: Decodable {
@@ -71,6 +74,15 @@ enum ExportFormat: String, CaseIterable, Identifiable {
 
 @MainActor @Observable
 final class Workspace {
+    let dictation = DictationController()
+    var pasteAfterDictation = preferences.bool(forKey: "pasteAfterDictation") { didSet { Self.preferences.set(pasteAfterDictation, forKey: "pasteAfterDictation") } }
+    private static var preferences: UserDefaults {
+        ProcessInfo.processInfo.environment["FSCRIPT_APP_PREFERENCES_SUITE"].flatMap(UserDefaults.init(suiteName:)) ?? .standard
+    }
+    @ObservationIgnored private var pasteTarget: NSRunningApplication?
+    @ObservationIgnored private var deliveryProcess: CLIProcess?
+    @ObservationIgnored private var deliveryTask: Task<Void, Never>?
+    @ObservationIgnored private var deliveryID = UUID()
     var input = ""
     var rangeMode = RangeMode.all
     var rangeStart = ""
@@ -95,7 +107,7 @@ final class Workspace {
     @ObservationIgnored private var jobTask: Task<Void, Never>?
     @ObservationIgnored private var pendingInput: String?
 
-    var busy: Bool { operation != nil || loading || savingPreference }
+    var busy: Bool { operation != nil || loading || savingPreference || dictation.isBusy }
     var canTranscribe: Bool { !busy && installation != nil && !input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     var displayedText: String { pane == .notes ? notes : transcript }
 
@@ -109,6 +121,9 @@ final class Workspace {
             let version = String(decoding: output, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
             guard version.hasPrefix("fscript ") else { throw ClientError("The app's command helper is invalid. Reinstall the app.") }
             self.installation = installation
+            dictation.configure(executable: installation.executable, directory: jobDirectory())
+            dictation.onRecording = { [weak self] shortcut in self?.recordingBegan(shortcut: shortcut) }
+            dictation.onCompleted = { [weak self] message in self?.dictationCompleted(message) }
             try await refreshModels()
             await refreshAgents()
             status = "Ready"
@@ -147,6 +162,7 @@ final class Workspace {
         Task {
             defer { savingPreference = false }
             do {
+                await dictation.shutdown()
                 _ = try await control(["models", "set", name, "--json", "--quiet"])
                 try await refreshModels()
                 error = nil
@@ -173,6 +189,7 @@ final class Workspace {
         Task {
             defer { savingPreference = false }
             do {
+                await dictation.shutdown()
                 let installation = try CLIInstallation.locate()
                 _ = try await CLIProcess().output(executable: installation.executable, arguments: ["models", "reset", "--quiet"])
                 self.installation = installation
@@ -231,6 +248,7 @@ final class Workspace {
         jobTask = Task {
             defer { finishOperation() }
             do {
+                await dictation.shutdown()
                 let directory = jobDirectory()
                 let output = directory.appendingPathComponent("transcript.json")
                 let arguments = ["--stream", "--json", "--output", output.path] + range + ["--", source]
@@ -286,7 +304,88 @@ final class Workspace {
         }
     }
 
-    func cancel() { cancelRequested = true; status = "Stopping…"; activeProcess?.cancel() }
+    func cancel() {
+        if dictation.isBusy {
+            status = "Stopping dictation…"
+            Task { await dictation.shutdown(); status = "Dictation cancelled" }
+            return
+        }
+        cancelRequested = true; status = "Stopping…"; activeProcess?.cancel()
+    }
+
+    func shutdown() async {
+        activeProcess?.cancel()
+        cancelRequested = true
+        deliveryProcess?.cancel()
+        deliveryTask?.cancel()
+        await dictation.shutdown()
+        await jobTask?.value
+        await deliveryTask?.value
+    }
+
+    func setAutomaticPaste(_ enabled: Bool) {
+        pasteAfterDictation = enabled
+        if enabled {
+            // Diagnose the running process; a Settings switch is not proof of
+            // that process's effective grant, especially for ad-hoc builds.
+            let logger = Logger(subsystem: "com.brenorb.fast-transcript", category: "paste")
+            logger.info("Paste preference enabled: pid=\(ProcessInfo.processInfo.processIdentifier), bundle=\(Bundle.main.bundleIdentifier ?? "unknown", privacy: .public), path=\(Bundle.main.bundlePath, privacy: .public), ax=\(AXIsProcessTrusted()), post=\(CGPreflightPostEventAccess())")
+        }
+        error = nil
+    }
+
+    private func recordingBegan(shortcut: Bool) {
+        deliveryID = UUID()
+        deliveryProcess?.cancel()
+        deliveryTask?.cancel()
+        pasteTarget = shortcut ? NSWorkspace.shared.frontmostApplication : nil
+        cancelRequested = false
+        error = nil
+        status = "Listening · release to finish"
+    }
+
+    private func dictationCompleted(_ event: RecordingEvent) {
+        guard let result = event.data.result else { return }
+        completedURL = event.data.output_path.map { URL(fileURLWithPath: $0) }
+        transcript = result.text
+        notes = ""; notesURL = nil; pane = .transcript; sourceTitle = "Dictation"
+        status = result.text.isEmpty ? "No speech recognized" : "Dictation complete"
+        guard !result.text.isEmpty, let completedURL, let installation else { return }
+        let token = UUID()
+        deliveryID = token
+        let process = CLIProcess()
+        deliveryProcess = process
+        let target = pasteTarget
+        let paste = pasteAfterDictation && target?.isTerminated == false && target?.processIdentifier != ProcessInfo.processInfo.processIdentifier && target == NSWorkspace.shared.frontmostApplication
+        deliveryTask = Task {
+            defer { if deliveryID == token { deliveryProcess = nil; deliveryTask = nil } }
+            do {
+                var args = ["export", completedURL.path, "--format", "compact", "--quiet"]
+                if paste, let target { args += ["--paste", "--target-pid", String(target.processIdentifier)] }
+                else { args += ["--copy"] }
+                _ = try await process.output(executable: installation.executable, arguments: args)
+                guard deliveryID == token else { return }
+                status = paste ? "Dictation copied and sent to the original app" : "Dictation copied"
+            } catch let deliveryError {
+                guard deliveryID == token, !Task.isCancelled else { return }
+                if paste {
+                    let fallback = CLIProcess()
+                    deliveryProcess = fallback
+                    do {
+                        _ = try await fallback.output(executable: installation.executable, arguments: ["export", completedURL.path, "--format", "compact", "--copy", "--quiet"])
+                        guard deliveryID == token, !Task.isCancelled else { return }
+                        status = "Dictation copied · automatic paste unavailable"
+                        self.error = deliveryError.localizedDescription
+                        return
+                    } catch {
+                        guard deliveryID == token, !Task.isCancelled else { return }
+                        self.error = error.localizedDescription
+                    }
+                } else { self.error = deliveryError.localizedDescription }
+                status = "Dictation saved · copy needs attention"
+            }
+        }
+    }
 
     private func finishOperation() { activeProcess = nil; jobTask = nil; operation = nil }
 
@@ -308,6 +407,7 @@ final class Workspace {
         jobTask = Task {
             defer { finishOperation() }
             do {
+                await dictation.shutdown()
                 let output = completedURL.deletingLastPathComponent().appendingPathComponent("notes.md")
                 let data = try await process.output(executable: installation.executable, arguments: ["notes", completedURL.path, "--output", output.path, "--json"])
                 if cancelRequested { status = "Notes cancelled"; return }
@@ -323,9 +423,19 @@ final class Workspace {
     }
 
     func copy() {
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(displayedText, forType: .string)
-        status = pane == .notes ? "Notes copied" : "Transcript copied"
+        guard !busy, let installation else { return }
+        let source = pane == .notes ? notesURL : completedURL
+        guard let source else { return }
+        let format = pane == .notes ? "markdown" : "compact"
+        let process = CLIProcess()
+        activeProcess = process; operation = "Copying"; cancelRequested = false
+        jobTask = Task {
+            defer { finishOperation() }
+            do {
+                _ = try await process.output(executable: installation.executable, arguments: ["export", source.path, "--format", format, "--copy", "--quiet"])
+                status = "Copied"
+            } catch { if !cancelRequested { self.error = error.localizedDescription } }
+        }
     }
 
     func export(_ format: ExportFormat = .text) {

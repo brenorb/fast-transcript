@@ -106,6 +106,7 @@ pub(crate) fn run(options: Options) -> Result<()> {
             "record needs a terminal, --duration SECONDS, or --control for unattended start/stop"
         );
     }
+    crate::capture::check_platform()?;
     #[cfg(unix)]
     unsafe {
         let mut action: libc::sigaction = std::mem::zeroed();

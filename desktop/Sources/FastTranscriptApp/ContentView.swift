@@ -20,6 +20,8 @@ struct ContentView: View {
         .frame(minWidth: 720, minHeight: 500)
         .background(Color(nsColor: .windowBackgroundColor))
         .overlay { if dropTarget { RoundedRectangle(cornerRadius: 12).stroke(.tint, lineWidth: 3).padding(8).allowsHitTesting(false) } }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didResignActiveNotification)) { _ in workspace.dictation.releasePhysicalHold() }
+        .onDisappear { workspace.dictation.windowClosed() }
         .onDrop(of: [.fileURL, .url, .plainText], isTargeted: $dropTarget, perform: acceptDrop)
     }
 
@@ -31,9 +33,9 @@ struct ContentView: View {
                     .accessibilityIdentifier("mediaInput")
                     .onSubmit { workspace.start() }
                     .disabled(workspace.busy)
-                if workspace.operation != nil {
+                if workspace.operation != nil || workspace.dictation.isBusy {
                     Button("Cancel", systemImage: "stop.fill", action: workspace.cancel)
-                        .disabled(workspace.cancelRequested)
+                        .disabled((workspace.operation != nil && workspace.cancelRequested) || workspace.dictation.state == .stopping)
                         .accessibilityIdentifier("cancelJob")
                 } else {
                     Button("Transcribe", systemImage: "waveform", action: { workspace.start() })
@@ -71,6 +73,20 @@ struct ContentView: View {
                 .accessibilityIdentifier("agentPicker")
             }
             .disabled(workspace.busy)
+            HStack(spacing: 12) {
+                HoldToTalkButton(title: workspace.dictation.title,
+                    enabled: workspace.operation == nil && !workspace.loading && !workspace.savingPreference && workspace.dictation.canHold,
+                    pressed: workspace.dictation.hold,
+                    accessiblePress: workspace.dictation.accessiblePress)
+                    .frame(width: 260, height: 30)
+                Text("\(workspace.dictation.shortcutLabel) anywhere once prepared").font(.caption).foregroundStyle(.secondary)
+                Spacer()
+                Toggle("Paste automatically", isOn: Binding(get: { workspace.pasteAfterDictation }, set: { workspace.setAutomaticPaste($0) }))
+                    .toggleStyle(.checkbox).font(.caption)
+                    .help("After shortcut dictation, paste only when the original app is still active. Requires Accessibility permission. Otherwise the text is copied.")
+                    .disabled(workspace.busy)
+            }
+            if let warning = workspace.dictation.shortcutWarning { Text(warning).font(.caption).foregroundStyle(.secondary) }
             DisclosureGroup(selectionTitle, isExpanded: $advanced) {
                 HStack {
                     Picker("Selection", selection: $workspace.rangeMode) {
@@ -99,7 +115,7 @@ struct ContentView: View {
             }
             .font(.callout)
             .disabled(workspace.busy)
-            if let error = workspace.error {
+            if let error = workspace.error ?? workspace.dictation.error {
                 errorBanner(error)
             }
         }
@@ -161,9 +177,9 @@ struct ContentView: View {
             }
             if workspace.displayedText.isEmpty {
                 ContentUnavailableView {
-                    Label(workspace.operation == nil ? "Drop audio or video" : "Preparing your transcript", systemImage: "waveform")
+                    Label(emptyDocumentTitle, systemImage: "waveform")
                 } description: {
-                    Text(workspace.completedURL != nil ? "No speech was recognized." : "Open a file or paste a video link. Transcription runs locally and appears as it arrives.")
+                    Text(workspace.dictation.isBusy ? "Recognition runs locally. Your transcript appears when recording finishes." : workspace.completedURL != nil ? "No speech was recognized." : "Open a file or paste a video link. Transcription runs locally and appears as it arrives.")
                 }
             } else {
                 ScrollView {
@@ -180,10 +196,16 @@ struct ContentView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
+    private var emptyDocumentTitle: String {
+        if workspace.dictation.isBusy { return workspace.dictation.title }
+        if workspace.completedURL != nil { return "No speech recognized" }
+        return workspace.operation == nil ? "Drop audio or video" : "Preparing your transcript"
+    }
+
     private var footer: some View {
         HStack(spacing: 12) {
             if workspace.busy { ProgressView().controlSize(.small) }
-            Text(workspace.status).font(.callout).foregroundStyle(.secondary)
+            Text(workspace.dictation.isBusy ? workspace.dictation.title : workspace.status).font(.callout).foregroundStyle(.secondary)
                 .lineLimit(1).accessibilityIdentifier("jobStatus")
             Spacer()
             Button("Create notes", systemImage: "sparkles", action: workspace.generateNotes)
@@ -227,7 +249,7 @@ struct ContentView: View {
                 }
             }
             Spacer()
-            Button { workspace.error = nil } label: { Image(systemName: "xmark") }
+            Button { workspace.error = nil; workspace.dictation.error = nil } label: { Image(systemName: "xmark") }
                 .buttonStyle(.plain).accessibilityLabel("Dismiss error")
         }
         .padding(12)

@@ -70,7 +70,7 @@ fn command() -> Command {
         .subcommand(Command::new("skill").about("Print the bundled agent skill")
             .subcommand(Command::new("path").about("Print a local path to the bundled skill")))
         .subcommand(Command::new("record").about("Dictate using the default microphone")
-            .after_help("Examples:\n  fscript record\n  fscript record --duration 10\n  fscript record --control --json\n\nCtrl-C finishes a terminal recording; a second interrupt cancels. Control mode reads JSONL start/stop/cancel/shutdown requests on stdin and keeps the model loaded.")
+            .after_help("Examples:\n  fscript record\n  fscript record --duration 10\n  fscript record --control --json\n  fscript record --hotkey\n\nCtrl-C finishes bare/duration capture; a second interrupt cancels. In --control/--hotkey mode, Ctrl-C cancels. Control mode reads JSONL start/stop/cancel/shutdown requests on stdin and keeps the model loaded.")
             .arg(Arg::new("duration").long("duration").conflicts_with_all(["control", "hotkey"]).help("Stop automatically after this many seconds of microphone capture"))
             .arg(Arg::new("control").long("control").action(ArgAction::SetTrue).help("Serve explicit JSONL recording requests on stdin with one warm model"))
             .arg(Arg::new("hotkey").long("hotkey").num_args(0..=1).default_missing_value("auto").value_parser(["auto", "ctrl+shift+space", "ctrl+shift+d", "ctrl+shift+period"]).help("Keep a warm global hold shortcut; auto chooses the first available chord"))

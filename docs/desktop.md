@@ -107,3 +107,51 @@ GUI controls and local ONNX inference evidence.
 
 Microphone dictation, live meeting capture, calendar/call detection, session
 history/recovery, and stable release distribution remain later roadmap milestones.
+
+## Dictation (under validation)
+
+Hold the microphone button to dictate; release to transcribe and copy the result.
+First use prepares the model and requests microphone authorization if needed;
+speech is captured only while the app says Listening. Releasing during preparation
+warms the model without starting a later unattended recording. Subsequent clips
+reuse that model until cancellation, a model change, file/URL transcription, or
+Quit. File/URL jobs remain the primary default flow.
+
+After preparation, hold the global chord shown next to the button from any app.
+The shared CLI chooses an available exclusive shortcut; the floating red/gray
+recording indicator shows capture and processing without taking focus. The File
+menu's Start/Finish dictation (Command-Shift-D) also supports a toggle interaction;
+Accessibility activation or Return on the focused hold button does the same.
+Toggle recording survives changing apps and keeps its recording indicator visible;
+closing the main window finishes that toggle recording. A physical hold ends on
+focus loss so it cannot lose its release event.
+
+Paste automatically is off by default. Shortcut dictation can optionally paste
+into the originally active app when it is still active, otherwise the result is
+copied. The shared CLI checks actual event-posting permission; Settings appearing
+enabled is not by itself proof that this build/process has that permission.
+Failures preserve the transcript and attempt clipboard delivery. Copy/export/notes
+use the same existing completed-transcript commands. Cancel stops the owned
+recording/model process; Quit also waits for an idle warm helper to exit.
+
+FSCRIPT_APP_PREFERENCES_SUITE isolates the small set of presentation preferences
+for local GUI testing. It does not change CLI model or agent settings. See
+[dictation validation](dictation-validation.md) for evidence and remaining gaps.
+
+## Build identity and macOS grants
+
+For development builds that retain permission identity across recompilation, use
+an existing signing certificate, for example:
+
+```sh
+scripts/build_macos_app.sh --sign-identity 'Apple Development: Your Name (TEAMID)'
+```
+
+FSCRIPT_SIGNING_IDENTITY supplies the same option; an explicit flag overrides it.
+The same identity signs the bundled CLI and the app, with nested code signed first
+and verification completed before replacing the prior app. The script does not
+create certificates or change any macOS permission. Without an identity it uses
+ad-hoc signing, whose designated requirement is tied to that exact build; an
+existing enabled permission entry may then refer to a previous code hash.
+Do not diagnose that mismatch as a disabled user setting. See [Apple's code
+identity explanation](https://developer.apple.com/documentation/technotes/tn3127-inside-code-signing-requirements/).

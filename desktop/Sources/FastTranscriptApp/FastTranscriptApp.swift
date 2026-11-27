@@ -12,12 +12,11 @@ final class ApplicationDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        guard let workspace, workspace.busy else { return .terminateNow }
+        guard let workspace else { return .terminateNow }
         guard !terminating else { return .terminateLater }
         terminating = true
-        workspace.cancel()
         Task {
-            while workspace.busy { try? await Task.sleep(for: .milliseconds(30)) }
+            await workspace.shutdown()
             sender.reply(toApplicationShouldTerminate: true)
         }
         return .terminateLater
@@ -46,6 +45,10 @@ struct FastTranscriptApp: App {
                 Button("Paste link and transcribe", action: workspace.pasteLink)
                     .keyboardShortcut("v", modifiers: [.command, .shift])
                     .disabled(workspace.busy)
+                Divider()
+                Button(workspace.dictation.state == .recording || workspace.dictation.state == .starting ? "Finish dictation" : "Start dictation", action: workspace.dictation.accessiblePress)
+                    .keyboardShortcut("d", modifiers: [.command, .shift])
+                    .disabled(workspace.operation != nil || workspace.loading || workspace.savingPreference || !workspace.dictation.canHold || workspace.dictation.state == .preparing)
             }
         }
     }

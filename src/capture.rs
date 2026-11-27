@@ -23,8 +23,17 @@ enum Source {
     },
 }
 
+pub(crate) fn check_platform() -> Result<()> {
+    #[cfg(not(target_os = "macos"))]
+    if std::env::var_os("FSCRIPT_CAPTURE_TEST_WAV").is_none() {
+        bail!("microphone recording currently requires macOS; file and URL transcription work on this platform");
+    }
+    Ok(())
+}
+
 impl Capture {
     pub(crate) fn start(path: &Path) -> Result<Self> {
+        check_platform()?;
         // Explicit deterministic transport for process tests; never selected automatically.
         let (source, spec) = if let Some(input) = std::env::var_os("FSCRIPT_CAPTURE_TEST_WAV") {
             let reader = hound::WavReader::open(input).context("cannot open capture test WAV")?;

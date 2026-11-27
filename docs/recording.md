@@ -115,10 +115,17 @@ press starting capture after the user has already released it.
 
 The desktop's Copy and automatic dictation delivery call fscript export --copy
 with the shared renderer. Optional --paste --target-pid PID adds an explicitly
-targeted Command-V through CoreGraphics. It requires Accessibility permission,
-waits for modifiers to be released, and never types transcript characters as
+targeted Command-V through CoreGraphics. It checks CoreGraphics event-posting access for the process performing the
+operation (CGPreflightPostEventAccess), rather than assuming the parent GUI
+process and helper have the same grant. It waits for modifiers to be released, and never types transcript characters as
 shell input. The app additionally checks the originally active application is
-still active; if focus changed or permission is absent, it copies instead.
+still active. If focus changed, it copies; if targeted paste fails, it retries
+clipboard-only delivery and reports the failure while keeping the transcript.
+The app logs its own bundle path/PID and AX/event-posting preflight values for
+diagnostics instead of telling users an enabled Settings switch is disabled.
+Ad-hoc builds have a version-specific code identity, so an enabled entry may
+refer to a different build; [Apple explains code identity and permission
+continuity](https://developer.apple.com/documentation/technotes/tn3127-inside-code-signing-requirements/).
 The CLI cannot acknowledge that a target accepted paste. Clipboard command
 failures are surfaced; completed transcripts remain saved. The clipboard E2E
 uses a literal fixture executable and compares all rendered bytes without

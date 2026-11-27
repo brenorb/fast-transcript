@@ -13,6 +13,10 @@ public struct RecordingEvent: Decodable, Sendable {
         public let model_reused: Bool?
         public let message: String?
         public let fatal: Bool?
+        public let trigger: String?
+        public let shortcut_available: Bool?
+        public let shortcut_error: String?
+        public let shortcut_label: String?
     }
 }
 

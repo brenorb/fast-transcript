@@ -76,7 +76,9 @@ Microphone dictation is available through `fscript record` on macOS. Ctrl-C
 finishes the clip; agents can use `fscript record --duration 10`. A warm JSONL
 controller supports repeated recordings without reloading the model. See
 [recording and its validation coverage](docs/recording.md). Desktop hold-to-talk
-and the global shortcut are in progress.
+and a shared global shortcut are implemented and under end-to-end validation.
+[Dictation controls and validation status](docs/dictation-validation.md) track the
+remaining checks.
 
 ## Why this exists
 

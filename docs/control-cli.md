@@ -158,7 +158,8 @@ Export --copy copies the chosen rendering instead of saving another export file.
 The rendered content remains on stdout (or in the --json completion envelope),
 and output_path is null. --paste additionally sends Command-V to the positive
 --target-pid process ID; specifying that explicit target is required. Both flags
-conflict with output paths. Paste requires macOS Accessibility permission and waits
+conflict with output paths. Paste preflights macOS event-posting access for the process performing delivery
+(CGPreflightPostEventAccess) and waits
 up to one second for held modifiers to be released. It reports key delivery,
 not an acknowledgement that the receiving application accepted the paste.
 
