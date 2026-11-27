@@ -3,6 +3,7 @@
 import argparse
 import json
 import os
+import platform
 from pathlib import Path
 import shutil
 import subprocess
@@ -27,6 +28,21 @@ def main():
     fixture = StreamingCLI()
     fixture.setUp()
     try:
+        # Compile the opt-in GUI acceptance fixtures without launching or granting them access.
+        for name in ('PasteTarget', 'NativePasteCheck'):
+            subprocess.run(['swiftc', str(ROOT / 'tests/fixtures' / (name + '.swift')),
+                            '-target', platform.machine() + '-apple-macosx14.0',
+                            '-o', str(fixture.root / name)], check=True)
+        # Invalid acceptance specs fail before checking a grant or posting keys.
+        for positive, error in [(None, 'at least one asserted positive'), (True, 'receiver is not ready')]:
+            specification = fixture.root / 'invalid-paste-spec.json'
+            report = fixture.root / 'invalid-paste-report.json'
+            specification.write_text(json.dumps(dict(targetPid=1, observations=str(fixture.root / 'missing-receiver'),
+                                                     report=str(report), cases=[dict(name='validation', binary='/missing/fscript',
+                                                                                   transcript='/missing/transcript', expectedInsertion=positive)])))
+            result = subprocess.run([str(fixture.root / 'NativePasteCheck'), str(specification)], capture_output=True, timeout=10)
+            if result.returncode == 0 or error not in json.loads(report.read_text())['error']:
+                raise AssertionError('Invalid native paste acceptance specification was not rejected correctly')
         source = fixture.root / 'speech é 🦀 # %.wav'
         shutil.copyfile(fixture.fixture.source, source)
         expected = fixture.fixture.run_cli(source, '--chunk', '2.5', '--overlap', '0.5')

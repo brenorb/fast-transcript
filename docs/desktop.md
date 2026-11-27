@@ -153,6 +153,11 @@ Settings entry. Quit owns and cancels the permission helper as well.
 Failures preserve the transcript and attempt clipboard delivery. Copy/export/notes
 use the same existing completed-transcript commands. Cancel stops the owned
 recording/model process; Quit also waits for an idle warm helper to exit.
+The shared macOS paste function stays alive for 100 ms after posting the complete
+chord so a short-lived CLI cannot exit before queued events are delivered. Copy
+alone has no such wait. A sent status describes posting events, not readback from
+an arbitrary text field; [native acceptance](native-paste-testing.md) verifies real
+Paste callbacks and exact inserted text in a disposable receiver.
 
 FSCRIPT_APP_PREFERENCES_SUITE isolates the small set of presentation preferences
 for local GUI testing. It does not change CLI model or agent settings. See

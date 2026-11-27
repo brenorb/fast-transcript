@@ -141,6 +141,10 @@ mod macos {
         for event in events {
             unsafe { CGEventPostToPid(pid, event.0) }
         }
+        // Posting is asynchronous. Keep a short-lived CLI sender alive long
+        // enough for WindowServer to deliver the complete chord before exit.
+        // Copy-only delivery does not enter this path or incur this wait.
+        std::thread::sleep(std::time::Duration::from_millis(100));
         Ok(())
     }
 }

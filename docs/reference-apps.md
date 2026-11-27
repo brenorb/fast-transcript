@@ -66,3 +66,34 @@ existing Say It checkouts, but they were not treated as current upstream. Runtim
 testing of these reference apps, exhaustive feature parity, and their release
 packaging were not performed in this study. Native capture, permissions, and call
 detection must be validated on this Mac when those milestones are implemented.
+
+## Paste and permission follow-up (2026-11-27)
+
+The native paste failure was reviewed independently with Astra at high reasoning.
+This focused follow-up revisited the pinned source above; it does not claim full
+feature parity or runtime testing of the reference apps.
+
+| App | Actual event/output path | Permission and process ownership | Applied lesson |
+| --- | --- | --- | --- |
+| Handy | A serialized app paste worker calls main-thread Enigo. It resolves the V key for the active layout, places text on the clipboard, and sends a Command-V chord with a 100 ms Command hold. Its normal path restores the clipboard with settling waits; optional reliable paste observes a clipboard consumer read. | Tauri's macOS permission adapter checks/requests Accessibility. The app and its event sender remain alive. Its pinned Enigo implementation also delays teardown according to pending events. | A successful posting call is weaker than observed insertion. Test sender lifetime separately from focus and modifier timing. Retain Fast Transcript's explicit target PID and copied-text fallback; clipboard restoration is a separate product choice. |
+| Say It | The selection agent reads Accessibility selection and can send Command-C to the captured PID using a combined-session CGEventSource. It checks foreground identity while retrying and observing clipboard changes, then restores its snapshot. This is selection ingestion for TTS. | Accessibility belongs to a long-lived selection helper. The packaging script signs embedded code with a supplied identity and preserves requirements. | PID targeting and focus checks are compatible with native keyboard events. Its sender outlives posting; a short-lived CLI needs separate teardown validation. |
+| OpenOats | The inspected output path writes meeting files; the older exporter activates its app before showing a save panel. Current capture/onboarding explicitly request microphone and system-audio access and report the result of attempting capture. | Capture lives in shared native modules; processing uses the bundled oats child. Its builder supports Developer ID/Apple Development identities and signs nested code before the app. | Validate the operation behind a permission status. Reuse explicit native setup and shared capture/process ownership when implementing meetings. This inspected path supplies no keyboard-paste recipe. |
+
+Primary implementation references:
+
+- Handy [key handling](https://github.com/cjpais/Handy/blob/f236901e00b6ed44095b8b9eef90383fb87bda39/src-tauri/src/input.rs#L67-L201),
+  [clipboard flow](https://github.com/cjpais/Handy/blob/f236901e00b6ed44095b8b9eef90383fb87bda39/src-tauri/src/clipboard.rs#L109-L147), and
+  its pinned Enigo [pending-event timing](https://github.com/enigo-rs/enigo/blob/b297a14e807abdf818b7809a70b445ade4fc5897/src/macos/macos_impl.rs#L914-L928) / [teardown](https://github.com/enigo-rs/enigo/blob/b297a14e807abdf818b7809a70b445ade4fc5897/src/macos/macos_impl.rs#L1179-L1184).
+- Say It [selection reader and PID-directed copy](https://github.com/callebtc/sayit/blob/c02707a0745a21ecedff79725eabd156e988073e/Sources/SayItSelectionAgent/SelectedTextReader.swift),
+  [retry flow](https://github.com/callebtc/sayit/blob/c02707a0745a21ecedff79725eabd156e988073e/Sources/SayItXPC/SelectionCaptureFlow.swift), and
+  [embedded signing](https://github.com/callebtc/sayit/blob/c02707a0745a21ecedff79725eabd156e988073e/Scripts/sign-embedded-code.sh).
+- OpenOats [capture permission setup](https://github.com/yazinsai/OpenOats/blob/d8caac78ea283dc791f8d1c4185450e445d3f336/OpenOats/Sources/OpenOats/SettingsModel.swift#L151-L168),
+  [processing child ownership](https://github.com/yazinsai/OpenOats/blob/d8caac78ea283dc791f8d1c4185450e445d3f336/OpenOats/Sources/OpenOats/AppModel.swift),
+  [signing](https://github.com/yazinsai/OpenOats/blob/d8caac78ea283dc791f8d1c4185450e445d3f336/scripts/build_swift_app.sh), and
+  [1.x export panel activation](https://github.com/yazinsai/OpenOats/blob/b79fe07d60d326c6bc57fd1a7bc0aa2f5ab6b8e7/OpenOats/Sources/OpenOats/Views/ContentExporter.swift#L54-L72).
+
+The local differential isolated sender lifetime without changing the granted app:
+the same old export executable inserted text only when held alive after posting,
+in both test orders. With normal stdout and normal process exit, the 100 ms fix
+then produced three exact native Paste callbacks; two old-binary controls exited
+successfully without callbacks or insertion. See [native paste testing](native-paste-testing.md).

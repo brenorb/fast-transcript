@@ -1,8 +1,8 @@
 # Dictation validation
 
-Roadmap milestone 5 remains in progress. Real microphone capture now passes;
-physical global-shortcut capture also passes. Effective automatic paste remains
-incomplete.
+Roadmap milestone 5 remains in progress. Real microphone and physical global
+shortcut capture pass. The shared CLI paste correction passes native insertion
+checks; packaging and the remaining GUI acceptance checks are still underway.
 
 ## Automated coverage
 
@@ -138,8 +138,8 @@ Still required before marking milestone 5 complete:
 - Physical microphone transport and first-use approval now pass as recorded below.
   Denied-device handling has not been exercised through the real OS dialog;
   recognition quality has not been measured against a spoken reference.
-- Automatic paste into a blank native test field, focus-change fallback, and actual
-  effective permission behavior for the helper doing the paste.
+- The fixed shared CLI inserts exact text into a blank native field. Complete
+  packaged-GUI delivery and focus-change fallback with that same correction.
 - Physical keyboard delivery for the selected global chord now passes below;
   native exclusive registration, automatic fallback, and release-on-shutdown passed.
 - All CI green after the implementation/documentation commits are pushed.
@@ -283,3 +283,22 @@ re-addition. The entry remains present and enabled. Explicit approval for that
 separate operation is pending; no TCC reset or indirect workaround was attempted.
 The validated app bundle is unchanged, and milestone 5 remains incomplete until
 effective paste and the remaining acceptance checks pass.
+
+The user subsequently explicitly approved remove-and-re-add. The exact tested
+bundle was registered again and its entry was observed enabled. The actual bundled
+helper's kTCCServicePostEvent preflight then returned authValue 2. This repaired
+the identity mismatch without changing other applications' grants.
+
+A later physical hold captured 7.5 seconds of public fixture speech and the app
+reported that paste was sent. The original disposable target was then found to
+lack the standard Edit menu/Command-V binding; even a normal automation paste
+failed there. The corrected target accepts that positive control. A foreground-
+verified replay still exposed a separate short-lived sender failure: API exit 0
+did not establish receipt. Keeping the unchanged posting process alive for 500 ms
+with stdout backpressure caused native insertion in both experiment orders.
+
+The 100 ms post-chord correction was tested with normally exiting CLI processes
+and receiver-owned Paste callbacks: three fixed cases inserted exact renderer
+text; two interleaved old-binary controls exited 0 without a callback. Foreground
+PID was unchanged across all five cases. See [native paste testing](native-paste-testing.md)
+for the durable opt-in receiver check and [the reference comparison](reference-apps.md#paste-and-permission-follow-up-2026-11-27).
