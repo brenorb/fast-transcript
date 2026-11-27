@@ -38,12 +38,12 @@ flag-based actions. We do not add a second flag spelling for each new action.
 | Warm dictation shortcut | `fscript record --hotkey` | First available exclusive hold chord; explicit chord override supported. |
 | Clipboard | `fscript export transcript.json --copy` | Copy the shared rendering; optional paste requires an explicit target PID. |
 | Paste access | `fscript permissions` | Inspect without prompting. Only explicit `--request paste` asks macOS for access. |
-| Meetings (planned) | `fscript record --source meeting` | Separate mic/system tracks and a durable session. |
-| Session control (planned) | `fscript sessions list`, `fscript sessions stop ID` | Explicit noninteractive control. |
+| Meetings | `fscript meeting` | Foreground live mic/system capture into a new private session; Ctrl-C finishes. Native acceptance remains in progress. |
+| Meeting control | `fscript meeting --control`, `meeting status DIR`, `meeting recover DIR` | Explicit JSONL start/stop/cancel and durable inspection/recovery. |
 | Detection (planned) | `fscript calls watch`, `fscript calendar list` | Inspect native adapter evidence. |
 
 Action names are reserved in command position. Files named notes, models, agents,
-export, skill, record, or permissions use explicit paths such as `./notes`, or `fscript -- notes`. This is
+export, skill, record, meeting, or permissions use explicit paths such as `./notes`, or `fscript -- notes`. This is
 an intentional breaking choice for this young app, avoiding a separate command
 and filesystem-dependent guessing. Normal filenames and URLs remain unchanged.
 Root --help discovers actions; `fscript notes --help` and `fscript help notes`

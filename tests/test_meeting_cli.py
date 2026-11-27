@@ -1,0 +1,316 @@
+"""Meeting E2E: real converters/storage, independent channel/ASR checks, recovery.
+
+Only native audio arrival and the model worker are explicit fixtures. No device
+permission is requested. Run with a fresh compiled FSCRIPT_TEST_BINARY.
+"""
+import hashlib
+import json
+import os
+from pathlib import Path
+import selectors
+import signal
+import struct
+import subprocess
+import time
+import unittest
+import wave
+
+from tests import test_media_range_cli as fixture
+
+
+class MeetingCLI(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        fixture.MediaRangeCLI.setUpClass()
+
+    def setUp(self):
+        self.fixture = fixture.MediaRangeCLI()
+        self.fixture.setUp()
+        self.addCleanup(self.fixture.doCleanups)
+        self.root, self.env = self.fixture.root, self.fixture.env
+        self.remote = self.root / 'remote.wav'
+        with wave.open(str(self.remote), 'wb') as audio:
+            audio.setparams((2, 2, 48000, 0, 'NONE', 'not compressed'))
+            audio.writeframes(b''.join(struct.pack('<hh', (i * 17) % 20001 - 10000, (i * 23) % 10001) for i in range(48000 * 10)))
+        self.env.update(FSCRIPT_CAPTURE_TEST_WAV=str(self.fixture.source), FSCRIPT_SYSTEM_CAPTURE_TEST_WAV=str(self.remote))
+        self.output = self.root / 'meetings'
+        worker = fixture.WORKER.replace('import hashlib, json, os, shutil, sys, wave', 'import hashlib, json, os, shutil, sys, wave, time\nwith open(os.environ["MEETING_WORKERS"], "a") as log: log.write(str(os.getpid()) + "\\n")')
+        worker = worker.replace('    path = json.loads(line)["audio_path"]', '    with open(os.environ["MEETING_REQUEST_LOG"], "a") as log: log.write("request\\n")\n    time.sleep(float(os.environ.get("MEETING_INFERENCE_DELAY", "0")))\n    if os.environ.get("MEETING_INFERENCE_FAIL"): print(json.dumps({"error":"fixture recognition failure"}), flush=True); continue\n    path = json.loads(line)["audio_path"]')
+        (self.root / 'worker').write_text(worker)
+        self.env['MEETING_WORKERS'] = str(self.root / 'workers')
+        self.env['MEETING_REQUEST_LOG'] = str(self.root / 'requests')
+
+    def command(self, *args):
+        return [str(fixture.BINARY), 'meeting', '--json', '--model', 'ultra', '--output-dir', str(self.output), *map(str, args)]
+
+    def spawn(self, *args):
+        process = subprocess.Popen(self.command(*args), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=self.env, cwd=self.root, bufsize=0)
+        self.addCleanup(self.stop, process)
+        return process
+
+    @staticmethod
+    def stop(process):
+        if process.poll() is None:
+            process.terminate()
+            try: process.wait(timeout=3)
+            except subprocess.TimeoutExpired:
+                process.kill(); process.wait(timeout=3)
+        for stream in (process.stdin, process.stdout, process.stderr):
+            if stream: stream.close()
+
+    def event(self, process, timeout=8):
+        deadline, line = time.monotonic() + timeout, bytearray()
+        with selectors.DefaultSelector() as selector:
+            selector.register(process.stdout, selectors.EVENT_READ)
+            while time.monotonic() < deadline:
+                if not selector.select(max(0, deadline - time.monotonic())): break
+                byte = process.stdout.read(1)
+                if not byte: self.fail('meeting ended before event: ' + process.stderr.read().decode())
+                if byte == b'\n': return json.loads(line)
+                line.extend(byte)
+        self.fail(f'no meeting event within {timeout}s: {line[:100]!r}')
+
+    def through(self, process, kind):
+        events = []
+        while True:
+            event = self.event(process)
+            events.append(event)
+            if event['type'] == kind: return events
+
+    def finish(self, process, prefix=(), status=0):
+        stdout, stderr = process.communicate(timeout=20)
+        self.assertEqual(process.returncode, status, stderr.decode())
+        events = [*prefix, *(json.loads(line) for line in stdout.splitlines())]
+        self.assertEqual([event['sequence'] for event in events], list(range(len(events))))
+        self.assertTrue(all(event['version'] == 1 for event in events))
+        return events
+
+    def inspect(self, directory, action='status', success=True):
+        result = subprocess.run([str(fixture.BINARY), 'meeting', action, str(directory), '--json'], capture_output=True, env=self.env, timeout=5)
+        self.assertEqual(result.returncode == 0, success, result.stderr.decode())
+        return json.loads(result.stdout) if success else result
+
+    def test_live_updates_precede_stop_and_final_chunks_match_saved_audio(self):
+        process = self.spawn('--duration', '5')
+        prefix = self.through(process, 'update')
+        self.assertIsNone(process.poll())
+        directory = Path(prefix[1]['data']['directory'])
+        self.assertTrue((directory / 'transcript.partial.json').is_file())
+        self.assertFalse((directory / 'transcript.json').exists())
+        self.assertEqual(self.inspect(directory)['state'], 'recording')
+        self.inspect(directory, 'recover', success=False)
+        events = self.finish(process, prefix)
+        result = events[-1]['data']['result']
+        self.assertEqual(events[-1]['type'], 'completed')
+        self.assertEqual(json.loads((directory / 'transcript.json').read_text()), result)
+        self.assertEqual(self.inspect(directory)['state'], 'stopped')
+        self.assertEqual(len((self.root / 'workers').read_text().splitlines()), 1, 'one warm model handles both tracks')
+        labels = {'Microphone': 'microphone.pcm', 'System': 'system.pcm'}
+        self.assertEqual({s['speaker'] for s in result['segments']}, set(labels))
+        for segment in result['segments']:
+            audio = (directory / labels[segment['speaker']]).read_bytes()
+            start, end = round(segment['start_s'] * 16000), round(segment['end_s'] * 16000)
+            self.assertEqual(segment['text'], hashlib.sha256(audio[start * 2:end * 2]).hexdigest())
+        self.assertNotEqual((directory / 'microphone.pcm').read_bytes(), (directory / 'system.pcm').read_bytes())
+        exported = subprocess.run([str(fixture.BINARY), 'export', str(directory / 'transcript.json'), '--stdout', '--format', 'speakers'], capture_output=True, env=self.env, timeout=5)
+        self.assertEqual(exported.returncode, 0, exported.stderr.decode())
+        self.assertIn(b'Microphone', exported.stdout)
+        self.assertIn(b'System', exported.stdout)
+
+    def test_duration_and_disk_progress_do_not_wait_for_slow_inference(self):
+        self.env['MEETING_INFERENCE_DELAY'] = '4'
+        process = self.spawn('--duration', '3')
+        prefix = self.through(process, 'recording')
+        directory = Path(prefix[1]['data']['directory'])
+        time.sleep(3.5)
+        self.assertIsNone(process.poll(), 'model is still transcribing')
+        sizes = [(directory / name).stat().st_size for name in ('microphone.pcm', 'system.pcm')]
+        self.assertTrue(all(2.95 * 32000 < size < 3.15 * 32000 for size in sizes), sizes)
+        time.sleep(.3)
+        self.assertEqual(sizes, [(directory / name).stat().st_size for name in ('microphone.pcm', 'system.pcm')], 'capture stopped independently of inference')
+        events = self.finish(process, prefix)
+        self.assertEqual(events[-1]['type'], 'completed')
+
+    def test_recognition_failure_continues_saving_until_requested_duration(self):
+        self.env['MEETING_INFERENCE_FAIL'] = '1'
+        process = self.spawn('--duration', '3.5')
+        prefix = self.through(process, 'recognition_error')
+        directory = Path(prefix[1]['data']['directory'])
+        self.assertIsNone(process.poll())
+        events = self.finish(process, prefix, status=1)
+        self.assertEqual(events[-1]['type'], 'error')
+        manifest = self.inspect(directory)
+        self.assertEqual(manifest['state'], 'stopped')
+        self.assertTrue(all(frames > 3.4 * 16000 for frames in manifest['track_frames']))
+        self.assertTrue(any(event['type'] == 'saved' for event in events))
+
+    def test_control_start_stop_and_closed_stdin_after_stop_complete(self):
+        process = self.spawn('--control')
+        prefix = [self.event(process)]
+        self.assertEqual(prefix[0]['type'], 'ready')
+        self.assertFalse(self.output.exists())
+        process.stdin.write(b'{"action":"start"}\n'); process.stdin.flush()
+        prefix += self.through(process, 'recording')
+        time.sleep(.3)
+        process.stdin.write(b'{"action":"stop"}\n'); process.stdin.flush()
+        events = self.finish(process, prefix)
+        self.assertEqual(events[-1]['type'], 'completed')
+        self.assertLess(events[-1]['data']['result']['audio_seconds'], 1)
+
+    def test_controller_crash_retains_checkpointed_and_later_audio_for_recovery(self):
+        process = self.spawn('--control')
+        prefix = [self.event(process)]
+        process.stdin.write(b'{"action":"start"}\n'); process.stdin.flush()
+        prefix += self.through(process, 'recording')
+        directory = Path(prefix[1]['data']['directory'])
+        time.sleep(1.4)
+        process.stdin.close(); process.stdin = None
+        events = self.finish(process, prefix, status=1)
+        self.assertEqual(events[-1]['type'], 'error')
+        recovered = self.inspect(directory, 'recover')
+        self.assertEqual(recovered['state'], 'interrupted')
+        self.assertTrue(all(count > 16000 for count in recovered['track_frames']))
+        self.assertEqual(self.inspect(directory, 'recover'), recovered)
+
+    def test_cancel_after_audio_saved_interrupts_a_blocked_final_inference(self):
+        self.env['MEETING_INFERENCE_DELAY'] = '60'
+        process = self.spawn('--control')
+        prefix = [self.event(process)]
+        process.stdin.write(b'{"action":"start"}\n'); process.stdin.flush()
+        prefix += self.through(process, 'recording')
+        time.sleep(.2)
+        process.stdin.write(b'{"action":"stop"}\n'); process.stdin.flush()
+        prefix += self.through(process, 'saved')
+        directory = Path(prefix[1]['data']['directory'])
+        if not any(event['type'] == 'model_ready' for event in prefix):
+            prefix += self.through(process, 'model_ready')
+        deadline = time.monotonic() + 5
+        while not (self.root / 'requests').exists() and time.monotonic() < deadline:
+            time.sleep(.01)
+        self.assertTrue((self.root / 'requests').exists(), 'the final inference request must actually have started')
+        began = time.monotonic()
+        process.stdin.write(b'{"action":"cancel"}\n'); process.stdin.flush()
+        events = self.finish(process, prefix)
+        self.assertLess(time.monotonic() - began, 3)
+        self.assertEqual(events[-1]['type'], 'cancelled')
+        self.assertTrue(events[-1]['data']['audio_stopped'])
+        self.assertFalse(events[-1]['data']['recoverable'])
+        self.assertEqual(self.inspect(directory)['state'], 'stopped')
+        self.assertFalse((directory / 'transcript.json').exists())
+        for pid in (self.root / 'workers').read_text().splitlines():
+            with self.assertRaises(ProcessLookupError): os.kill(int(pid), 0)
+
+    def test_stalled_converter_is_terminated_after_stop_deadline(self):
+        # Both converters keep stdin open without consuming: native packet writes
+        # will fill the pipe, so only the independent deadline can stop them.
+        converter = self.root / 'ffmpeg'
+        converter.write_text('#!/usr/bin/env python3\nimport time\ntime.sleep(60)\n')
+        converter.chmod(0o755)
+        began = time.monotonic()
+        process = self.spawn('--duration', '.3')
+        events = self.finish(process, status=1)
+        self.assertLess(time.monotonic() - began, 5)
+        directory = Path(events[1]['data']['directory'])
+        self.assertFalse((directory / 'transcript.json').exists())
+        self.assertEqual(self.inspect(directory, 'recover')['state'], 'interrupted')
+
+    def test_partial_file_is_kept_separate_when_the_final_decode_fails(self):
+        worker = (self.root / 'worker').read_text().replace('for line in sys.stdin:', 'calls = 0\nfor line in sys.stdin:')
+        worker = worker.replace('    path = json.loads(line)["audio_path"]', '    calls += 1\n    if calls > 2: print(json.dumps({"error":"final inference failed"}), flush=True); continue\n    path = json.loads(line)["audio_path"]')
+        (self.root / 'worker').write_text(worker)
+        process = self.spawn('--duration', '3')
+        events = self.finish(process, status=1)
+        directory = Path(events[1]['data']['directory'])
+        self.assertEqual(self.inspect(directory)['state'], 'stopped')
+        self.assertTrue((directory / 'transcript.partial.json').is_file())
+        self.assertFalse((directory / 'transcript.json').exists())
+        self.assertFalse(any(event['type'] == 'completed' for event in events))
+        self.assertTrue(all(not event['data']['recording_continues'] for event in events if event['type'] == 'recognition_error'))
+
+    def test_missing_source_is_interrupted_and_never_fabricated_as_silence(self):
+        self.env['FSCRIPT_SYSTEM_CAPTURE_TEST_WAV'] = str(self.root / 'missing.wav')
+        process = self.spawn('--duration', '1')
+        events = self.finish(process, status=1)
+        directory = Path(events[1]['data']['directory'])
+        self.assertEqual(self.inspect(directory)['state'], 'recording')
+        manifest = self.inspect(directory, 'recover')
+        self.assertEqual(manifest['state'], 'interrupted')
+        self.assertEqual(manifest['track_frames'][1], 0)
+
+    def test_valid_empty_source_never_becomes_a_recording_of_fabricated_silence(self):
+        empty = self.root / 'empty.wav'
+        with wave.open(str(empty), 'wb') as audio:
+            audio.setparams((1, 2, 16000, 0, 'NONE', 'not compressed'))
+        self.env['FSCRIPT_SYSTEM_CAPTURE_TEST_WAV'] = str(empty)
+        process = self.spawn('--duration', '1.2')
+        events = self.finish(process, status=1)
+        directory = Path(events[1]['data']['directory'])
+        manifest = self.inspect(directory, 'recover')
+        self.assertEqual(manifest['state'], 'interrupted')
+        self.assertEqual(manifest['track_frames'][1], 0)
+
+    def test_completion_is_one_commit_point_even_when_cancel_arrives_at_completion(self):
+        for _ in range(5):
+            process = self.spawn('--control')
+            prefix = [self.event(process)]
+            process.stdin.write(b'{"action":"start"}\n'); process.stdin.flush()
+            prefix += self.through(process, 'recording')
+            time.sleep(.1)
+            process.stdin.write(b'{"action":"stop"}\n'); process.stdin.flush()
+            prefix += self.through(process, 'completed')
+            try:
+                process.stdin.write(b'{"action":"cancel"}\n'); process.stdin.flush()
+            except BrokenPipeError: pass
+            events = self.finish(process, prefix)
+            self.assertEqual([e['type'] for e in events if e['type'] in ('completed', 'cancelled')], ['completed'])
+            directory = Path(prefix[1]['data']['directory'])
+            self.assertTrue((directory / 'transcript.json').is_file())
+            self.assertFalse((directory / '.transcript.pending.json').exists())
+
+    def test_recording_state_does_not_wait_for_model_loading(self):
+        worker = (self.root / 'worker').read_text().replace('print(json.dumps(dict(ready=True', 'time.sleep(1)\nprint(json.dumps(dict(ready=True')
+        (self.root / 'worker').write_text(worker)
+        began = time.monotonic()
+        process = self.spawn('--duration', '.3')
+        prefix = self.through(process, 'recording')
+        self.assertLess(time.monotonic() - began, 1)
+        self.assertFalse(any(event['type'] == 'model_ready' for event in prefix))
+        events = self.finish(process, prefix)
+        self.assertEqual(events[-1]['type'], 'completed')
+
+    def test_model_startup_failure_preserves_healthy_capture(self):
+        (self.root / 'worker').write_text('#!/usr/bin/env python3\nraise SystemExit(2)\n')
+        process = self.spawn('--duration', '.8')
+        events = self.finish(process, status=1)
+        directory = Path(events[1]['data']['directory'])
+        self.assertTrue(any(event['type'] == 'recognition_error' for event in events))
+        manifest = self.inspect(directory)
+        self.assertEqual(manifest['state'], 'stopped')
+        self.assertTrue(all(frames > .7 * 16000 for frames in manifest['track_frames']))
+        self.assertFalse((directory / 'transcript.json').exists())
+
+    def test_help_status_and_invalid_duration_have_no_capture_side_effects(self):
+        for args in [('--help',), ('--duration', '0'), ('--duration', 'NaN'), ('--duration', '-1'), ()]:
+            result = subprocess.run(self.command(*args), stdin=subprocess.DEVNULL, capture_output=True, env=self.env, timeout=5)
+            self.assertEqual(result.returncode == 0, args == ('--help',), result.stderr.decode())
+            self.assertFalse(self.output.exists())
+            self.assertFalse((self.root / 'workers').exists())
+
+    @unittest.skipUnless(os.name == 'posix', 'POSIX signal supervision')
+    def test_first_interrupt_finishes_and_second_interrupt_cancels_owned_workers(self):
+        process = self.spawn('--duration', '30')
+        prefix = self.through(process, 'recording')
+        time.sleep(.2)
+        process.send_signal(signal.SIGINT)
+        events = self.finish(process, prefix)
+        self.assertEqual(events[-1]['type'], 'completed')
+        self.assertLess(events[-1]['data']['result']['audio_seconds'], 1)
+        self.env['MEETING_INFERENCE_DELAY'] = '60'
+        process = self.spawn('--duration', '30')
+        self.through(process, 'recording')
+        time.sleep(2.3)
+        process.send_signal(signal.SIGINT)
+        time.sleep(.1)
+        process.send_signal(signal.SIGINT)
+        process.communicate(timeout=5)
+        self.assertEqual(process.returncode, 130)

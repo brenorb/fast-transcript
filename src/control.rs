@@ -49,6 +49,7 @@ mod routing_tests {
             "agents",
             "skill",
             "record",
+            "meeting",
             "permissions",
         ] {
             assert_eq!(arguments(&args(&[action])), Some(args(&[action])));
@@ -89,6 +90,16 @@ fn command() -> Command {
             .arg(Arg::new("model").long("model").help("Override the shared speech-model preference"))
             .arg(Arg::new("device").long("device").default_value("auto").help("Inference device; auto, cpu, mps, mlx, or cuda as supported by the model"))
             .arg(Arg::new("model-dir").long("model-dir").help("Existing speech-model directory")))
+        .subcommand(Command::new("meeting").about("Record and transcribe microphone and system audio live")
+            .after_help("Examples:\n  fscript meeting\n  fscript meeting --duration 60\n  fscript meeting --control --json\n  fscript meeting status ./meetings/SESSION\n  fscript meeting recover ./meetings/SESSION\n\nCtrl-C stops capture and finishes pending transcription; a second interrupt cancels. In --control mode, Ctrl-C cancels immediately. Both tracks are saved continuously in a new child of ./meetings. Control mode accepts one JSONL start/stop/cancel/shutdown session. Closing stdin interrupts the session and retains recoverable audio.")
+            .arg(Arg::new("duration").long("duration").conflicts_with("control").help("Stop capture automatically after this many seconds"))
+            .arg(Arg::new("control").long("control").action(ArgAction::SetTrue).help("Wait for JSONL start/stop requests on stdin"))
+            .arg(Arg::new("output-dir").long("output-dir").default_value("meetings").help("Parent directory for a new private meeting session"))
+            .arg(Arg::new("model").long("model").help("Override the shared speech-model preference"))
+            .arg(Arg::new("device").long("device").default_value("auto").help("Inference device supported by the model"))
+            .arg(Arg::new("model-dir").long("model-dir").help("Existing speech-model directory"))
+            .subcommand(Command::new("status").about("Inspect the last durable checkpoint without recording").arg(Arg::new("directory").required(true)))
+            .subcommand(Command::new("recover").about("Recover audio from an interrupted, unowned session").arg(Arg::new("directory").required(true))))
         .subcommand(Command::new("export").about("Export a completed transcript without transcribing again")
             .after_help("Examples:\n  fscript export meeting.json\n  fscript export meeting.json --format srt\n  fscript media.wav --stream --json | fscript export - --format plain")
             .arg(Arg::new("input").required(true).help("Complete fscript JSON/JSONL file, or - for stdin"))
@@ -130,7 +141,8 @@ pub(crate) fn needs_supervision(raw: &[String]) -> bool {
     matches(raw).is_ok_and(|matches| {
         (matches!(matches.subcommand_name(), Some("notes" | "record"))
             || matches.subcommand().is_some_and(|(name, values)| {
-                (name == "export" && (values.get_flag("copy") || values.get_flag("paste")))
+                (name == "meeting" && values.subcommand_name().is_none())
+                    || (name == "export" && (values.get_flag("copy") || values.get_flag("paste")))
                     || (name == "permissions" && values.get_one::<String>("request").is_some())
             }))
             && !matches.get_flag("manual")
@@ -140,9 +152,12 @@ pub(crate) fn needs_supervision(raw: &[String]) -> bool {
 pub(crate) fn finish_on_interrupt(raw: &[String]) -> bool {
     matches(raw).is_ok_and(|matches| {
         matches.subcommand().is_some_and(|(name, values)| {
-            name == "record"
+            (name == "record"
                 && !values.get_flag("control")
-                && values.get_one::<String>("hotkey").is_none()
+                && values.get_one::<String>("hotkey").is_none())
+                || (name == "meeting"
+                    && values.subcommand_name().is_none()
+                    && !values.get_flag("control"))
         })
     })
 }
@@ -259,7 +274,27 @@ pub(crate) fn run(raw: Vec<String>) -> Result<()> {
             })?;
             crate::notes::emit(&result, json)
         }
-        Some(("record", values)) => {
+        Some(("meeting", values)) if values.subcommand_name().is_some() => {
+            let (action, values) = values.subcommand().unwrap();
+            let directory = std::path::Path::new(values.get_one::<String>("directory").unwrap());
+            let manifest = if action == "recover" {
+                crate::meeting_store::recover(directory)?
+            } else {
+                crate::meeting_store::inspect(directory)?
+            };
+            if json {
+                print(&format!("{}\n", serde_json::to_string_pretty(&manifest)?))
+            } else {
+                print(&format!(
+                    "Meeting: {}\nState: {:?}\nMicrophone: {:.2}s\nSystem: {:.2}s\n",
+                    directory.display(),
+                    manifest.state,
+                    manifest.track_frames[0] as f64 / 16000.0,
+                    manifest.track_frames[1] as f64 / 16000.0
+                ))
+            }
+        }
+        Some((name @ ("record" | "meeting"), values)) => {
             let duration = values
                 .get_one::<String>("duration")
                 .map(|value| {
@@ -281,11 +316,26 @@ pub(crate) fn run(raw: Vec<String>) -> Result<()> {
                     args.extend([format!("--{name}"), value.clone()]);
                 }
             }
+            if name == "meeting" {
+                args.extend(["--stream".into(), "--no-diarization".into()]);
+            }
+            let args = crate::cli::parse_args_with_default_model(
+                &args,
+                crate::settings::default_model_selection,
+            )?;
+            if name == "meeting" {
+                return crate::meetings::run(crate::meetings::Options {
+                    args,
+                    control: values.get_flag("control"),
+                    json,
+                    duration,
+                    output_directory: std::path::absolute(
+                        values.get_one::<String>("output-dir").unwrap(),
+                    )?,
+                });
+            }
             crate::recording::run(crate::recording::Options {
-                args: crate::cli::parse_args_with_default_model(
-                    &args,
-                    crate::settings::default_model_selection,
-                )?,
+                args,
                 control: values.get_flag("control"),
                 hotkey: values.get_one::<String>("hotkey").cloned(),
                 json,

@@ -82,6 +82,12 @@ and a shared global shortcut are implemented and under end-to-end validation.
 [Dictation controls and validation status](docs/dictation-validation.md) track the
 remaining checks.
 
+Live meeting capture is available in the development CLI as `fscript meeting`:
+separate microphone/system tracks, live channel-attributed text, durable recovery,
+and the same export/notes commands. `--duration 60 --json` supports unattended
+runs. The meeting GUI, device-clock drift/rerouting, and native system-audio
+acceptance are still in progress; see [current contracts and validation](docs/live-meetings.md).
+
 ## Why this exists
 
 I wanted a tool for **transcribing long classes and lectures quickly on a laptop while still using the computer for normal work**.

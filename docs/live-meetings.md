@@ -1,15 +1,110 @@
 # Live meetings
 
-Roadmap milestone 6 is in progress. The shared Rust storage/recovery foundation is
-implemented, both capture sources share timestamped packets, and the native tap
-adapter compiles. Native system-audio delivery remains unverified; live meeting
-capture, incremental recognition, CLI control, and the
-meeting GUI are not yet available. Dictation is independently complete at
-stable/dictation. Calendar/call detection remains milestone 7.
+Roadmap milestone 6 is in progress. The meeting CLI now connects shared capture,
+continuous normalization, durable storage, incremental inference, final export,
+and recovery. Native system-audio delivery remains unverified. Clock-drift
+compensation, route-change recovery, the meeting GUI, and native acceptance are
+still outstanding; this milestone has no stable tag. Dictation is independently
+complete at stable/dictation. Calendar/call detection remains milestone 7.
+
+## Everyday use and unattended control
+
+```sh
+fscript meeting
+fscript meeting --duration 60 --json
+fscript meeting --control --json
+fscript meeting status ./meetings/SESSION --json
+fscript meeting recover ./meetings/SESSION --json
+fscript export ./meetings/SESSION/transcript.json --format speakers
+fscript notes ./meetings/SESSION/transcript.json
+```
+
+The default output parent is ./meetings. Each start creates a new private child;
+--output-dir overrides that parent. The saved speech model is shared with file
+transcription and dictation, with --model/--model-dir/--device overrides. Normal
+foreground capture finishes on first Ctrl-C; the second cancels owned processes.
+--duration requires positive finite seconds and needs no terminal. --control
+waits for one JSONL start request, accepts stop/cancel/shutdown, and always emits
+JSONL. Ctrl-C cancels control mode immediately. No GUI-only recording API exists.
+A literal media file named meeting uses ./meeting or -- meeting.
+
+A stop request stamps one common host-clock cutoff. Capture stops independently
+of blocked recognition, drains queued packets through each continuous converter,
+and saves both tracks. The requested duration starts at session creation; startup
+and initial permission time are included. A source that becomes ready only after
+the cutoff, or supplies no accepted audio frames, is an interrupted capture rather
+than a successful track manufactured from padding. Actual silence supplied by a
+working endpoint remains valid captured audio.
+
+Closing stdin before stop cancels and preserves recoverable audio. Closing it
+after stop permits completion. Cancel/shutdown interrupts blocked model loading,
+recognition, and the final backlog pass. If audio has already been saved, its
+manifest remains stopped; cancellation does not relabel successful capture as an
+interrupted recording. One controller process handles exactly one meeting.
+
+## Events and transcript publication
+
+Session JSONL uses the shared dictation envelope: version 1, sequence (starting
+at zero), type, nullable session_id, and data. The session ID is assigned by started;
+ready precedes a controlled start and has no assigned ID. Events are flushed.
+Diagnostics go to stderr; quiet suppresses status without removing result events.
+
+| Event | Meaning |
+| --- | --- |
+| ready | Service accepts start; requires_start says whether control mode is enabled |
+| started | Private directory exists; supplies directory and Microphone/System channel labels |
+| recording | Both capture adapters are ready, independently of model loading |
+| model_ready | One shared model is loaded for both tracks; includes model metadata and load time |
+| update | Provisional full text/segments, newly printable addition, and transcript.partial.json output_path |
+| recognition_error | Recognition failed; recording_continues reflects whether capture is still active |
+| saved | Both tracks were closed, synced, and marked stopped; includes final manifest |
+| completed | All saved frames were processed and transcript.json was committed; includes the existing result schema |
+| cancelled | Recognition was interrupted; directory, audio_stopped, and recoverable distinguish saved capture from interruption |
+| error | Fatal capture/control/output failure; no completed event is implied |
+
+Provisional snapshots never occupy the final filename. The inference helper stages
+its result privately; the controller owns atomic final promotion and the completion
+commit point. Cancellation accepted before that point prevents publication.
+Cancellation arriving after it cannot produce a second terminal event. An audio
+manifest marked stopped proves capture completion; it does not by itself prove
+that recognition or final transcript publication succeeded. Partial snapshots may
+remain alongside a complete transcript, but only transcript.json is the final
+export/notes input. Channel names do not identify individual remote participants.
+
+## Capture and recognition execution
+
+Each source has its own capture thread and one continuous FFmpeg normalization
+context: native-rate interleaved PCM16 becomes 16 kHz mono PCM16. Output readers
+write directly to the shared private store in bounded blocks; neither native
+callbacks nor disk writes wait for the ASR result. Both source loops checkpoint
+at one-second intervals. A separate stop/deadline watcher acts even if a converter
+blocks its input or shutdown; after two seconds it kills that owned converter.
+A killed/failed converter cannot mark the session successfully stopped. This
+bounds converter stalls, not arbitrary OS permission dialogs or stalled storage.
+
+One inference helper belongs to the existing supervised process group. It loads
+one model, reads bounded immutable audio prefixes from disk, and uses the same
+PcmChunker, InferenceOutcome merging, finalizer, and export schema as file jobs.
+Opening windows are 2 seconds; after recognized text they become 8 seconds, with
+0.5-second overlap. Microphone and System are processed in alternating bounded
+reads. Slow recognition accumulates an on-disk backlog; it does not create an
+unbounded queue of audio in RAM. Recognition failures, including startup failures,
+leave healthy capture running until the requested stop; the command subsequently
+fails with the saved audio directory instead of claiming a complete transcript.
+
+The current alignment compares cumulative native frames against the host clock,
+keeps small callback jitter contiguous, fills positive discrepancies exceeding
+100 ms, and fails on a backwards discrepancy exceeding 100 ms. This is not an
+adaptive device-clock resampler: gradual independent-clock drift is not yet
+compensated, and a large positive discrepancy can insert silence. Long meetings
+with independent devices therefore still require the upcoming drift work and
+interior-marker simulation before milestone 6 can be considered complete. Default
+device changes are also not followed yet. These limits are deliberately retained
+in the milestone ledger instead of labeling the current capture path stable.
 
 ## Storage contract
 
-The meeting controller will initialize a new session folder before starting
+The meeting controller initializes a new session folder before starting
 capture. The storage layer in src/meeting_store.rs owns this format:
 
 | File | Contract |
@@ -29,11 +124,11 @@ overlapping packet prefixes cannot overwrite earlier audio. Empty packets do not
 extend a track. Appending writes in fixed-size blocks, including long gaps,
 instead of accumulating the whole recording in memory. This work runs on the
 disk writer, never the realtime audio callback. Capture resampling and clock
-alignment belong to the upcoming capture adapter, not a second GUI implementation.
+alignment run in the shared controller, not in the GUI.
 
 Each checkpoint syncs both audio files before atomically replacing and syncing
-the manifest. The controller must schedule a bounded checkpoint interval;
-this storage module does not start a timer or claim one is running. A write or
+the manifest. The capture loops schedule one-second checkpoints;
+the storage module itself does not start a timer. A write or
 checkpoint failure prevents further writes and successful completion. The session
 stays recoverable rather than being marked stopped by Drop or process teardown.
 
@@ -52,7 +147,7 @@ result before preserving the next audio packet.
 
 ## Shared capture transport
 
-Dictation's WAV sink and the upcoming meeting controller use AudioSource in
+Dictation's WAV sink and the meeting controller use AudioSource in
 src/capture.rs. The source supplies native-rate, interleaved Int16 packets plus
 the first sample's host-clock timestamp; it does not resample or mix tracks.
 Native microphone capture retains its existing bounded CPAL queue, conversion,
@@ -98,8 +193,8 @@ in silence still needs native acceptance. Stop drops the input stream before
 destroying the aggregate and then the tap. Initialization failures use the same
 ownership guard. Cleanup attempts both resources, propagates errors, and retains
 failed IDs for a final Drop retry rather than reporting an unconditional success.
-The current adapter is bound to the initial output; route-change recovery belongs
-to the upcoming controller and is not claimed here.
+The current adapter is bound to the initial output; route-change recovery remains
+upcoming work and is not claimed here.
 
 Only an explicit system capture start can create devices or trigger its OS
 permission flow. FSCRIPT_SYSTEM_CAPTURE_TEST_WAV explicitly substitutes a WAV
@@ -190,3 +285,19 @@ and NSAudioCaptureUsageDescription. The upcoming adapter must validate actual
 sample delivery rather than infer success from device creation. CLI control will
 remain under fscript, following [clig.dev](https://clig.dev/#subcommands), with
 machine-readable stdout, diagnostics on stderr, and a fully unattended path.
+
+Controller verification uses explicit WAV transports, real FFmpeg processes, the
+actual CLI/service subprocesses, private storage, and a deterministic model worker.
+It checks live pre-stop updates, exact SHA-256 recognition-input equality with saved
+per-channel audio, source separation, one warm model for both tracks, final export,
+durable status, active-owner recovery refusal, stdin interruption/recovery, graceful
+first interrupt and forceful second cancellation, slow-inference-independent disk
+progress/stop, recognition failures, cancellation during blocked final recognition,
+stalled converters, missing/empty sources, and completion/cancellation consistency.
+
+Three additional Rust checks cover 5 native sample rates × 1/2 channels and random
+input fragmentation against an independent whole-file FFmpeg conversion, source
+jitter/real gaps/cutoff against an independently constructed PCM timeline, and
+idempotent shared cutoff conversion. The existing randomized store/chunker tests
+remain applicable. None of these fixtures prove native microphone/system delivery,
+independent-clock drift compensation, device rerouting, or meeting GUI behavior.

@@ -23,6 +23,11 @@ fscript record
 fscript record --duration 10
 fscript record --control --json
 fscript record --hotkey
+fscript meeting
+fscript meeting --duration 60 --json
+fscript meeting --control
+fscript meeting status SESSION [--json]
+fscript meeting recover SESSION [--json]
 fscript permissions [--json]
 fscript permissions --request paste [--json]
 ```
@@ -196,3 +201,38 @@ streaming CLI's process-group supervisor on macOS/Linux. Ctrl-C, SIGTERM, or SIG
 returns 130, stops owned helpers, and removes job scratch files. Timeouts fail
 without replacing existing notes. The caller must provide a complete transcript;
 literal JSON-like prose can be forced with --input-format text.
+
+## Live meeting sessions
+
+`fscript meeting` records the default microphone and system output into separate,
+private tracks under a new child of ./meetings and prints channel-attributed live
+text. It uses the shared saved model. The capture service requires macOS 14.2+
+and OS microphone/system-audio access. Native delivery and the meeting GUI remain
+under validation; see docs/live-meetings.md for the implemented protocol and limits.
+
+--duration SECONDS stops capture without a terminal. --output-dir DIR chooses the
+parent session directory; each recording creates a new child and never overwrites
+an existing session. --model, --model-dir, and --device use the media CLI's shared
+selection. --json emits flushed version 1 session events. Ctrl-C finishes ordinary
+capture and drains pending recognition; a second interrupt cancels. In --control
+mode, Ctrl-C cancels immediately.
+
+--control waits for one newline-terminated JSON start request on stdin. Send stop
+to stop capture and finish pending transcription, or cancel/shutdown to exit
+without a final transcript. Closing stdin before stop interrupts the session;
+closing it after stop permits normal completion. Requests use the same action
+names as dictation, but one meeting process handles exactly one session. A start
+request during an active session is an error. Each line is limited to 64 KiB.
+
+Audio is written/checkpointed independently of model loading and inference.
+Recognition failure reports recognition_error and keeps capture running until
+stop/duration; saved confirms that audio is durable, not that recognition finished.
+Live snapshots use transcript.partial.json. Only successful full recognition
+publishes transcript.json and a completed event, using the existing document
+schema so export and notes need no meeting-specific rendering logic. Microphone
+and System are source channels, not inferred identities of meeting participants.
+
+meeting status SESSION inspects the last durable manifest without loading a model
+or opening devices. meeting recover SESSION retains every complete saved sample
+from an interrupted, unowned recording, marks it interrupted, and refuses a live
+owner. Recovery does not resume capture or claim a complete transcript.

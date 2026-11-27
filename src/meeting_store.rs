@@ -17,7 +17,7 @@ pub(crate) enum Track {
 }
 
 impl Track {
-    const ALL: [Self; 2] = [Self::Microphone, Self::System];
+    pub(crate) const ALL: [Self; 2] = [Self::Microphone, Self::System];
 
     fn index(self) -> usize {
         match self {
@@ -180,6 +180,7 @@ impl Writer {
         })
     }
 
+    #[cfg(test)]
     pub(crate) fn frames(&self, track: Track) -> u64 {
         self.positions[track.index()]
     }

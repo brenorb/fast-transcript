@@ -16,7 +16,9 @@ mod inference;
 mod input;
 mod job;
 mod media_range;
+mod meeting_capture;
 mod meeting_store;
+mod meetings;
 mod model;
 mod model_catalog;
 mod notes;
@@ -26,6 +28,7 @@ mod pcm_stream;
 mod progress;
 mod recording;
 mod remote;
+mod session_events;
 mod settings;
 mod shortcut;
 mod streaming;
@@ -73,6 +76,9 @@ pub fn run_from_args(raw_args: Vec<String>) -> Result<()> {
 
 /// Binary entry point with process ownership and cancellation for streaming jobs.
 pub fn run_cli_from_args(raw_args: Vec<String>) -> Result<i32> {
+    if std::env::var_os(meetings::WORKER_ENV).is_some() {
+        return meetings::run_worker(raw_args).map(|()| 0);
+    }
     if let Some(arguments) = control::arguments(&raw_args) {
         let supervised = control::needs_supervision(&arguments);
         let finish_on_interrupt = control::finish_on_interrupt(&arguments);

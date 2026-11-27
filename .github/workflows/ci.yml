@@ -17,6 +17,8 @@ jobs:
         run: cargo fmt --check
       - name: Check generated man page
         run: python3 scripts/generate_man_page.py --check
+      - name: Install conversion test dependency
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - name: Test
         run: cargo test --locked
       - name: Publish dry run
@@ -43,6 +45,8 @@ jobs:
         run: uv run --no-project --with yt-dlp python -m unittest tests/test_single_cli.py
       - name: Recording lifecycle E2E and batch differential tests
         run: uv run --no-project --with yt-dlp python -m unittest tests/test_recording_cli.py
+      - name: Meeting capture, live updates, cancellation, and recovery E2E
+        run: uv run --no-project python -m unittest tests/test_meeting_cli.py
       - name: External agent notes E2E and control CLI tests
         run: uv run --no-project python -m unittest tests/test_agent_notes_cli.py
       - name: Completed export E2E and batch differential tests

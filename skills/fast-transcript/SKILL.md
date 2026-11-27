@@ -72,6 +72,18 @@ and configured model provider. Use `fscript agents` to inspect availability and
 
 Use `fscript --help`, nested help such as `fscript notes --help`, or the complete
 offline `fscript --manual` when details are needed. Action names are reserved:
-for an actual file named notes, models, agents, export, skill, or record, pass an explicit
+for an actual file named notes, models, agents, export, skill, record, or meeting, pass an explicit
 path such as `./notes` or use `fscript -- notes`. Help/discovery never loads a
 speech model or starts a note agent.
+
+For live meetings, `fscript meeting --duration 60 --json` saves microphone and
+system audio separately and emits provisional channel-attributed text. macOS
+14.2+ capture requires OS microphone/system-audio access. `fscript meeting
+--control` waits for one JSONL `{"action":"start"}` request; send `stop` to finish
+capture and drain recognition. `cancel`/`shutdown` interrupts recognition even
+after capture stops. Do not close stdin before stop. Use `meeting status DIR` to
+inspect a durable checkpoint and `meeting recover DIR` only after an interrupted
+owner exits. Live snapshots are `transcript.partial.json`; only
+`transcript.json` is complete and ready for final export/notes. Native system
+capture, clock drift, route changes, and the meeting GUI are still under validation;
+see docs/live-meetings.md for coverage and current limits.
