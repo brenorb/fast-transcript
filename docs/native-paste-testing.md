@@ -87,3 +87,15 @@ All five attempts reported the same receiver PID before and after delivery. The
 visible field contained only the three fixed-case markers, matching its native
 callbacks and the compact renderer. This validates the chosen wait on this Mac;
 it is not a claim that 100 ms is a universal minimum or a recognition benchmark.
+
+## Packaged correction (2026-11-27)
+
+After the user completed macOS authentication, the existing access entry was
+refreshed for the app built from dc10449. No further bundle rebuild was performed.
+The app-owned runner then launched the actual bundled CLI through its normal
+supervisor/worker path, with normal stdout and process exit. All three asserted
+cases passed: exactly one native Paste callback per case, exact cumulative text,
+and the same receiver PID before and after each delivery. The visible receiver
+contained the three expected markers. These checks validate packaged CLI delivery
+under the app's effective grant; they do not substitute for physical shortcut
+capture followed by the GUI's delivery decision.

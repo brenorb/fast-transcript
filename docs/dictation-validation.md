@@ -2,7 +2,9 @@
 
 Roadmap milestone 5 remains in progress. Real microphone and physical global
 shortcut capture pass. The shared CLI paste correction passes native insertion
-checks; packaging and the remaining GUI acceptance checks are still underway.
+checks, including the corrected packaged app. Toggle persistence across an
+independently confirmed app switch passes; physical shortcut delivery through the
+GUI and its focus-change fallback are still being checked.
 
 ## Automated coverage
 
@@ -132,14 +134,16 @@ loss. The current candidate must validate these controls.
 
 Still required before marking milestone 5 complete:
 
-- Exact current candidate: toggle behavior across independently verified app focus
-  changes. Real SDK model switching and controlled inference cancellation passed
-  above; real microphone checks remain separate.
+- Physical shortcut capture followed by the packaged GUI's paste decision and
+  focus-change copy fallback. Toggle persistence across an independently verified
+  app change now passes as recorded below. Real SDK model switching and controlled
+  inference cancellation passed above; real microphone checks remain separate.
 - Physical microphone transport and first-use approval now pass as recorded below.
   Denied-device handling has not been exercised through the real OS dialog;
   recognition quality has not been measured against a spoken reference.
-- The fixed shared CLI inserts exact text into a blank native field. Complete
-  packaged-GUI delivery and focus-change fallback with that same correction.
+- The fixed shared CLI inserts exact text into a blank native field, including
+  from the packaged app. Complete physical-shortcut GUI delivery and focus-change
+  fallback with that same correction.
 - Physical keyboard delivery for the selected global chord now passes below;
   native exclusive registration, automatic fallback, and release-on-shutdown passed.
 - All CI green after the implementation/documentation commits are pushed.
@@ -302,3 +306,24 @@ and receiver-owned Paste callbacks: three fixed cases inserted exact renderer
 text; two interleaved old-binary controls exited 0 without a callback. Foreground
 PID was unchanged across all five cases. See [native paste testing](native-paste-testing.md)
 for the durable opt-in receiver check and [the reference comparison](reference-apps.md#paste-and-permission-follow-up-2026-11-27).
+
+## Corrected packaged app and focus acceptance
+
+The app built from dc10449 passed signature verification. After the user completed
+macOS authentication for the authorized entry refresh, its app-owned acceptance
+runner invoked the actual bundled CLI with normal supervisor/worker execution,
+normal stdout, and normal process exit. All three cases produced exactly one
+native Paste callback and exact expected insertion. The receiver's PID remained
+the same before and after each delivery; the visible field contained the three
+expected markers. No external agent or microphone was used in these checks.
+
+The unmodified Command-Shift-D action then started latched dictation with the
+explicit public WAV fixture. Finder opened Fast Transcript and then the native
+receiver. The app's lifecycle log independently recorded deactivation with
+toggle=true and state=recording, while its visible control remained Listening.
+NSWorkspace identified the native receiver as the foreground application.
+Finishing with Command-Shift-D saved the clip and reported Dictation copied;
+the clipboard matched the shared compact renderer exactly (206 UTF-8 bytes).
+This proves toggle persistence across an actual focus change, not physical hold
+release or shortcut-origin paste routing. Those final physical shortcut checks
+are requested separately against the same unchanged bundle.
