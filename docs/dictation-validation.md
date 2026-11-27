@@ -1,7 +1,7 @@
 # Dictation validation
 
-Roadmap milestone 5 remains in progress. The GUI implementation is present; real
-microphone and automatic-paste acceptance checks are not yet proven complete.
+Roadmap milestone 5 remains in progress. Real microphone capture now passes;
+automatic-paste and final physical-shortcut acceptance remain incomplete.
 
 ## Automated coverage
 
@@ -134,8 +134,9 @@ Still required before marking milestone 5 complete:
 - Exact current candidate: toggle behavior across independently verified app focus
   changes. Real SDK model switching and controlled inference cancellation passed
   above; real microphone checks remain separate.
-- Physical microphone transport with first-use/denied-device behavior distinguished
-  from the deterministic fixture; no claim of microphone recognition yet.
+- Physical microphone transport and first-use approval now pass as recorded below.
+  Denied-device handling has not been exercised through the real OS dialog;
+  recognition quality has not been measured against a spoken reference.
 - Automatic paste into a blank native test field, focus-change fallback, and actual
   effective permission behavior for the helper doing the paste.
 - Physical keyboard delivery for the latest selected global chord; native
@@ -172,6 +173,31 @@ The window handler is scoped to the exact hosting NSWindow, excluding menu and
 auxiliary-window closures. With the scoped candidate, opening and dismissing the
 app menu left the toggle visibly Listening; the 500-case regression also passed.
 Lifecycle diagnostics record state and intent only, never captured text. The Mac
-locked again before the final combined close/reopen/Quit acceptance check. That
-rendered check and live microphone/paste checks remain pending; native unit and
-process tests do not substitute for them.
+locked again before the final combined close/reopen/Quit acceptance check. The
+later live session below covers close/reopen and microphone capture; final Quit
+and effective paste checks remain pending. Native unit and process tests do not
+substitute for them.
+
+## Live microphone acceptance, 2026-11-27
+
+The user approved the pending microphone prompt for the existing candidate; the
+macOS authorization log recorded the successful decision for that same process.
+No bundle rebuild, permission reset, or fixture capture override was used.
+
+- A native 4.5-second hold/release produced a saved 4.3946875-second document with
+  input_source microphone and transcript_source local-microphone. The local ONNX
+  model produced nonempty text, and the GUI reported Dictation copied. This is
+  transport and inference evidence, not a controlled recognition-quality result.
+- Command-Shift-D started a second live recording. Closing the main window
+  finished and saved 14.144 seconds; the reopened window retained the completed
+  result and reported No speech recognized. The lifecycle log confirmed the exact
+  hosting-window close intent during recording, followed by the view disappearance
+  during processing. The second clip reported load_seconds 0.
+- Enabling automatic paste in the isolated test preference logged ax=false and
+  post=false for this same app process. The microphone grant did not repair the
+  separate Accessibility code-requirement mismatch. The enabled Settings switch
+  was retained; effective targeted paste remains unverified.
+
+During this acceptance session, a temporary caffeinate -di -t 7200 process was
+started at the user's request. macOS confirmed idle display/system sleep
+assertions. It does not unlock the Mac or change its security configuration.
