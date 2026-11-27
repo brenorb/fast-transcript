@@ -16,6 +16,7 @@ mod inference;
 mod input;
 mod job;
 mod media_range;
+mod meeting_store;
 mod model;
 mod model_catalog;
 mod notes;
