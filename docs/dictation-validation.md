@@ -56,6 +56,12 @@ FSCRIPT_CAPTURE_TEST_WAV:
 
 The physical shortcut check preceded the exclusive-registration/automatic-fallback
 improvement. The latest candidate must still be checked with the selected chord.
+Native CLI registration checks on 2026-11-27 confirmed that two live controllers
+selected Control-Shift-Space and Control-Shift-D respectively. An explicit attempt
+to claim the occupied Space chord reported shortcut_available false and Carbon
+error -9878 while control recording/cancellation still worked. After shutdown,
+the original chord registered successfully again. These checks used fixture audio
+and verify collision/fallback/cleanup, not physical keyboard-event delivery.
 The model timings above describe model loading only, not total capture-to-text
 latency. No general model latency/quality claim is derived from one speech fixture.
 
@@ -124,7 +130,8 @@ Still required before marking milestone 5 complete:
   from the deterministic fixture; no claim of microphone recognition yet.
 - Automatic paste into a blank native test field, focus-change fallback, and actual
   effective permission behavior for the helper doing the paste.
-- Latest selected global chord with exclusive collision detection/fallback.
+- Physical keyboard delivery for the latest selected global chord; native
+  exclusive registration, automatic fallback, and release-on-shutdown passed.
 - All CI green after the implementation/documentation commits are pushed.
 
 A disposable native target lives in tests/fixtures/PasteTarget.swift. It creates
