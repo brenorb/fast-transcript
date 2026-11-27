@@ -59,6 +59,16 @@ improvement. The latest candidate must still be checked with the selected chord.
 The model timings above describe model loading only, not total capture-to-text
 latency. No general model latency/quality claim is derived from one speech fixture.
 
+The fixture-permission correction was then checked with the real cached Photon
+SDK (moondream 2.4.1, kestrel 0.8.1, torch 2.14.0) on local MPS inference, using
+the existing benchmark interpreter and offline model retrieval. Cold Redux
+(8.3 seconds of fixture audio), warm Redux (15 seconds), and Ultra after a menu
+switch (13.74 seconds) each matched independent batch CLI runs exactly for text,
+segments, duration, chunk settings/count, and model metadata. The warm Redux
+result reported load_seconds 0. No microphone permission prompt appeared in these
+fixture tests. These are real ASR models with prerecorded capture, not microphone
+recognition or model performance benchmarks.
+
 With prerecorded public speech and an explicitly controlled SDK worker:
 
 - The app reached Transcribing dictation while the worker was blocked after its
@@ -107,9 +117,9 @@ loss. The current candidate must validate these controls.
 
 Still required before marking milestone 5 complete:
 
-- Exact current candidate: real SDK engine switching and toggle behavior across
-  independently verified app focus changes. Controlled-worker model switching and
-  inference cancellation passed above; real microphone checks remain separate.
+- Exact current candidate: toggle behavior across independently verified app focus
+  changes. Real SDK model switching and controlled inference cancellation passed
+  above; real microphone checks remain separate.
 - Physical microphone transport with first-use/denied-device behavior distinguished
   from the deterministic fixture; no claim of microphone recognition yet.
 - Automatic paste into a blank native test field, focus-change fallback, and actual
@@ -121,3 +131,16 @@ A disposable native target lives in tests/fixtures/PasteTarget.swift. It creates
 only an empty text window, opens no user documents, and saves no files; compile
 and run it solely for GUI paste validation. It is not a second product command
 and is never bundled with the desktop application or CLI wheel.
+
+The desktop skips microphone authorization when FSCRIPT_CAPTURE_TEST_WAV is
+explicitly present: this backend path opens only that WAV, not an audio device.
+Earlier GUI fixture builds unnecessarily requested microphone access, which
+combined with ad-hoc rebuild identities caused repeated prompts during validation.
+Real capture retains the normal AVFoundation authorization flow; denied access is
+reported rather than repeatedly requested or automatically changed in Settings.
+
+The user subsequently authorized live microphone validation and handling its
+permission request. A native-capture attempt reached the authorization wait, but
+Computer Use refused access to the system UserNotificationCenter application for
+safety reasons. The owned app was closed without granting that prompt or making
+a live recording. This is a tool restriction, not missing user authorization.

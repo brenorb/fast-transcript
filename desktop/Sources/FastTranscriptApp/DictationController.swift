@@ -81,13 +81,18 @@ final class DictationController {
         state = .preparing
         intentionalStop = false
         task = Task {
-            // One-time OS authorization belongs to the user-facing app. The
-            // backend still owns all capture, chunking, inference, and shortcut work.
+            // Authorize only real capture. Explicit WAV fixtures never open a
+            // microphone and must not prompt for an unrelated system grant.
+            // The backend owns all capture, inference, and shortcut work.
             let permitted: Bool
-            switch AVCaptureDevice.authorizationStatus(for: .audio) {
-            case .authorized: permitted = true
-            case .notDetermined: permitted = await AVCaptureDevice.requestAccess(for: .audio)
-            default: permitted = false
+            if ProcessInfo.processInfo.environment["FSCRIPT_CAPTURE_TEST_WAV"] != nil {
+                permitted = true
+            } else {
+                switch AVCaptureDevice.authorizationStatus(for: .audio) {
+                case .authorized: permitted = true
+                case .notDetermined: permitted = await AVCaptureDevice.requestAccess(for: .audio)
+                default: permitted = false
+                }
             }
             guard !Task.isCancelled else { task = nil; state = .off; return }
             guard permitted else {
