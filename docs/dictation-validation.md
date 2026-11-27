@@ -1,10 +1,10 @@
 # Dictation validation
 
-Roadmap milestone 5 remains in progress. Real microphone and physical global
-shortcut capture pass. The shared CLI paste correction passes native insertion
-checks, including the corrected packaged app. Toggle persistence across an
-independently confirmed app switch passes; physical shortcut delivery through the
-GUI and its focus-change fallback are still being checked.
+Roadmap milestone 5 is complete. Real microphone capture, physical global
+shortcut capture, exact packaged paste insertion, toggle persistence across an
+independently confirmed app switch, and focus-change paste suppression pass.
+The final physical shortcut acceptance is recorded below. Stable release
+distribution and persistent signing remain roadmap milestone 8.
 
 ## Automated coverage
 
@@ -130,23 +130,23 @@ A candidate test also found that app deactivation was cancelling the accessible
 Start intent during model preparation. Toggle intent is now separate from a
 physical hold: it persists across app changes, shows a visible recording indicator,
 and finishes when the main window closes. Physical holds still release on focus
-loss. The current candidate must validate these controls.
+loss. The acceptance checks below validate these controls.
 
-Still required before marking milestone 5 complete:
+Acceptance coverage and limits:
 
 - Physical shortcut capture followed by the packaged GUI's paste decision and
-  focus-change copy fallback. Toggle persistence across an independently verified
-  app change now passes as recorded below. Real SDK model switching and controlled
-  inference cancellation passed above; real microphone checks remain separate.
+  focus-change fallback pass below. Toggle persistence across an independently
+  verified app change, real SDK model switching, and controlled inference
+  cancellation pass as recorded separately.
 - Physical microphone transport and first-use approval now pass as recorded below.
   Denied-device handling has not been exercised through the real OS dialog;
   recognition quality has not been measured against a spoken reference.
-- The fixed shared CLI inserts exact text into a blank native field, including
-  from the packaged app. Complete physical-shortcut GUI delivery and focus-change
-  fallback with that same correction.
+- The fixed shared CLI inserts exact text into a blank native field, both from
+  the packaged app's runner and after the physical shortcut through its GUI.
 - Physical keyboard delivery for the selected global chord now passes below;
   native exclusive registration, automatic fallback, and release-on-shutdown passed.
-- All CI green after the implementation/documentation commits are pushed.
+- Stable checkpoint tags are created only after the pushed acceptance
+  documentation and implementation have green CI.
 
 A disposable native target lives in tests/fixtures/PasteTarget.swift. It creates
 only an empty text window, opens no user documents, and saves no files; compile
@@ -325,5 +325,32 @@ NSWorkspace identified the native receiver as the foreground application.
 Finishing with Command-Shift-D saved the clip and reported Dictation copied;
 the clipboard matched the shared compact renderer exactly (206 UTF-8 bytes).
 This proves toggle persistence across an actual focus change, not physical hold
-release or shortcut-origin paste routing. Those final physical shortcut checks
-are requested separately against the same unchanged bundle.
+release or shortcut-origin paste routing. The final physical shortcut checks
+below use the same unchanged bundle.
+
+## Final physical shortcut acceptance
+
+The user physically held Control-Shift-Space for two takes with the public speech
+WAV still explicitly selected. The first take kept the native test field active;
+the second switched to Fast Transcript's main window before release. These are
+real Carbon shortcut gestures with prerecorded capture, not microphone speech or
+app-targeted key simulations.
+
+| Take | Saved audio | Observed result | Independent batch comparison |
+| --- | --- | --- | --- |
+| Original field remains active | 8.42 s | Exactly one new native Paste callback; the field exactly matches the saved transcript, ending in “em casa.” | Exact text, segments, duration, chunk settings, and chunk count |
+| Switch to Fast Transcript before release | 9.62 s | The longer result appears in the main window, ending in “os 5.”; the original field retains only the first take, with no additional callback | Exact text, segments, duration, chunk settings, and chunk count |
+
+Each comparison independently cropped the original WAV with FFmpeg, then ran the
+real packaged CLI and cached ONNX model in batch mode. Both recording documents
+reported load_seconds 0, confirming warm model reuse; this is not an inference
+performance benchmark. The second take's different, longer text makes unchanged
+receiver contents a meaningful focus-change assertion. The user subsequently
+used Copy while reporting results, so a later clipboard snapshot is not treated
+as proof of its earlier automatic contents. Automatic copy bytes were checked
+independently during the toggle acceptance above; both paths use the same export
+action.
+
+The temporary notes runner was removed from the isolated test configuration, its
+prior agent selection restored, and the prerecorded validation app and native
+receiver were closed. No real-user model or agent preferences were changed.

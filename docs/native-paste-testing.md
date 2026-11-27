@@ -99,3 +99,9 @@ and the same receiver PID before and after each delivery. The visible receiver
 contained the three expected markers. These checks validate packaged CLI delivery
 under the app's effective grant; they do not substitute for physical shortcut
 capture followed by the GUI's delivery decision.
+
+The subsequent physical shortcut check through the same packaged app inserted
+the exact first take into this receiver. A second take switched to the main app
+before release and produced no further receiver callback or text change. Both
+saved takes matched independent FFmpeg-cropped batch inference; see
+[final dictation acceptance](dictation-validation.md#final-physical-shortcut-acceptance).
