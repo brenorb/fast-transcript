@@ -3,6 +3,7 @@ import AVFoundation
 import FastTranscriptClient
 import Foundation
 import Observation
+import OSLog
 
 @MainActor @Observable
 final class DictationController {
@@ -22,6 +23,7 @@ final class DictationController {
     @ObservationIgnored private var intentionalStop = false
     @ObservationIgnored private var shortcutClip = false
     @ObservationIgnored private let hud = DictationHUD()
+    @ObservationIgnored private let logger = Logger(subsystem: "com.brenorb.fast-transcript", category: "lifecycle")
 
     var isBusy: Bool { [.preparing, .starting, .recording, .processing, .stopping].contains(state) }
     var isRunning: Bool { task != nil }
@@ -67,9 +69,13 @@ final class DictationController {
         else { latched = true; setHeld(true) }
     }
 
-    func releasePhysicalHold() { if !latched { setHeld(false) } }
+    func releasePhysicalHold() {
+        logger.info("App deactivated; toggle=\(self.latched), state=\(String(describing: self.state), privacy: .public)")
+        if !latched { setHeld(false) }
+    }
 
-    func windowClosed() {
+    func windowClosed(origin: String) {
+        logger.info("Window finish intent; origin=\(origin, privacy: .public), state=\(String(describing: self.state), privacy: .public)")
         if !shortcutClip {
             latched = false
             setHeld(false)
@@ -177,6 +183,7 @@ final class DictationController {
     private func stopClip() { state = .processing; send("stop") }
 
     func cancel() {
+        logger.info("Dictation cancel; state=\(String(describing: self.state), privacy: .public)")
         held = false
         latched = false
         intentionalStop = true

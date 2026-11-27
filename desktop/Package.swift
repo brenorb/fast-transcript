@@ -9,5 +9,6 @@ let package = Package(
         .target(name: "FastTranscriptClient"),
         .executableTarget(name: "FastTranscriptApp", dependencies: ["FastTranscriptClient"]),
         .testTarget(name: "FastTranscriptClientTests", dependencies: ["FastTranscriptClient"]),
+        .testTarget(name: "FastTranscriptAppTests", dependencies: ["FastTranscriptApp"]),
     ]
 )

@@ -21,7 +21,8 @@ struct ContentView: View {
         .background(Color(nsColor: .windowBackgroundColor))
         .overlay { if dropTarget { RoundedRectangle(cornerRadius: 12).stroke(.tint, lineWidth: 3).padding(8).allowsHitTesting(false) } }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didResignActiveNotification)) { _ in workspace.dictation.releasePhysicalHold() }
-        .onDisappear { workspace.dictation.windowClosed() }
+        .background(WindowCloseObserver { workspace.dictation.windowClosed(origin: "native-main-window") }.frame(width: 0, height: 0).allowsHitTesting(false))
+        .onDisappear { workspace.dictation.windowClosed(origin: "view-disappeared") }
         .onDrop(of: [.fileURL, .url, .plainText], isTargeted: $dropTarget, perform: acceptDrop)
     }
 

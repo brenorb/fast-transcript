@@ -21,9 +21,12 @@ microphone and automatic-paste acceptance checks are not yet proven complete.
   default lookup; the recording action now uses the same resolver as media jobs.
 - Clipboard export compares renderer bytes through a literal fixture command,
   rejects invalid/implicit paste targets, and preserves source documents on failure.
-- Fifteen native client checks include real-CLI repeated recordings versus an
+- Sixteen native checks include real-CLI repeated recordings versus an
   independent batch document, one worker start, broken/full-duplex pipes, and
   500 fragmented Unicode recording lifecycles. These are fixture-capture tests.
+- The app's close observer has a 500-case hosting-window/detachment property
+  regression using unshown windows in the test process. Notifications from other
+  windows must never finish dictation, and detachment must remove the observer.
 
 ## Observed GUI and real-model evidence
 
@@ -156,3 +159,19 @@ permission request. A native-capture attempt reached the authorization wait, but
 Computer Use refused access to the system UserNotificationCenter application for
 safety reasons. The owned app was closed without granting that prompt or making
 a live recording. This is a tool restriction, not missing user authorization.
+
+After the user unlocked the desktop, the rendered fallback caption and button help
+both showed Control-Shift-D while another fixture controller held Space; button
+dictation completed and copied. A lifecycle check exposed that the old primary
+Window scene quit on close and discarded toggle capture. The app now remains
+available after closing its window and has an explicit shared-workspace reopen
+action. During development, close-to-finish saved a fixture clip and reopening
+displayed that completed transcript.
+
+The window handler is scoped to the exact hosting NSWindow, excluding menu and
+auxiliary-window closures. With the scoped candidate, opening and dismissing the
+app menu left the toggle visibly Listening; the 500-case regression also passed.
+Lifecycle diagnostics record state and intent only, never captured text. The Mac
+locked again before the final combined close/reopen/Quit acceptance check. That
+rendered check and live microphone/paste checks remain pending; native unit and
+process tests do not substitute for them.

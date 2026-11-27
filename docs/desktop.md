@@ -95,18 +95,19 @@ cargo build --locked
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer python3 scripts/test_desktop_client.py
 ```
 
-Python, FFmpeg, and ffprobe are required. Nine Swift tests cover the native process
+Python, FFmpeg, and ffprobe are required. Sixteen native checks cover the process
 client, real CLI/batch parity, cancellation, native file-provider input, malformed
 lifecycles, 500 randomized UTF-8 event fragmentation cases, and 500 file-path
-transport cases. The real CLI and FFmpeg run with a deterministic ASR worker;
+transport cases, and 500 hosting-window close/detachment cases. The window
+regression creates only unshown test-process windows. The real CLI and FFmpeg run with a deterministic ASR worker;
 these checks download no model and call no paid agent. Running swift test directly
-skips the three fixture-dependent integration cases unless their environment is
+skips the four fixture-dependent integration cases unless their environment is
 supplied. macOS CI runs the full script and verifies the built app signature and
 bundled command. See [desktop-validation.md](desktop-validation.md) for actual
 GUI controls and local ONNX inference evidence.
 
-Microphone dictation, live meeting capture, calendar/call detection, session
-history/recovery, and stable release distribution remain later roadmap milestones.
+Dictation is under acceptance validation. Live meeting capture, calendar/call
+detection, session history/recovery, and stable distribution remain later milestones.
 
 ## Dictation (under validation)
 
@@ -127,6 +128,13 @@ Accessibility activation or Return on the focused hold button does the same.
 Toggle recording survives changing apps and keeps its recording indicator visible;
 closing the main window finishes that toggle recording. A physical hold ends on
 focus loss so it cannot lose its release event.
+
+Closing the window keeps the app and its prepared global shortcut available.
+Reopening the app restores the shared workspace and completed transcript. Quit
+cancels active work and shuts down owned workers. A native observer watches the
+hosting window only: closing a menu or another panel must not finish recording.
+This uses a primary window group and an explicit reopen action; a primary
+[single Window scene normally quits when closed](https://developer.apple.com/documentation/swiftui/window).
 
 Paste automatically is off by default. Shortcut dictation can optionally paste
 into the originally active app when it is still active, otherwise the result is
