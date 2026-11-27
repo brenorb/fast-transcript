@@ -7,10 +7,23 @@ use std::path::Path;
 use std::time::{Duration, Instant};
 
 pub(crate) struct Capture {
-    source: Source,
+    source: AudioSource,
     writer: hound::WavWriter<BufWriter<File>>,
     samples: usize,
     channels: u16,
+}
+
+/// Native-format PCM plus capture time on the shared host clock. On macOS CPAL
+/// and Core Audio taps both use mach_absolute_time converted to nanoseconds.
+pub(crate) struct AudioPacket {
+    pub(crate) samples: Vec<i16>,
+    pub(crate) host_time_ns: u128,
+}
+
+pub(crate) struct AudioSource {
+    source: Source,
+    pub(crate) spec: hound::WavSpec,
+    cutoff: Option<Instant>,
 }
 
 enum Source {
@@ -20,7 +33,36 @@ enum Source {
         reader: hound::WavReader<BufReader<File>>,
         next: Instant,
         packet_samples: usize,
+        epoch_ns: u128,
+        delivered_samples: u64,
     },
+}
+
+pub(crate) fn host_time_ns() -> Result<u128> {
+    #[cfg(target_os = "macos")]
+    {
+        // CPAL's Core Audio capture timestamps use this same clock/timebase.
+        host_ticks_to_ns(unsafe { mach2::mach_time::mach_absolute_time() })
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        static ORIGIN: std::sync::OnceLock<Instant> = std::sync::OnceLock::new();
+        Ok(ORIGIN.get_or_init(Instant::now).elapsed().as_nanos())
+    }
+}
+
+#[cfg(target_os = "macos")]
+pub(crate) fn host_ticks_to_ns(ticks: u64) -> Result<u128> {
+    static TIMEBASE: std::sync::OnceLock<Option<(u32, u32)>> = std::sync::OnceLock::new();
+    let (numer, denom) = TIMEBASE
+        .get_or_init(|| {
+            let mut info = mach2::mach_time::mach_timebase_info { numer: 0, denom: 0 };
+            // A valid writable timebase pointer; no capture or permission request.
+            let status = unsafe { mach2::mach_time::mach_timebase_info(&mut info) };
+            (status == 0 && info.denom != 0).then_some((info.numer, info.denom))
+        })
+        .context("cannot inspect audio host clock")?;
+    Ok(ticks as u128 * numer as u128 / denom as u128)
 }
 
 pub(crate) fn check_platform() -> Result<()> {
@@ -33,13 +75,58 @@ pub(crate) fn check_platform() -> Result<()> {
 
 impl Capture {
     pub(crate) fn start(path: &Path) -> Result<Self> {
+        let source = AudioSource::microphone()?;
+        let writer =
+            hound::WavWriter::create(path, source.spec).context("cannot create captured audio")?;
+        let channels = source.spec.channels;
+        Ok(Self {
+            source,
+            writer,
+            samples: 0,
+            channels,
+        })
+    }
+
+    pub(crate) fn poll(&mut self) -> Result<()> {
+        let writer = &mut self.writer;
+        let count = &mut self.samples;
+        self.source.poll(|packet| {
+            for sample in packet.samples {
+                writer.write_sample(sample)?;
+                *count += 1;
+            }
+            Ok(())
+        })
+    }
+
+    pub(crate) fn finish(mut self) -> Result<()> {
+        self.source.stop();
+        self.poll()?;
+        if self.samples / self.channels as usize == 0 {
+            bail!("no microphone audio was captured; check microphone permission and the selected system input");
+        }
+        self.writer
+            .finalize()
+            .context("cannot finalize captured audio")
+    }
+}
+
+impl AudioSource {
+    /// The same transport feeds dictation's WAV sink and meeting's durable sink.
+    pub(crate) fn microphone() -> Result<Self> {
         check_platform()?;
         // Explicit deterministic transport for process tests; never selected automatically.
         let (source, spec) = if let Some(input) = std::env::var_os("FSCRIPT_CAPTURE_TEST_WAV") {
             let reader = hound::WavReader::open(input).context("cannot open capture test WAV")?;
             let spec = reader.spec();
-            if spec.sample_format != hound::SampleFormat::Int || spec.bits_per_sample != 16 {
-                bail!("capture test WAV must contain 16-bit PCM");
+            if spec.sample_format != hound::SampleFormat::Int
+                || spec.bits_per_sample != 16
+                || spec.channels == 0
+                || spec.sample_rate == 0
+            {
+                bail!(
+                    "capture test WAV must contain 16-bit PCM with a valid rate and channel count"
+                );
             }
             let packet_samples = ((spec.sample_rate / 50).max(1) * spec.channels as u32) as usize;
             (
@@ -47,6 +134,8 @@ impl Capture {
                     reader,
                     next: Instant::now(),
                     packet_samples,
+                    epoch_ns: host_time_ns()?,
+                    delivered_samples: 0,
                 },
                 spec,
             )
@@ -60,17 +149,19 @@ impl Capture {
             #[cfg(not(target_os = "macos"))]
             bail!("microphone recording currently requires macOS; file and URL transcription work on this platform");
         };
-        let writer =
-            hound::WavWriter::create(path, spec).context("cannot create captured audio")?;
         Ok(Self {
             source,
-            writer,
-            samples: 0,
-            channels: spec.channels,
+            spec,
+            cutoff: None,
         })
     }
 
-    pub(crate) fn poll(&mut self) -> Result<()> {
+    /// Drain bounded native queues, or catch a fixture up to elapsed time. A sink
+    /// failure propagates immediately instead of consuming subsequent packets.
+    pub(crate) fn poll(
+        &mut self,
+        mut receive: impl FnMut(AudioPacket) -> Result<()>,
+    ) -> Result<()> {
         match &mut self.source {
             #[cfg(target_os = "macos")]
             Source::Microphone(capture) => {
@@ -79,59 +170,61 @@ impl Capture {
                     let Ok(packet) = capture.audio.try_recv() else {
                         break;
                     };
-                    for sample in packet {
-                        self.writer.write_sample(sample)?;
-                        self.samples += 1;
-                    }
+                    receive(packet)?;
                 }
             }
             Source::Fixture {
                 reader,
                 next,
                 packet_samples,
+                epoch_ns,
+                delivered_samples,
             } => {
                 // Match elapsed recording time even when a loaded host delays
                 // the controller loop. One packet per poll truncates fixtures
                 // on slower CI machines and breaks batch parity.
-                let now = Instant::now();
+                let now = self.cutoff.unwrap_or_else(Instant::now);
                 while now >= *next {
-                    let mut received = false;
-                    for sample in reader.samples::<i16>().take(*packet_samples) {
-                        self.writer.write_sample(sample?)?;
-                        self.samples += 1;
-                        received = true;
-                    }
-                    *next += Duration::from_millis(20);
-                    if !received {
+                    let samples = reader
+                        .samples::<i16>()
+                        .take(*packet_samples)
+                        .collect::<std::result::Result<Vec<_>, _>>()?;
+                    if samples.is_empty() {
                         *next = now + Duration::from_millis(20);
                         break;
                     }
+                    let host_time_ns = *epoch_ns
+                        + (*delivered_samples as u128 * 1_000_000_000)
+                            / (self.spec.sample_rate as u128 * self.spec.channels as u128);
+                    *next += Duration::from_secs_f64(
+                        samples.len() as f64
+                            / (self.spec.sample_rate as f64 * self.spec.channels as f64),
+                    );
+                    *delivered_samples += samples.len() as u64;
+                    receive(AudioPacket {
+                        samples,
+                        host_time_ns,
+                    })?;
                 }
             }
         }
         Ok(())
     }
 
-    pub(crate) fn finish(mut self) -> Result<()> {
+    pub(crate) fn stop(&mut self) {
+        self.cutoff.get_or_insert_with(Instant::now);
         #[cfg(target_os = "macos")]
         if let Source::Microphone(capture) = &mut self.source {
             // Stop callbacks before draining the final packets.
             capture.stream.take();
         }
-        self.poll()?;
-        if self.samples / self.channels as usize == 0 {
-            bail!("no microphone audio was captured; check microphone permission and the selected system input");
-        }
-        self.writer
-            .finalize()
-            .context("cannot finalize captured audio")
     }
 }
 
 #[cfg(target_os = "macos")]
 struct NativeCapture {
     stream: Option<cpal::Stream>,
-    audio: std::sync::mpsc::Receiver<Vec<i16>>,
+    audio: std::sync::mpsc::Receiver<AudioPacket>,
     errors: std::sync::mpsc::Receiver<String>,
     overflow: std::sync::Arc<std::sync::atomic::AtomicBool>,
     spec: hound::WavSpec,
@@ -155,7 +248,7 @@ impl NativeCapture {
         let (error_sender, errors) = std::sync::mpsc::sync_channel(1);
         let overflow = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
         let full = overflow.clone();
-        let callback = move |data: &cpal::Data, _: &cpal::InputCallbackInfo| {
+        let callback = move |data: &cpal::Data, info: &cpal::InputCallbackInfo| {
             let packet: Option<Vec<i16>> = match data.sample_format() {
                 cpal::SampleFormat::F32 => data
                     .as_slice::<f32>()
@@ -169,7 +262,14 @@ impl NativeCapture {
                     .map(|samples| samples.iter().map(|v| (v >> 16) as i16).collect()),
                 _ => None,
             };
-            if packet.is_none_or(|packet| sender.try_send(packet).is_err()) {
+            if packet.is_none_or(|samples| {
+                sender
+                    .try_send(AudioPacket {
+                        samples,
+                        host_time_ns: info.timestamp().capture.as_nanos(),
+                    })
+                    .is_err()
+            }) {
                 full.store(true, std::sync::atomic::Ordering::Relaxed);
             }
         };
@@ -228,10 +328,16 @@ mod tests {
         }
         writer.finalize().unwrap();
         let mut capture = Capture {
-            source: Source::Fixture {
-                reader: hound::WavReader::open(source).unwrap(),
-                next: Instant::now() - Duration::from_secs(2),
-                packet_samples: 320,
+            source: AudioSource {
+                source: Source::Fixture {
+                    reader: hound::WavReader::open(source).unwrap(),
+                    next: Instant::now() - Duration::from_secs(2),
+                    packet_samples: 320,
+                    epoch_ns: 0,
+                    delivered_samples: 0,
+                },
+                spec,
+                cutoff: None,
             },
             writer: hound::WavWriter::create(&output, spec).unwrap(),
             samples: 0,
@@ -263,5 +369,116 @@ mod tests {
         }
         assert_eq!(quantize(10.0), i16::MAX);
         assert_eq!(quantize(-10.0), i16::MIN);
+    }
+
+    fn fixture_source(path: &Path, rate: u32, channels: u16) -> (AudioSource, Vec<i16>) {
+        let spec = hound::WavSpec {
+            channels,
+            sample_rate: rate,
+            bits_per_sample: 16,
+            sample_format: hound::SampleFormat::Int,
+        };
+        let samples: Vec<i16> = (0..(rate as usize / 7 * channels as usize))
+            .map(|n| n as i16)
+            .collect();
+        let mut writer = hound::WavWriter::create(path, spec).unwrap();
+        for sample in &samples {
+            writer.write_sample(*sample).unwrap();
+        }
+        writer.finalize().unwrap();
+        let source = AudioSource {
+            source: Source::Fixture {
+                reader: hound::WavReader::open(path).unwrap(),
+                next: Instant::now() - Duration::from_secs(2),
+                packet_samples: (rate / 50).max(1) as usize * channels as usize,
+                epoch_ns: 9_000_000_000,
+                delivered_samples: 0,
+            },
+            spec,
+            cutoff: None,
+        };
+        (source, samples)
+    }
+
+    #[test]
+    fn delayed_packet_timestamps_preserve_pcm_and_channel_clock_for_multiple_rates() {
+        let temp = tempfile::tempdir().unwrap();
+        for rate in [8000, 11025, 16000, 44100, 48000] {
+            for channels in [1, 2] {
+                let path = temp.path().join(format!("{rate}-{channels}.wav"));
+                let (mut source, expected) = fixture_source(&path, rate, channels);
+                let mut actual = Vec::new();
+                let mut packets = 0;
+                source
+                    .poll(|packet| {
+                        assert_eq!(
+                            packet.host_time_ns,
+                            9_000_000_000
+                                + actual.len() as u128 * 1_000_000_000
+                                    / (rate as u128 * channels as u128)
+                        );
+                        assert!(!packet.samples.is_empty());
+                        assert_eq!(packet.samples.len() % channels as usize, 0);
+                        actual.extend(packet.samples);
+                        packets += 1;
+                        Ok(())
+                    })
+                    .unwrap();
+                assert!(packets > 1);
+                assert_eq!(actual, expected);
+                source.stop();
+                source
+                    .poll(|_| bail!("EOF must never synthesize additional packets"))
+                    .unwrap();
+            }
+        }
+    }
+
+    #[test]
+    fn stopped_fixture_does_not_advance_while_a_consumer_finishes() {
+        let temp = tempfile::tempdir().unwrap();
+        let (mut source, _) = fixture_source(&temp.path().join("source.wav"), 16000, 1);
+        source.stop();
+        let stopped = source.cutoff.unwrap();
+        match &mut source.source {
+            Source::Fixture { next, .. } => *next = stopped + Duration::from_nanos(1),
+            #[cfg(target_os = "macos")]
+            Source::Microphone(_) => unreachable!("explicit fixture cannot open a microphone"),
+        }
+        std::thread::sleep(Duration::from_millis(1));
+        source.stop();
+        assert_eq!(
+            source.cutoff,
+            Some(stopped),
+            "repeated stop cannot extend capture"
+        );
+        source
+            .poll(|_| bail!("stop must freeze fixture arrival time"))
+            .unwrap();
+    }
+
+    #[test]
+    fn consumer_failure_stops_draining_before_later_packets_are_consumed() {
+        let temp = tempfile::tempdir().unwrap();
+        let (mut source, expected) = fixture_source(&temp.path().join("source.wav"), 16000, 1);
+        let mut first = Vec::new();
+        let result = source.poll(|packet| {
+            first.extend(packet.samples);
+            bail!("disk consumer failed")
+        });
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("disk consumer failed"));
+        assert_eq!(first.len(), 320);
+        let mut remaining = Vec::new();
+        source
+            .poll(|packet| {
+                remaining.extend(packet.samples);
+                Ok(())
+            })
+            .unwrap();
+        first.extend(remaining);
+        assert_eq!(first, expected);
     }
 }

@@ -34,3 +34,4 @@ libc = "0.2"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 cpal = "0.18.2"
+mach2 = "0.6"

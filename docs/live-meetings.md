@@ -1,7 +1,8 @@
 # Live meetings
 
 Roadmap milestone 6 is in progress. The shared Rust storage/recovery foundation is
-implemented; live meeting capture, incremental recognition, CLI control, and the
+implemented and the existing microphone transport yields timestamped packets;
+live meeting capture, incremental recognition, CLI control, and the
 meeting GUI are not yet available. Dictation is independently complete at
 stable/dictation. Calendar/call detection remains milestone 7.
 
@@ -48,6 +49,29 @@ Incremental inference can read bounded windows of at most 120 seconds without
 loading an entire meeting. Capture and storage do not wait for an inference
 result before preserving the next audio packet.
 
+## Shared capture transport
+
+Dictation's WAV sink and the upcoming meeting controller use AudioSource in
+src/capture.rs. The source supplies native-rate, interleaved Int16 packets plus
+the first sample's host-clock timestamp; it does not resample or mix tracks.
+Native microphone capture retains its existing bounded CPAL queue, conversion,
+overflow reporting, device errors, and stop-before-drain behavior.
+
+On macOS the timestamp comes from CPAL's capture instant on the mach_absolute_time
+clock, expressed as nanoseconds. Reading the same host clock uses mach2, already
+present in CPAL's locked dependency graph. The tap adapter can use that common
+clock; [CPAL's timestamp documentation](https://docs.rs/cpal/0.18.2/cpal/struct.StreamInstant.html)
+explicitly identifies its Core Audio source. This is a macOS-specific alignment
+decision, not an assumption that all CPAL backends share clock origins.
+
+Explicit WAV fixtures retain their own epoch and derive packet timestamps from
+delivered sample counts, so delayed polling cannot shift audio onto the poll
+clock. Packet scheduling uses actual frame duration, including non-integral
+20 ms rates and a short final packet. Stop freezes the fixture's arrival cutoff;
+late draining or a repeated stop cannot extend the captured interval. A consumer
+error stops draining before subsequent packets are consumed. No fixture is
+selected automatically and these tests do not request microphone permission.
+
 ## Validation
 
 Nine Rust backend checks cover separate tracks, gaps/overlaps, checkpoint versus
@@ -62,6 +86,18 @@ is refused. The parent then kills that owned child and verifies that recovery
 retains the complete post-checkpoint samples, trims only the partial byte, and
 records interruption. This is a backend process test, not evidence of native
 system-audio capture, a meeting CLI, or meeting GUI acceptance.
+
+Five capture checks include complete PCM preservation under delayed polling,
+exact timestamp/PCM comparisons at five sample rates and one/two channels,
+idempotent stop cutoffs, consumer-failure propagation, and the existing exhaustive
+quantization property. Recording CLI and native process-client E2E checks compare
+the refactored source with independent batch output and cover repeated clips,
+cancellation, model reuse, and process cleanup. Native microphone and tap delivery
+through the upcoming meeting controller still require their own acceptance.
+The extraction passed 226 Rust checks, seven recording CLI E2E cases (one
+additional platform-specific case skipped), and sixteen native client/app checks
+on this Mac. No app bundle rebuild or permission refresh was needed for these
+fixture-only backend checks.
 
 ## Reference decisions
 
