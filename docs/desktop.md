@@ -119,7 +119,9 @@ Quit. File/URL jobs remain the primary default flow.
 
 After preparation, hold the global chord shown next to the button from any app.
 The shared CLI chooses an available exclusive shortcut; the floating red/gray
-recording indicator shows capture and processing without taking focus. The File
+recording indicator shows capture and processing without taking focus. The caption
+and hold-button help use the chord actually selected by the CLI; when no chord is
+available, the UI directs you to the hold button. The File
 menu's Start/Finish dictation (Command-Shift-D) also supports a toggle interaction;
 Accessibility activation or Return on the focused hold button does the same.
 Toggle recording survives changing apps and keeps its recording indicator visible;

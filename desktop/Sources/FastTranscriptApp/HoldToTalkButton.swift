@@ -5,6 +5,7 @@ import SwiftUI
 struct HoldToTalkButton: NSViewRepresentable {
     let title: String
     let enabled: Bool
+    let shortcutLabel: String?
     let pressed: (Bool) -> Void
     let accessiblePress: () -> Void
 
@@ -21,7 +22,8 @@ struct HoldToTalkButton: NSViewRepresentable {
         button.isEnabled = enabled
         button.pressed = pressed
         button.accessiblePress = accessiblePress
-        button.toolTip = "Hold the button, or hold Control-Shift-Space anywhere after dictation is prepared. Release to transcribe. Accessibility activation toggles start/stop."
+        let shortcut = shortcutLabel.map { " Or hold \($0) anywhere after dictation is prepared." } ?? ""
+        button.toolTip = "Hold the button to dictate; release to transcribe.\(shortcut) Return or accessibility activation toggles start/stop."
     }
 }
 

@@ -115,6 +115,9 @@ Ready reports shortcut_label, shortcut_available, and shortcut_error. Control
 clients can still record when global registration fails; bare shortcut mode exits
 nonzero. Cancel/exit unregisters the owned key. A 10,000-pattern property test
 checks repeated input suppression and release edges; queue overflow fails loudly.
+Human shortcut mode announces the selected chord after loading, before the first
+gesture. Recording instructions use that same selected chord, including automatic
+fallbacks. JSON clients receive it through the ready event's data.shortcut_label.
 Native event pumping uses a small positive timeout, including while idle.
 Gestures queued during synchronous inference are discarded, avoiding a stale
 press starting capture after the user has already released it.

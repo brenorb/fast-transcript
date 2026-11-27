@@ -190,6 +190,14 @@ fn run_session(options: &Options, events: &mut Events) -> Result<()> {
         None,
         serde_json::json!({"model":loaded.metadata,"load_seconds":loaded.load_seconds,"shortcut_available":shortcut.is_some(),"shortcut_error":shortcut_error,"shortcut_label":shortcut.as_ref().map(crate::shortcut::Shortcut::label)}),
     )?;
+    if !events.json {
+        if let Some(shortcut) = &shortcut {
+            eprintln!(
+                "hold {} to record; release to transcribe; Ctrl-C to cancel and exit",
+                shortcut.label()
+            );
+        }
+    }
     let mut active: Option<Active> = None;
     let mut next = (!options.control && options.hotkey.is_none()).then_some(Request::Start);
     let mut from_shortcut = false;
@@ -262,13 +270,11 @@ fn run_session(options: &Options, events: &mut Events) -> Result<()> {
                     eprintln!(
                         "recording microphone... {}",
                         if options.control {
-                            "send stop to transcribe"
+                            "send stop to transcribe".to_string()
+                        } else if let Some(shortcut) = &shortcut {
+                            format!("release {} to finish", shortcut.label())
                         } else {
-                            if options.hotkey.is_some() {
-                                "release Control-Shift-Space to finish"
-                            } else {
-                                "press Ctrl-C to finish; press again to cancel"
-                            }
+                            "press Ctrl-C to finish; press again to cancel".to_string()
                         }
                     );
                     active = Some(current);

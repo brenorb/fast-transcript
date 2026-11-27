@@ -62,6 +62,11 @@ to claim the occupied Space chord reported shortcut_available false and Carbon
 error -9878 while control recording/cancellation still worked. After shutdown,
 the original chord registered successfully again. These checks used fixture audio
 and verify collision/fallback/cleanup, not physical keyboard-event delivery.
+The human CLI fallback check reserved Space with a second fixture controller;
+the candidate announced Control-Shift-D on stderr before any gesture, then Ctrl-C
+exited with status 130 and empty stdout. The GUI caption/help correction compiled,
+but its rendered fallback check could not run because the Mac was locked and
+Computer Use could not unlock it. The test app and shortcut holder were closed.
 The model timings above describe model loading only, not total capture-to-text
 latency. No general model latency/quality claim is derived from one speech fixture.
 

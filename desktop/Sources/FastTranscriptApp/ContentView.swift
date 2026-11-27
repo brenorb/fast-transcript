@@ -76,10 +76,11 @@ struct ContentView: View {
             HStack(spacing: 12) {
                 HoldToTalkButton(title: workspace.dictation.title,
                     enabled: workspace.operation == nil && !workspace.loading && !workspace.savingPreference && workspace.dictation.canHold,
+                    shortcutLabel: workspace.dictation.shortcutWarning == nil ? workspace.dictation.shortcutLabel : nil,
                     pressed: workspace.dictation.hold,
                     accessiblePress: workspace.dictation.accessiblePress)
                     .frame(width: 260, height: 30)
-                Text("\(workspace.dictation.shortcutLabel) anywhere once prepared").font(.caption).foregroundStyle(.secondary)
+                Text(workspace.dictation.shortcutWarning == nil ? "\(workspace.dictation.shortcutLabel) anywhere once prepared" : "Use the hold button").font(.caption).foregroundStyle(.secondary)
                 Spacer()
                 Toggle("Paste automatically", isOn: Binding(get: { workspace.pasteAfterDictation }, set: { workspace.setAutomaticPaste($0) }))
                     .toggleStyle(.checkbox).font(.caption)
