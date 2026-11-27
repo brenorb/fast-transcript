@@ -2,7 +2,7 @@
 //! Requires macOS 14.2, like the transport's tap imports. Nothing here starts
 //! capture merely by loading the CLI.
 
-use anyhow::{bail, Context, Result};
+use anyhow::{bail, Result};
 use cpal::traits::{DeviceTrait, HostTrait};
 use objc2::rc::autoreleasepool;
 use objc2_core_audio::*;
@@ -77,12 +77,21 @@ fn check(status: i32, operation: &str) -> Result<()> {
     Ok(())
 }
 
-/// The three callers below pair each selector with its SDK-documented output
+/// The callers below pair each selector with its SDK-documented output
 /// type: AudioObjectID or an owned CFString pointer, and optional pid_t input.
 unsafe fn property<T>(object: AudioObjectID, selector: u32, pid: Option<&i32>) -> Result<T> {
+    unsafe { scoped_property(object, selector, kAudioObjectPropertyScopeGlobal, pid) }
+}
+
+unsafe fn scoped_property<T>(
+    object: AudioObjectID,
+    selector: u32,
+    scope: u32,
+    pid: Option<&i32>,
+) -> Result<T> {
     let mut address = AudioObjectPropertyAddress {
         mSelector: selector,
-        mScope: kAudioObjectPropertyScopeGlobal,
+        mScope: scope,
         mElement: kAudioObjectPropertyElementMain,
     };
     let mut value = MaybeUninit::<T>::uninit();
@@ -107,6 +116,74 @@ unsafe fn property<T>(object: AudioObjectID, selector: u32, pid: Option<&i32>) -
     Ok(unsafe { value.assume_init() })
 }
 
+/// Passive physical-device identity and complete hardware stream format. This
+/// must not impose CPAL's F32/I16 format or buffer-size restrictions on output.
+pub(crate) fn default_route(system: bool) -> Result<(String, [u64; 8])> {
+    // These are passive metadata queries: retrying unavailable metadata never
+    // starts a stream/tap or requests a permission.
+    route_properties(system).map_err(|error| {
+        crate::capture::RouteUnavailable(format!("audio route metadata unavailable: {error:#}"))
+            .into()
+    })
+}
+
+fn route_properties(system: bool) -> Result<(String, [u64; 8])> {
+    let device: AudioObjectID = unsafe {
+        property(
+            kAudioObjectSystemObject as AudioObjectID,
+            if system {
+                kAudioHardwarePropertyDefaultOutputDevice
+            } else {
+                kAudioHardwarePropertyDefaultInputDevice
+            },
+            None,
+        )?
+    };
+    if device == kAudioObjectUnknown {
+        return Err(
+            crate::capture::RouteUnavailable("default audio device is unavailable".into()).into(),
+        );
+    }
+    let raw: *mut CFString = unsafe { property(device, kAudioDevicePropertyDeviceUID, None)? };
+    let uid = unsafe {
+        CFRetained::from_raw(NonNull::new(raw).ok_or_else(|| {
+            crate::capture::RouteUnavailable("audio device UID is unavailable".into())
+        })?)
+    };
+    let format: objc2_core_audio_types::AudioStreamBasicDescription = unsafe {
+        scoped_property(
+            device,
+            kAudioDevicePropertyStreamFormat,
+            if system {
+                kAudioObjectPropertyScopeOutput
+            } else {
+                kAudioObjectPropertyScopeInput
+            },
+            None,
+        )?
+    };
+    if !format.mSampleRate.is_finite() || format.mSampleRate <= 0.0 || format.mChannelsPerFrame == 0
+    {
+        return Err(crate::capture::RouteUnavailable(
+            "audio hardware format is temporarily unavailable".into(),
+        )
+        .into());
+    }
+    Ok((
+        uid.to_string(),
+        [
+            format.mSampleRate.to_bits(),
+            format.mFormatID as u64,
+            format.mFormatFlags as u64,
+            format.mBytesPerPacket as u64,
+            format.mFramesPerPacket as u64,
+            format.mBytesPerFrame as u64,
+            format.mChannelsPerFrame as u64,
+            format.mBitsPerChannel as u64,
+        ],
+    ))
+}
+
 fn dictionary(entries: &[(&CStr, &CFType)]) -> Result<CFRetained<CFDictionary<CFType, CFType>>> {
     let keys: Vec<_> = entries
         .iter()
@@ -120,30 +197,16 @@ fn dictionary(entries: &[(&CStr, &CFType)]) -> Result<CFRetained<CFDictionary<CF
 impl SystemTap {
     /// Only an explicit meeting start calls this. Creation/start can trigger the
     /// OS system-audio permission flow; never use it as a passive preflight.
-    pub(crate) fn create() -> Result<(Self, cpal::Device)> {
+    pub(crate) fn create(
+        output_uid: &str,
+        cancelled: &dyn Fn() -> bool,
+    ) -> Result<(Self, cpal::Device)> {
         let (resources, uid) = autoreleasepool(|_| -> Result<_> {
             let mut resources = Resources {
                 tap: kAudioObjectUnknown,
                 aggregate: kAudioObjectUnknown,
                 destroy_tap: AudioHardwareDestroyProcessTap,
                 destroy_aggregate: AudioHardwareDestroyAggregateDevice,
-            };
-            let output: AudioObjectID = unsafe {
-                property(
-                    kAudioObjectSystemObject as AudioObjectID,
-                    kAudioHardwarePropertyDefaultOutputDevice,
-                    None,
-                )?
-            };
-            if output == kAudioObjectUnknown {
-                bail!("no system output device is available; select an output in System Settings > Sound");
-            }
-            let raw_uid: *mut CFString =
-                unsafe { property(output, kAudioDevicePropertyDeviceUID, None)? };
-            let output_uid = unsafe {
-                CFRetained::from_raw(
-                    NonNull::new(raw_uid).context("system output has no device UID")?,
-                )
             };
             let pid = std::process::id() as i32;
             let process = unsafe {
@@ -170,12 +233,15 @@ impl SystemTap {
                 description.setMixdown(true);
                 description.setMono(true);
                 description.setExclusive(true);
-                description.setDeviceUID(Some(&NSString::from_str(&output_uid.to_string())));
+                description.setDeviceUID(Some(&NSString::from_str(output_uid)));
                 // Required for device-bound taps on Sonoma; omission can return
                 // noErr with tap ID 0 (OpenOats' documented compatibility fix).
                 description.setStream(Some(&NSNumber::new_u32(0)));
                 description
             };
+            if cancelled() {
+                return Err(crate::capture::SetupCancelled.into());
+            }
             let status =
                 unsafe { AudioHardwareCreateProcessTap(Some(&description), &mut resources.tap) };
             check(status, "create the system audio tap")?;
@@ -224,6 +290,9 @@ impl SystemTap {
         // Newly connected devices can need time to publish their input format.
         // Match the fresh UID exactly; never fall back to a different input.
         for _ in 0..40 {
+            if cancelled() {
+                return Err(crate::capture::SetupCancelled.into());
+            }
             if let Some(device) = cpal::default_host().devices()?.find(|device| {
                 device.id().is_ok_and(|id| id.id() == uid)
                     && device.default_input_config().is_ok()
@@ -235,7 +304,10 @@ impl SystemTap {
             }
             std::thread::sleep(Duration::from_millis(75));
         }
-        bail!("the private system audio device did not become available");
+        Err(crate::capture::RouteUnavailable(
+            "the private system audio device did not become available".into(),
+        )
+        .into())
     }
 
     /// Drop the corresponding CPAL stream before calling this.

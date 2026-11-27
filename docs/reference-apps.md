@@ -97,3 +97,10 @@ the same old export executable inserted text only when held alive after posting,
 in both test orders. With normal stdout and normal process exit, the 100 ms fix
 then produced three exact native Paste callbacks; two old-binary controls exited
 successfully without callbacks or insertion. See [native paste testing](native-paste-testing.md).
+
+The route follow-up also inspected pinned OpenOats MicCapture.swift and
+MicRebuildTests.swift alongside LiveCapture.swift. Applied patterns are separate
+physical-route versus capture-format identity, same-UID hardware-format changes,
+bounded/coalesced reopen behavior, and not interpreting idle output as a stall.
+Fast Transcript retains its own Rust callback, resampling, durable coverage, and
+process-ownership paths rather than adding a separate native meeting service.

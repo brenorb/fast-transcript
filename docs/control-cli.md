@@ -267,3 +267,16 @@ tracks. Backend-reported model load is counted once. Engine calls include their
 runtime
 audio-file/IPC work; capture waiting, capture-side normalization/storage, and
 external notes are excluded. The completed document replaces preview text rather than extending its prefix.
+
+
+Meeting capture follows default input/output UID and hardware-format changes.
+Known transient failures use bounded reconnect attempts; idle system output alone
+is not a stall. source_status events describe ready/reconnecting/receiving sources.
+The optional result.meeting.route_interruptions array preserves uncertain coverage
+and its resolution. Reconnection resolves only when replacement PCM is retained.
+A stopped recording can contain stopped_during_reconnect or no_post_route_audio
+intervals; consult the manifest instead of assuming every stopped recording has
+complete coverage. Permanent/exhausted capture failures prevent completion and
+checkpoint interrupted state when storage remains healthy. Crashes/cancellation
+can leave recording for explicit recovery. See docs/live-meetings.md for the retry,
+clock, publication, and native-acceptance limits.

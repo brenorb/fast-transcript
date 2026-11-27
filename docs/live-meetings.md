@@ -3,8 +3,8 @@
 Roadmap milestone 6 is in progress. The meeting CLI now connects shared capture,
 continuous normalization, durable storage, incremental inference, final export,
 and recovery, with adaptive clock alignment. Native system-audio delivery remains
-unverified. Route-change recovery, the meeting GUI, and native acceptance are
-still outstanding; this milestone has no stable
+unverified. Route/format recovery is implemented in the shared service; the
+meeting GUI and native acceptance are still outstanding; this milestone has no stable
 tag. Dictation is independently complete at stable/dictation. Calendar/call detection remains milestone 7.
 
 ## Everyday use and unattended control
@@ -95,6 +95,7 @@ Diagnostics go to stderr; quiet suppresses status without removing result events
 | ready | Service accepts start; requires_start says whether control mode is enabled |
 | started | Private directory exists; supplies directory and Microphone/System channel labels |
 | restored | Saved-session transcription owns the retained tracks; includes their stopped/interrupted manifest |
+| source_status | Bounded source snapshots: track, ready/reconnecting/receiving state, and optional reason; durable coverage lives in the manifest |
 | recording | Both capture adapters are ready, independently of model loading |
 | model_ready | One shared model is loaded for both tracks; includes model metadata and load time |
 | update | Provisional full text/segments, newly printable addition, and transcript.partial.json output_path |
@@ -168,8 +169,9 @@ The resampler's input buffer is fixed at 1,024 mono frames plus filter history. 
 output retains 320 frames (20 ms) before publication, so stop can clip queued audio
 without rewriting saved prefixes. Flush padding has an explicit history bound;
 it cannot accumulate a meeting-length audio buffer. Source packet queues remain
-bounded in the shared transport. Device changes are not followed yet; route-change
-recovery and native hardware acceptance remain part of milestone 6.
+bounded in the shared transport. Meeting capture follows default-device and
+hardware-format changes as described below; native hardware acceptance remains
+part of milestone 6.
 
 ## Storage contract
 
@@ -262,8 +264,9 @@ in silence still needs native acceptance. Stop drops the input stream before
 destroying the aggregate and then the tap. Initialization failures use the same
 ownership guard. Cleanup attempts both resources, propagates errors, and retains
 failed IDs for a final Drop retry rather than reporting an unconditional success.
-The current adapter is bound to the initial output; route-change recovery remains
-upcoming work and is not claimed here.
+Each generation is bound to the physical output UID selected for it. The meeting
+worker replaces it after a route/format change; the private aggregate input format
+remains the independent decoding format. Native output-route acceptance is pending.
 
 Only an explicit system capture start can create devices or trigger its OS
 permission flow. FSCRIPT_SYSTEM_CAPTURE_TEST_WAV explicitly substitutes a WAV
@@ -345,7 +348,7 @@ The focused follow-up inspected OpenOats' pinned
 and [resampling](https://github.com/yazinsai/OpenOats/blob/d8caac78ea283dc791f8d1c4185450e445d3f336/OpenOats/Sources/OatsCapture/Resampler.swift).
 The useful patterns are separate raw tracks, a common host clock, explicit
 interruption recovery, output-device rebinding, and complete tap/device teardown.
-Our shared Rust service will own session state and inference; native capture is
+Our shared Rust service owns session state and inference; native capture is
 an adapter used through that same service by the CLI and GUI.
 
 [Apple's Core Audio tap sample](https://developer.apple.com/documentation/coreaudio/capturing-system-audio-with-core-audio-taps)
@@ -462,3 +465,103 @@ previous live final result, complete-sample SHA-256 digests were unchanged, prev
 inference time was zero, and the capture manifest remained interrupted. This is
 one English fixture with no native devices, not a general quality benchmark or
 native meeting acceptance.
+
+## Default devices and route/format recovery
+
+The CLI meeting service follows the current default input and output. Passive
+Core Audio queries poll physical UID and the complete hardware stream format
+(including rate/channels) every 250 ms. Duplicate observations do not rebuild a
+stream. Output fingerprinting does not impose CPAL's physical PCM format or
+buffer-size restrictions: the separate mono aggregate input is the decoding
+format. A tap is created with the UID from that same physical-route snapshot.
+Readiness is announced only after checking the opened generation's binding.
+These passive queries never create a tap or ask for permission.
+
+A device/format change or known CPAL stream invalidation starts reconnection.
+The old generation closes callback admission, stops/drops its stream, waits for
+in-flight callbacks, and drains valid packets using its original format and
+resampler. Its resampler flushes only through accepted audio, capped at the close-time host
+observation and any existing stop cutoff. It does not pad to the time reconnection was detected.
+Replacement audio uses a fresh resampler and its own host timestamps on the same
+meeting epoch. Storage preserves old samples on overlap and fills positive gaps
+with silence. Only final track shutdown pads through the common stop cutoff.
+
+Reopen attempts wait 500 ms after a route change, then one second between known
+transient failures, with at most eight attempts and a 15-second episode budget.
+The latest route is selected at each attempt. Two seconds of verified stable
+open transport resets this budget even if system output is idle; coverage remains
+pending until replacement PCM is retained. Idle system output alone never starts
+reconnection. Unknown/permission/setup/format errors and transport overflow remain
+fatal; passive metadata unavailability and a confirmed aggregate-registration
+timeout may retry. No background permission request or general permission retry
+loop was added. Dictation retains its existing fixed-format WAV contract.
+
+Both PCM and error callbacks participate in the quiescence boundary. Fatal errors
+have a separate retained slot from retryable notifications, and overflow is
+latched. A final drain retains good packets before checking these failures, so a
+fatal error arriving after the last regular poll cannot become a successful save.
+An observed permanent setup failure is retained even when a stop arrives at the
+same time. The first capture-thread failure is retained before stopping its peer,
+rather than replacing it with the peer's secondary no-audio error. Synchronous
+pause errors also reach this decision. Route detection is stamped before teardown
+and bounded by stop; finalization requires both track lengths to equal the shared
+cutoff. A rare late cutoff publication that finds already retained audio past the
+cutoff is an interrupted capture, not a successful misaligned recording.
+
+The manifest's optional route_interruptions array records track, reason,
+last_audio_end_frame, detected_frame, resume_frame, resolved_frame, and resolution.
+Absent arrays in older version-1 manifests remain readable. On a successful
+replacement, resolution is reconnected; the annotation is checkpointed only with
+new PCM beyond the old saved prefix and the replacement's first frame. A short
+packet still buffered in the resampler cannot publish a premature recovery claim.
+An overlapping replacement must add novel audio before resolution. These records
+are copied unchanged into result.meeting and saved-session transcription.
+
+If stop/duration wins while both tracks have supplied valid audio at some point,
+capture may finish stopped with an explicit stopped_during_reconnect record.
+An opened but still undelivered replacement uses no_post_route_audio instead.
+resume_frame remains null in both cases; resolved_frame is the common cutoff.
+A track that never supplied accepted audio still fails rather than fabricating a
+complete silent recording. Reconnection exhaustion or permanent capture failure
+prevents saved/completed; after workers stop, healthy storage is checkpointed as
+interrupted. A failed storage checkpoint, process crash, or cancelled-owner Drop
+can instead leave recording for explicit recovery. Unresolved interruption records
+remain unresolved during repair; byte lengths cannot establish a resume time.
+
+A route interruption records uncertain coverage, not a claim that audible speech
+was lost: an output device can be legitimately idle. source_status is bounded,
+nonblocking UI/agent status; the durable manifest is authoritative. Retry sleeps
+and aggregate-discovery polling observe stop/cancel. Synchronous OS permission or
+driver calls themselves still have no hard wall-time guarantee; process supervision
+remains the final cancellation boundary.
+
+## Route validation and limits
+
+Randomized packet-boundary tests switch from 16 kHz mono to 44.1/48/96 kHz stereo,
+retain terminal/initial waveform markers, verify sub-3-ms marker placement, flush
+old tails without wall-time padding, preserve exact zero gaps, and keep the old
+byte prefix immutable during overlapping generations. A callback-gate test covers
+in-flight terminal packets and closed admission. Native-transport tests use
+constructed queues (no devices) to inject a final valid marker, a retryable notice,
+and a later fatal error/overflow; good samples remain available while success is
+rejected. Store tests require newly retained samples before checkpointing resume.
+
+CLI E2E uses explicit scripted WAV route substitutions: format switches while the
+peer keeps recording, persisted coverage, exact saved/live transcript agreement,
+stop and cancel during retry, retry exhaustion with transcribable retained audio,
+and a healthy idle replacement followed by another route change. Existing shared
+recording and file/export regressions remain applicable. Hour-long waveform and
+clock alignment acceptance still runs separately in release mode. These checks
+prove the shared controller and normalization behavior under simulated routing;
+they do not prove real USB/Bluetooth switching, native system-audio delivery,
+first-use OS permission behavior, or meeting GUI behavior. Native acceptance and
+the meeting GUI remain required before a stable milestone-6 tag.
+
+A lock-lifetime regression deliberately retains the lock's open-file description
+in a disposable child. Explicit owner unlock releases it even while that child
+lives; normal descriptors still use close-on-exec and the lock inode is never
+unlinked. This also removes a transient lock-retention failure observed during
+parallel process tests. A stop-during-tail-flush check covers future-dated fixture
+frames and delayed cutoff publication, requiring exact final length or an
+interrupted result. Global --json placement remains valid on either side of the
+meeting verb while capture-only options are rejected with subcommands.

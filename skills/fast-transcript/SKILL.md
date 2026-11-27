@@ -98,3 +98,9 @@ immediately. Failure retains any previous transcript and saved audio. The comple
 document's optional meeting manifest reports capture state and track_frames: an
 interrupted recording remains interrupted even after all retained audio is
 transcribed. Never infer full-meeting capture from recognition completion alone.
+
+Meeting route changes are handled by the shared CLI service. Treat source_status
+as live status and result.meeting.route_interruptions as durable coverage evidence.
+A stopped session can still contain a reconnect interval with no replacement
+audio; recognition completion does not imply uninterrupted recording. Native
+USB/Bluetooth and system-audio acceptance remain in progress.

@@ -10,7 +10,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 const RATE: u32 = crate::SAMPLE_RATE as u32;
 const MAX_READ_FRAMES: usize = crate::SAMPLE_RATE * 120;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
 pub(crate) enum Track {
     Microphone,
     System,
@@ -42,6 +43,20 @@ pub(crate) enum State {
     Interrupted,
 }
 
+/// A route transition is coverage information, not proof of lost speech. Idle
+/// output can legitimately supply no packets until playback resumes.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct RouteInterruption {
+    pub(crate) track: Track,
+    pub(crate) reason: String,
+    pub(crate) last_audio_end_frame: u64,
+    pub(crate) detected_frame: u64,
+    pub(crate) resume_frame: Option<u64>,
+    pub(crate) resolved_frame: Option<u64>,
+    pub(crate) resolution: Option<String>,
+}
+
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct Manifest {
@@ -53,6 +68,8 @@ pub(crate) struct Manifest {
     pub(crate) state: State,
     /// Last checkpoint, in microphone/system order. No per-track path is trusted.
     pub(crate) track_frames: [u64; 2],
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) route_interruptions: Vec<RouteInterruption>,
 }
 
 fn options() -> OpenOptions {
@@ -96,8 +113,20 @@ impl Lock {
     }
 }
 
-// Closing releases the lock. Never unlink it: another process may already have
-// this inode open while waiting to acquire ownership.
+// Explicitly unlock before close: a forked child can briefly inherit the same
+// open-file description before exec closes CLOEXEC descriptors. Never unlink the
+// lock inode; a different owner may already have it open.
+impl Drop for Lock {
+    fn drop(&mut self) {
+        #[cfg(unix)]
+        {
+            use std::os::fd::AsRawFd;
+            unsafe {
+                libc::flock(self._file.as_raw_fd(), libc::LOCK_UN);
+            }
+        }
+    }
+}
 
 pub(crate) fn inspect(directory: &Path) -> Result<Manifest> {
     let manifest: Manifest = serde_json::from_reader(
@@ -167,6 +196,7 @@ impl Writer {
                 .try_into()?,
             state: State::Recording,
             track_frames: [0; 2],
+            route_interruptions: Vec::new(),
         };
         save(directory, &manifest)?;
         if let Some(parent) = directory.parent().filter(|p| !p.as_os_str().is_empty()) {
@@ -182,7 +212,6 @@ impl Writer {
         })
     }
 
-    #[cfg(test)]
     pub(crate) fn frames(&self, track: Track) -> u64 {
         self.positions[track.index()]
     }
@@ -228,6 +257,63 @@ impl Writer {
             self.failed = true;
         }
         result.context("cannot append meeting audio; existing audio remains recoverable")
+    }
+
+    pub(crate) fn route_interrupted(
+        &mut self,
+        track: Track,
+        detected_frame: u64,
+        reason: String,
+    ) -> Result<usize> {
+        let index = self.manifest.route_interruptions.len();
+        self.manifest.route_interruptions.push(RouteInterruption {
+            track,
+            reason,
+            last_audio_end_frame: self.frames(track),
+            detected_frame,
+            resume_frame: None,
+            resolved_frame: None,
+            resolution: None,
+        });
+        self.checkpoint()?;
+        Ok(index)
+    }
+
+    pub(crate) fn try_resume_route(&mut self, index: usize, first: u64) -> Result<bool> {
+        let interruption = self
+            .manifest
+            .route_interruptions
+            .get(index)
+            .context("missing route interruption")?;
+        if self.frames(interruption.track) <= interruption.last_audio_end_frame.max(first) {
+            return Ok(false);
+        }
+        self.resolve_route(index, first, "reconnected")?;
+        Ok(true)
+    }
+
+    pub(crate) fn interrupt(&mut self) -> Result<()> {
+        self.checkpoint()?;
+        self.manifest.state = State::Interrupted;
+        save(&self.directory, &self.manifest)
+    }
+
+    pub(crate) fn resolve_route(&mut self, index: usize, at: u64, resolution: &str) -> Result<()> {
+        let interruption = self
+            .manifest
+            .route_interruptions
+            .get_mut(index)
+            .context("missing route interruption")?;
+        if interruption.resolution.is_some() {
+            bail!("route interruption was already resolved");
+        }
+        interruption.resolution = Some(resolution.into());
+        interruption.resolved_frame = Some(at);
+        if resolution == "reconnected" {
+            interruption.resume_frame = Some(at);
+        }
+        self.checkpoint()?;
+        Ok(())
     }
 
     /// Sync audio before publishing progress. The controller chooses the bounded
@@ -388,6 +474,81 @@ mod tests {
             read_frames(&directory, Track::System, 0, 100).unwrap(),
             [0, -21, -22]
         );
+        assert_eq!(recover(&directory).unwrap().state, State::Stopped);
+    }
+
+    #[test]
+    fn route_resume_is_checkpointed_only_with_novel_durable_audio() {
+        for first in [120, 240] {
+            let temp = tempfile::tempdir().unwrap();
+            let directory = temp.path().join("meeting");
+            let mut writer = Writer::create(&directory).unwrap();
+            writer.append(Track::Microphone, 0, &[11; 160]).unwrap();
+            let transition = writer
+                .route_interrupted(Track::Microphone, 170, "new route".into())
+                .unwrap();
+            assert!(
+                !writer.try_resume_route(transition, first).unwrap(),
+                "accepted but buffered input is not retained audio"
+            );
+            if first < 160 {
+                writer.append(Track::Microphone, first, &[99; 20]).unwrap();
+                assert!(
+                    !writer.try_resume_route(transition, first).unwrap(),
+                    "overlap has not added new audio"
+                );
+            }
+            assert!(inspect(&directory).unwrap().route_interruptions[0]
+                .resolution
+                .is_none());
+            writer
+                .append(Track::Microphone, first.max(150), &[22; 32])
+                .unwrap();
+            assert!(writer.try_resume_route(transition, first).unwrap());
+            let manifest = inspect(&directory).unwrap();
+            assert_eq!(manifest.route_interruptions[0].resume_frame, Some(first));
+            assert!(manifest.track_frames[0] > first.max(160));
+            drop(writer);
+            let recovered = recover(&directory).unwrap();
+            assert_eq!(recovered.route_interruptions, manifest.route_interruptions);
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn ending_ownership_unlocks_even_when_a_child_inherited_the_description() {
+        use std::os::{fd::AsRawFd, unix::process::CommandExt};
+        struct Child(std::process::Child);
+        impl Drop for Child {
+            fn drop(&mut self) {
+                let _ = self.0.kill();
+                let _ = self.0.wait();
+            }
+        }
+        let temp = tempfile::tempdir().unwrap();
+        let directory = temp.path().join("meeting");
+        let mut writer = Writer::create(&directory).unwrap();
+        writer.append(Track::Microphone, 0, &[1, 2, 3]).unwrap();
+        let saved = writer.finish().unwrap();
+        let descriptor = saved._lock._file.as_raw_fd();
+        let mut command = std::process::Command::new("/bin/cat");
+        command
+            .stdin(std::process::Stdio::piped())
+            .stdout(std::process::Stdio::null());
+        // Deliberately retain only this disposable test lock across exec. The
+        // closure uses async-signal-safe fcntl and does not access Rust state.
+        unsafe {
+            command.pre_exec(move || {
+                if libc::fcntl(descriptor, libc::F_SETFD, 0) < 0 {
+                    return Err(std::io::Error::last_os_error());
+                }
+                Ok(())
+            });
+        }
+        let mut child = Child(command.spawn().unwrap());
+        assert!(SavedSession::open(&directory).is_err());
+        drop(saved);
+        assert!(child.0.try_wait().unwrap().is_none());
         assert_eq!(recover(&directory).unwrap().state, State::Stopped);
     }
 

@@ -91,7 +91,6 @@ fn command() -> Command {
             .arg(Arg::new("device").long("device").default_value("auto").help("Inference device; auto, cpu, mps, mlx, or cuda as supported by the model"))
             .arg(Arg::new("model-dir").long("model-dir").help("Existing speech-model directory")))
         .subcommand(Command::new("meeting").about("Record and transcribe microphone and system audio live")
-            .args_conflicts_with_subcommands(true)
             .after_help("Examples:\n  fscript meeting\n  fscript meeting --duration 60\n  fscript meeting --control --json\n  fscript meeting status ./meetings/SESSION\n  fscript meeting recover ./meetings/SESSION\n  fscript meeting transcribe ./meetings/SESSION\n\nCtrl-C stops capture and finishes pending transcription; a second interrupt cancels. In --control mode, Ctrl-C cancels immediately. Both tracks are saved continuously in a new child of ./meetings. Live preview goes to stderr; stdout prints the completed transcript path. Final recognition uses longer context and may revise preview text. Control mode accepts one JSONL start/stop/cancel/shutdown session. Closing stdin interrupts the session and retains recoverable audio.")
             .arg(Arg::new("duration").long("duration").conflicts_with("control").help("Stop capture automatically after this many seconds"))
             .arg(Arg::new("control").long("control").action(ArgAction::SetTrue).help("Wait for JSONL start/stop requests on stdin"))
@@ -141,7 +140,27 @@ fn command() -> Command {
 }
 
 fn matches(raw: &[String]) -> std::result::Result<ArgMatches, clap::Error> {
-    command().try_get_matches_from(std::iter::once("fscript".to_owned()).chain(raw.iter().cloned()))
+    let parsed = command()
+        .try_get_matches_from(std::iter::once("fscript".to_owned()).chain(raw.iter().cloned()))?;
+    if let Some(("meeting", values)) = parsed.subcommand() {
+        if values.subcommand_name().is_some() {
+            if let Some(name) = [
+                "duration",
+                "control",
+                "output-dir",
+                "model",
+                "device",
+                "model-dir",
+            ]
+            .into_iter()
+            .find(|name| values.value_source(name) == Some(clap::parser::ValueSource::CommandLine))
+            {
+                return Err(clap::Error::raw(clap::error::ErrorKind::ArgumentConflict,
+                    format!("meeting --{name} cannot be combined with a subcommand; put speech-model options after transcribe")));
+            }
+        }
+    }
+    Ok(parsed)
 }
 
 pub(crate) fn needs_supervision(raw: &[String]) -> bool {

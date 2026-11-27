@@ -221,6 +221,22 @@ fn run_session(options: &Options, events: &mut Events) -> Result<()> {
     let mut saved = saved_session.is_some();
     let mut completed = false;
     loop {
+        if let Some(capture) = &capture {
+            while let Ok(notice) = capture.events.try_recv() {
+                let label = if notice["track"] == "microphone" {
+                    "Microphone"
+                } else {
+                    "System"
+                };
+                let state = notice["state"].as_str().unwrap_or("changed");
+                if let Some(reason) = notice["reason"].as_str() {
+                    eprintln!("{label}: {state} ({reason})");
+                } else {
+                    eprintln!("{label}: {state}");
+                }
+                events.send("source_status", Some(&id), notice)?;
+            }
+        }
         if !announced && capture.as_ref().is_some_and(Capture::ready) {
             events.send(
                 "recording",

@@ -260,7 +260,7 @@ class MeetingCLI(unittest.TestCase):
         process = self.spawn('--duration', '1')
         events = self.finish(process, status=1)
         directory = Path(events[1]['data']['directory'])
-        self.assertEqual(self.inspect(directory)['state'], 'recording')
+        self.assertEqual(self.inspect(directory)['state'], 'interrupted')
         manifest = self.inspect(directory, 'recover')
         self.assertEqual(manifest['state'], 'interrupted')
         self.assertEqual(manifest['track_frames'][1], 0)
@@ -316,6 +316,82 @@ class MeetingCLI(unittest.TestCase):
         self.assertEqual(manifest['state'], 'stopped')
         self.assertTrue(all(frames > .7 * 16000 for frames in manifest['track_frames']))
         self.assertFalse((directory / 'transcript.json').exists())
+
+    def test_route_format_switch_preserves_gap_metadata_and_matches_saved_replay(self):
+        self.env['FSCRIPT_MEETING_TEST_ROUTES'] = json.dumps(dict(microphone=[dict(after_seconds=0, wav=str(self.fixture.source)), dict(after_seconds=.4, wav=str(self.remote))]))
+        events = self.finish(self.spawn('--duration', '2.4'))
+        self.assertEqual(events[-1]['type'], 'completed')
+        directory = Path(events[1]['data']['directory'])
+        result = events[-1]['data']['result']
+        manifest = result['meeting']
+        interruptions = manifest['route_interruptions']
+        self.assertEqual(len(interruptions), 1)
+        gap = interruptions[0]
+        self.assertEqual(gap['track'], 'microphone')
+        self.assertEqual(gap['resolution'], 'reconnected')
+        self.assertGreater(gap['resume_frame'], gap['last_audio_end_frame'])
+        self.assertEqual(gap['resume_frame'], gap['resolved_frame'])
+        self.assertEqual(manifest['track_frames'][0], manifest['track_frames'][1])
+        audio = (directory / 'microphone.pcm').read_bytes()
+        self.assertEqual(audio[2*gap['last_audio_end_frame']:2*gap['resume_frame']], b'\0'*(2*(gap['resume_frame']-gap['last_audio_end_frame'])))
+        self.assertTrue(any(e['type'] == 'source_status' and e['data']['state'] == 'reconnecting' for e in events))
+        replay = self.finish(self.replay(directory))[-1]['data']['result']
+        self.assertEqual(replay['meeting'], manifest)
+        self.assertEqual(replay['segments'], result['segments'])
+        self.assertEqual(replay['text'], result['text'])
+
+    def test_idle_reopened_output_gets_a_fresh_budget_for_its_next_route(self):
+        empty = self.root / 'idle.wav'
+        with wave.open(str(empty), 'wb') as audio:
+            audio.setparams((1, 2, 16000, 0, 'NONE', 'not compressed'))
+        self.env['FSCRIPT_MEETING_TEST_ROUTES'] = json.dumps(dict(system=[dict(after_seconds=0, wav=str(self.remote)), dict(after_seconds=.2, wav=str(empty)), dict(after_seconds=3.2, wav=str(self.remote))]))
+        self.env['FSCRIPT_MEETING_TEST_RETRY_SECONDS'] = '.8'
+        events = self.finish(self.spawn('--duration', '4.8'))
+        self.assertEqual(events[-1]['type'], 'completed')
+        gap = events[-1]['data']['result']['meeting']['route_interruptions'][0]
+        self.assertEqual(gap['resolution'], 'reconnected')
+        self.assertGreater(gap['resume_frame'], 3 * 16000)
+
+    def test_stop_during_retry_keeps_prior_audio_and_records_partial_coverage(self):
+        self.env['FSCRIPT_MEETING_TEST_ROUTES'] = json.dumps(dict(microphone=[dict(after_seconds=0, wav=str(self.fixture.source)), dict(after_seconds=.2, wav=None)]))
+        events = self.finish(self.spawn('--duration', '1.1'))
+        self.assertEqual(events[-1]['type'], 'completed')
+        manifest = events[-1]['data']['result']['meeting']
+        self.assertEqual(manifest['state'], 'stopped')
+        gap = manifest['route_interruptions'][0]
+        self.assertEqual(gap['resolution'], 'stopped_during_reconnect')
+        self.assertIsNone(gap['resume_frame'])
+        self.assertEqual(gap['resolved_frame'], manifest['track_frames'][0])
+        self.assertGreater(gap['last_audio_end_frame'], 0)
+
+    def test_retry_exhaustion_retains_audio_and_does_not_claim_success(self):
+        self.env['FSCRIPT_MEETING_TEST_ROUTES'] = json.dumps(dict(microphone=[dict(after_seconds=0, wav=str(self.fixture.source)), dict(after_seconds=.2, wav=None)]))
+        self.env['FSCRIPT_MEETING_TEST_RETRY_SECONDS'] = '.3'
+        events = self.finish(self.spawn('--duration', '4'), status=1)
+        self.assertFalse(any(e['type'] in ('saved', 'completed') for e in events))
+        directory = Path(events[1]['data']['directory'])
+        manifest = self.inspect(directory, 'recover')
+        self.assertEqual(manifest['state'], 'interrupted')
+        self.assertGreater(manifest['track_frames'][0], 0)
+        self.assertIsNone(manifest['route_interruptions'][0]['resolution'])
+        replay = self.finish(self.replay(directory))[-1]['data']['result']
+        self.assertEqual(replay['meeting'], manifest)
+
+    def test_cancel_during_retry_remains_bounded_and_recoverable(self):
+        self.env['FSCRIPT_MEETING_TEST_ROUTES'] = json.dumps(dict(microphone=[dict(after_seconds=0, wav=str(self.fixture.source)), dict(after_seconds=.2, wav=None)]))
+        process = self.spawn('--control')
+        prefix = [self.event(process)]
+        process.stdin.write(b'{"action":"start"}\n'); process.stdin.flush()
+        while True:
+            event = self.event(process); prefix.append(event)
+            if event['type'] == 'source_status' and event['data']['state'] == 'reconnecting': break
+        began = time.monotonic()
+        process.stdin.write(b'{"action":"cancel"}\n'); process.stdin.flush()
+        events = self.finish(process, prefix)
+        self.assertLess(time.monotonic()-began, 3)
+        self.assertEqual(events[-1]['type'], 'cancelled')
+        directory = Path(prefix[1]['data']['directory'])
+        self.assertEqual(self.inspect(directory, 'recover')['state'], 'interrupted')
 
     def saved_fixture(self, frames=(16000 * 59 + 123, 16000 * 31 + 17), state='recording'):
         directory = self.root / 'saved meeting é'
@@ -436,6 +512,13 @@ class MeetingCLI(unittest.TestCase):
             result = subprocess.run(self.command(*args), stdin=subprocess.DEVNULL, capture_output=True, env=self.env, timeout=5)
             self.assertEqual(result.returncode == 0, args == ('--help',), result.stderr.decode())
             self.assertFalse(self.output.exists())
+            self.assertFalse((self.root / 'workers').exists())
+
+    def test_global_json_before_or_after_meeting_reaches_the_same_status_command(self):
+        for args in [('--json', 'meeting'), ('meeting', '--json')]:
+            result = subprocess.run([str(fixture.BINARY), *args, 'status', str(self.root / 'absent')], capture_output=True, env=self.env, timeout=5)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn(b'cannot read meeting manifest', result.stderr)
             self.assertFalse((self.root / 'workers').exists())
 
     @unittest.skipUnless(os.name == 'posix', 'POSIX signal supervision')

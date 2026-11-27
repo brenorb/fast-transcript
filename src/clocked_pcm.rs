@@ -90,6 +90,7 @@ pub(crate) struct ClockedPcm {
     queue: VecDeque<i16>,
     queue_start: u64,
     accepted: u64,
+    first_frame: Option<u64>,
 }
 
 impl ClockedPcm {
@@ -137,6 +138,7 @@ impl ClockedPcm {
             queue: VecDeque::new(),
             queue_start: 0,
             accepted: 0,
+            first_frame: None,
         })
     }
 
@@ -191,6 +193,7 @@ impl ClockedPcm {
             return Ok(());
         }
 
+        self.first_frame.get_or_insert(at.round().max(0.0) as u64);
         let gap = self
             .clock
             .as_mut()
@@ -293,17 +296,36 @@ impl ClockedPcm {
         self.publish(0, emit)
     }
 
-    pub(crate) fn finish(
+    pub(crate) fn first_frame(&self) -> Option<u64> {
+        self.first_frame
+    }
+
+    /// End one immutable device/format generation, without filling a route gap.
+    /// A newly opened endpoint may legitimately have delivered no packets yet.
+    pub(crate) fn finish_segment(
         mut self,
+        cutoff: Option<u64>,
+        mut emit: impl FnMut(u64, &[i16]) -> Result<()>,
+    ) -> Result<Option<u64>> {
+        if self.accepted == 0 {
+            return Ok(None);
+        }
+        let end = self.clock.as_ref().unwrap().position.round().max(0.0) as u64;
+        let end = cutoff.map_or(end, |cutoff| end.min(cutoff));
+        self.flush(end, &mut emit)?;
+        Ok(Some(end))
+    }
+
+    #[cfg(test)]
+    pub(crate) fn finish(
+        self,
         cutoff: u64,
         mut emit: impl FnMut(u64, &[i16]) -> Result<()>,
     ) -> Result<()> {
-        if self.accepted == 0 {
-            bail!("capture source supplied no accepted audio frames");
-        }
-        let end = (self.clock.as_ref().unwrap().position.round().max(0.0) as u64).min(cutoff);
-        self.flush(end, &mut emit)?;
-        // Use the sink's gap-fill semantics; do not allocate the silent tail.
+        let end = self
+            .finish_segment(Some(cutoff), &mut emit)?
+            .context("capture source supplied no accepted audio frames")?;
+        // Only final track shutdown pads to the shared cutoff.
         if cutoff > end {
             emit(cutoff - 1, &[0])?;
         }
@@ -334,6 +356,117 @@ mod tests {
         audio.resize(at, 0);
         audio.extend_from_slice(samples);
         Ok(())
+    }
+
+    #[test]
+    fn property_route_generations_flush_real_tails_and_preserve_overlap_prefixes() {
+        for seed in 0..12u64 {
+            for overlap in [false, true] {
+                let temp = tempfile::tempdir().unwrap();
+                let directory = temp.path().join("route");
+                let mut writer = crate::meeting_store::Writer::create(&directory).unwrap();
+                let mut random = seed + 1;
+                let mut prefix = Vec::new();
+                for (generation, rate, channels, start) in [
+                    (0, 16000u32, 1, 0.0),
+                    (
+                        1,
+                        [44100, 48000, 96000][seed as usize % 3],
+                        2,
+                        if overlap { 0.9 } else { 1.5 },
+                    ),
+                ] {
+                    let mut pcm = ClockedPcm::new(spec(rate, channels), 0).unwrap();
+                    let mut position = 0;
+                    while position < rate as usize {
+                        random = random.wrapping_mul(6364136223846793005).wrapping_add(1);
+                        let count = (random as usize % 1200 + 1).min(rate as usize - position);
+                        let samples: Vec<_> = (position..position + count)
+                            .flat_map(|frame| {
+                                let t = frame as f64 / rate as f64;
+                                // Terminal old marker and initial replacement marker
+                                // both fall within a resampler's buffered tail/head.
+                                let centre = if generation == 0 { 0.99 } else { 0.01 };
+                                let marker = (30000.0
+                                    * (-0.5 * ((t - centre) / 0.0015).powi(2)).exp())
+                                .round() as i16;
+                                std::iter::repeat_n(marker, channels as usize)
+                            })
+                            .collect();
+                        pcm.receiver(
+                            || None,
+                            |at, audio| {
+                                writer.append(crate::meeting_store::Track::Microphone, at, audio)
+                            },
+                        )(AudioPacket {
+                            samples,
+                            host_time_ns: ((start + position as f64 / rate as f64) * 1e9).round()
+                                as u128,
+                        })
+                        .unwrap();
+                        position += count;
+                    }
+                    assert_eq!(pcm.first_frame(), Some((start * RATE).round() as u64));
+                    let end = pcm
+                        .finish_segment(None, |at, audio| {
+                            writer.append(crate::meeting_store::Track::Microphone, at, audio)
+                        })
+                        .unwrap()
+                        .unwrap();
+                    assert!((end as f64 - (start + 1.0) * RATE).abs() <= 1.0);
+                    if generation == 0 {
+                        assert_eq!(
+                            writer.frames(crate::meeting_store::Track::Microphone),
+                            16000,
+                            "never pad old device to wall time"
+                        );
+                        prefix = crate::meeting_store::read_frames(
+                            &directory,
+                            crate::meeting_store::Track::Microphone,
+                            0,
+                            16000,
+                        )
+                        .unwrap();
+                        let peak = prefix
+                            .iter()
+                            .enumerate()
+                            .max_by_key(|(_, sample)| **sample)
+                            .unwrap();
+                        assert!(*peak.1 > 25000);
+                        assert!((peak.0 as f64 / RATE - 0.99).abs() < 0.003);
+                    }
+                }
+                let audio = crate::meeting_store::read_frames(
+                    &directory,
+                    crate::meeting_store::Track::Microphone,
+                    0,
+                    48000,
+                )
+                .unwrap();
+                assert_eq!(
+                    &audio[..16000],
+                    prefix.as_slice(),
+                    "replacement cannot rewrite old samples"
+                );
+                if !overlap {
+                    assert!(audio[16000..24000].iter().all(|sample| *sample == 0));
+                    let peak = audio[24000..]
+                        .iter()
+                        .enumerate()
+                        .max_by_key(|(_, sample)| **sample)
+                        .unwrap();
+                    assert!(*peak.1 > 25000);
+                    assert!((peak.0 as f64 / RATE - 0.01).abs() < 0.003);
+                }
+                assert_eq!(
+                    ClockedPcm::new(spec(48000, 2), 0)
+                        .unwrap()
+                        .finish_segment(None, |_, _| panic!("empty reopen must not invent audio"))
+                        .unwrap(),
+                    None
+                );
+            }
+        }
     }
 
     #[test]

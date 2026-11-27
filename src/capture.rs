@@ -127,19 +127,20 @@ impl AudioSource {
         bail!("microphone recording currently requires macOS; file and URL transcription work on this platform");
     }
 
-    pub(crate) fn system() -> Result<Self> {
+    pub(crate) fn system(cancelled: &dyn Fn() -> bool) -> Result<Self> {
+        let _ = cancelled;
         if let Some(input) = std::env::var_os("FSCRIPT_SYSTEM_CAPTURE_TEST_WAV") {
             return Self::fixture(Path::new(&input));
         }
         #[cfg(target_os = "macos")]
         {
-            Ok(Self::native(NativeCapture::system()?))
+            Ok(Self::native(NativeCapture::system(cancelled)?))
         }
         #[cfg(not(target_os = "macos"))]
         bail!("system audio capture requires macOS 14.2 or later");
     }
 
-    fn fixture(input: &Path) -> Result<Self> {
+    pub(crate) fn fixture(input: &Path) -> Result<Self> {
         let reader = hound::WavReader::open(input).context("cannot open capture test WAV")?;
         let spec = reader.spec();
         if spec.sample_format != hound::SampleFormat::Int
@@ -228,15 +229,48 @@ impl AudioSource {
         Ok(())
     }
 
+    /// Passive properties only; an idle output is not a failed capture stream.
+    pub(crate) fn route_changed(&self) -> Result<bool> {
+        #[cfg(target_os = "macos")]
+        if let Source::Native(capture) = &self.source {
+            return Ok(RouteBinding::current(capture.binding.system)? != capture.binding);
+        }
+        Ok(false)
+    }
+
+    /// Quiesced callbacks make the queue finite. Preserve all good packets,
+    /// then inspect latched fatal and pending route errors before declaring save.
+    pub(crate) fn drain(&mut self, receive: impl FnMut(AudioPacket) -> Result<()>) -> Result<()> {
+        #[cfg(target_os = "macos")]
+        let mut receive = receive;
+        #[cfg(target_os = "macos")]
+        if let Source::Native(capture) = &mut self.source {
+            while let Ok(packet) = capture.audio.try_recv() {
+                receive(packet)?;
+            }
+            return capture.check();
+        }
+        self.poll(receive)
+    }
+
     pub(crate) fn stop(&mut self) -> Result<()> {
         self.cutoff.get_or_insert_with(Instant::now);
         #[cfg(target_os = "macos")]
         if let Source::Native(capture) = &mut self.source {
             // Stop callbacks before draining the final packets.
+            capture.gate.close();
+            use cpal::traits::StreamTrait;
+            let paused = capture
+                .stream
+                .as_ref()
+                .map(|stream| stream.pause())
+                .transpose();
             capture.stream.take();
-            if let Some(mut tap) = capture.tap.take() {
-                tap.stop()?;
-            }
+            let quiet = capture.gate.wait();
+            let cleanup = capture.tap.take().map(|mut tap| tap.stop()).transpose();
+            quiet?;
+            cleanup?;
+            paused.context("cannot stop capture stream")?;
         }
         Ok(())
     }
@@ -248,29 +282,37 @@ struct NativeCapture {
     // Field order also drops the stream before its device on error/unwind.
     tap: Option<crate::system_capture::SystemTap>,
     audio: std::sync::mpsc::Receiver<AudioPacket>,
-    errors: std::sync::mpsc::Receiver<String>,
+    errors: std::sync::mpsc::Receiver<cpal::Error>,
+    fatal_errors: std::sync::mpsc::Receiver<cpal::Error>,
+    fatal: Option<cpal::Error>,
     overflow: std::sync::Arc<std::sync::atomic::AtomicBool>,
     spec: hound::WavSpec,
     label: &'static str,
+    binding: RouteBinding,
+    gate: std::sync::Arc<CallbackGate>,
 }
 
 #[cfg(target_os = "macos")]
 impl NativeCapture {
     fn microphone() -> Result<Self> {
-        use cpal::traits::HostTrait;
-        let device = cpal::default_host().default_input_device().context(
-            "no microphone input is available; choose an input in System Settings > Sound",
-        )?;
-        Self::open(device, "microphone", "Microphone", None)
+        use cpal::traits::{DeviceTrait, HostTrait};
+        let binding = RouteBinding::current(false)?;
+        let device = cpal::default_host()
+            .input_devices()?
+            .find(|device| device.id().is_ok_and(|id| id.id() == binding.uid))
+            .ok_or_else(|| RouteUnavailable("selected microphone is not yet available".into()))?;
+        Self::open(device, "microphone", "Microphone", None, binding)
     }
 
-    fn system() -> Result<Self> {
-        let (tap, device) = crate::system_capture::SystemTap::create()?;
+    fn system(cancelled: &dyn Fn() -> bool) -> Result<Self> {
+        let binding = RouteBinding::current(true)?;
+        let (tap, device) = crate::system_capture::SystemTap::create(&binding.uid, cancelled)?;
         Self::open(
             device,
             "system audio",
             "Screen & System Audio Recording",
             Some(tap),
+            binding,
         )
     }
 
@@ -279,6 +321,7 @@ impl NativeCapture {
         label: &'static str,
         permission: &'static str,
         tap: Option<crate::system_capture::SystemTap>,
+        binding: RouteBinding,
     ) -> Result<Self> {
         use cpal::traits::{DeviceTrait, StreamTrait};
         let config = device.default_input_config().with_context(|| format!("cannot inspect {label} input; check System Settings > Privacy & Security > {permission}"))?;
@@ -290,9 +333,15 @@ impl NativeCapture {
         };
         let (sender, audio) = std::sync::mpsc::sync_channel(128);
         let (error_sender, errors) = std::sync::mpsc::sync_channel(1);
+        let (fatal_sender, fatal_errors) = std::sync::mpsc::sync_channel(1);
         let overflow = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
         let full = overflow.clone();
+        let gate = std::sync::Arc::new(CallbackGate::default());
+        let callbacks = std::sync::Arc::clone(&gate);
         let callback = move |data: &cpal::Data, info: &cpal::InputCallbackInfo| {
+            let Some(_active) = callbacks.enter() else {
+                return;
+            };
             let packet: Option<Vec<i16>> = match data.sample_format() {
                 cpal::SampleFormat::F32 => data
                     .as_slice::<f32>()
@@ -317,7 +366,8 @@ impl NativeCapture {
                 full.store(true, std::sync::atomic::Ordering::Relaxed);
             }
         };
-        let stream = device.build_input_stream_raw(config.config(), config.sample_format(), callback, move |error| { let _ = error_sender.try_send(error.to_string()); }, Some(Duration::from_secs(5)))
+        let failures = std::sync::Arc::clone(&gate);
+        let stream = device.build_input_stream_raw(config.config(), config.sample_format(), callback, move |error| { let Some(_active) = failures.enter() else { return; }; if retryable(&error.clone().into()) { let _ = error_sender.try_send(error); } else { let _ = fatal_sender.try_send(error); } }, Some(Duration::from_secs(5)))
             .with_context(|| format!("cannot open {label}; allow access in System Settings > Privacy & Security > {permission}"))?;
         stream
             .play()
@@ -327,18 +377,137 @@ impl NativeCapture {
             tap,
             audio,
             errors,
+            fatal_errors,
+            fatal: None,
             overflow,
             spec,
             label,
+            binding,
+            gate,
         })
     }
 
-    fn check(&self) -> Result<()> {
+    fn check(&mut self) -> Result<()> {
         if self.overflow.load(std::sync::atomic::Ordering::Relaxed) {
             bail!("{} transport overflowed or returned an unsupported format; recording was stopped instead of losing audio silently", self.label);
         }
+        if self.fatal.is_none() {
+            self.fatal = self.fatal_errors.try_recv().ok();
+        }
+        if let Some(error) = &self.fatal {
+            return Err(error.clone()).with_context(|| format!("{} stopped", self.label));
+        }
         if let Ok(error) = self.errors.try_recv() {
-            bail!("{} stopped: {error}", self.label);
+            return Err(error).with_context(|| format!("{} stopped", self.label));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug)]
+pub(crate) struct SetupCancelled;
+impl std::fmt::Display for SetupCancelled {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("meeting stopped during audio setup")
+    }
+}
+impl std::error::Error for SetupCancelled {}
+
+#[derive(Debug)]
+pub(crate) struct RouteUnavailable(pub(crate) String);
+impl std::fmt::Display for RouteUnavailable {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+impl std::error::Error for RouteUnavailable {}
+
+pub(crate) fn retryable(error: &anyhow::Error) -> bool {
+    if error.is::<RouteUnavailable>() {
+        return true;
+    }
+    #[cfg(target_os = "macos")]
+    if let Some(error) = error.downcast_ref::<cpal::Error>() {
+        return matches!(
+            error.kind(),
+            cpal::ErrorKind::DeviceNotAvailable
+                | cpal::ErrorKind::StreamInvalidated
+                | cpal::ErrorKind::DeviceChanged
+        );
+    }
+    false
+}
+
+#[cfg(target_os = "macos")]
+#[derive(Clone, Eq, PartialEq)]
+struct RouteBinding {
+    system: bool,
+    uid: String,
+    format: [u64; 8],
+}
+#[cfg(target_os = "macos")]
+impl RouteBinding {
+    fn current(system: bool) -> Result<Self> {
+        let (uid, format) = crate::system_capture::default_route(system)?;
+        Ok(Self {
+            system,
+            uid,
+            format,
+        })
+    }
+}
+
+// Stop closes admission before tearing down a native stream. An in-flight
+// callback can finish enqueueing; no subsequent callback can enqueue a packet.
+#[cfg(any(target_os = "macos", test))]
+struct CallbackGate {
+    open: std::sync::atomic::AtomicBool,
+    active: std::sync::atomic::AtomicUsize,
+}
+#[cfg(any(target_os = "macos", test))]
+impl Default for CallbackGate {
+    fn default() -> Self {
+        Self {
+            open: std::sync::atomic::AtomicBool::new(true),
+            active: std::sync::atomic::AtomicUsize::new(0),
+        }
+    }
+}
+#[cfg(any(target_os = "macos", test))]
+struct ActiveCallback<'a>(&'a CallbackGate);
+#[cfg(any(target_os = "macos", test))]
+impl Drop for ActiveCallback<'_> {
+    fn drop(&mut self) {
+        self.0
+            .active
+            .fetch_sub(1, std::sync::atomic::Ordering::SeqCst);
+    }
+}
+#[cfg(any(target_os = "macos", test))]
+impl CallbackGate {
+    fn enter(&self) -> Option<ActiveCallback<'_>> {
+        use std::sync::atomic::Ordering::SeqCst;
+        if !self.open.load(SeqCst) {
+            return None;
+        }
+        self.active.fetch_add(1, SeqCst);
+        let guard = ActiveCallback(self);
+        if self.open.load(SeqCst) {
+            Some(guard)
+        } else {
+            None
+        }
+    }
+    fn close(&self) {
+        self.open.store(false, std::sync::atomic::Ordering::SeqCst);
+    }
+    fn wait(&self) -> Result<()> {
+        let deadline = Instant::now() + Duration::from_millis(250);
+        while self.active.load(std::sync::atomic::Ordering::SeqCst) != 0 {
+            if Instant::now() >= deadline {
+                bail!("audio callback did not quiesce; saved audio is recoverable");
+            }
+            std::thread::sleep(Duration::from_millis(1));
         }
         Ok(())
     }
@@ -358,6 +527,100 @@ fn quantize(value: f64) -> i16 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn final_drain_retains_good_packets_but_never_loses_a_late_fatal_failure() {
+        for overflowed in [false, true] {
+            let (audio_send, audio) = std::sync::mpsc::sync_channel(128);
+            let (route_send, errors) = std::sync::mpsc::sync_channel(1);
+            let (fatal_send, fatal_errors) = std::sync::mpsc::sync_channel(1);
+            let overflow = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+            let spec = hound::WavSpec {
+                channels: 1,
+                sample_rate: 16000,
+                bits_per_sample: 16,
+                sample_format: hound::SampleFormat::Int,
+            };
+            let mut source = AudioSource::native(NativeCapture {
+                stream: None,
+                tap: None,
+                audio,
+                errors,
+                fatal_errors,
+                fatal: None,
+                overflow: overflow.clone(),
+                spec,
+                label: "fixture",
+                binding: RouteBinding {
+                    system: false,
+                    uid: "fixture".into(),
+                    format: [0; 8],
+                },
+                gate: std::sync::Arc::new(CallbackGate::default()),
+            });
+            source.poll(|_| panic!("not yet queued")).unwrap();
+            audio_send
+                .send(AudioPacket {
+                    samples: vec![123, 30000],
+                    host_time_ns: 0,
+                })
+                .unwrap();
+            // A retryable notification cannot occupy the fatal notification slot.
+            route_send
+                .send(cpal::Error::new(cpal::ErrorKind::DeviceNotAvailable))
+                .unwrap();
+            if overflowed {
+                overflow.store(true, std::sync::atomic::Ordering::SeqCst);
+            } else {
+                fatal_send
+                    .send(cpal::Error::new(cpal::ErrorKind::PermissionDenied))
+                    .unwrap();
+            }
+            source.stop().unwrap();
+            let mut retained = Vec::new();
+            let error = source
+                .drain(|packet| {
+                    retained.extend(packet.samples);
+                    Ok(())
+                })
+                .unwrap_err();
+            assert_eq!(retained, [123, 30000]);
+            assert!(!retryable(&error));
+            assert!(
+                !retryable(&source.drain(|_| Ok(())).unwrap_err()),
+                "fatal latch survives another inspection"
+            );
+        }
+    }
+
+    #[test]
+    fn callback_admission_closes_before_old_queue_is_drained() {
+        let gate = std::sync::Arc::new(CallbackGate::default());
+        let active = std::sync::Arc::clone(&gate);
+        let (entered, ready) = std::sync::mpsc::channel();
+        let (release, proceed) = std::sync::mpsc::channel();
+        let (packets, queue) = std::sync::mpsc::channel();
+        let worker = std::thread::spawn(move || {
+            let guard = active.enter().unwrap();
+            entered.send(()).unwrap();
+            proceed.recv().unwrap();
+            packets.send("old-format terminal packet").unwrap();
+            drop(guard);
+            for _ in 0..10000 {
+                assert!(active.enter().is_none());
+            }
+        });
+        ready.recv().unwrap();
+        gate.close();
+        release.send(()).unwrap();
+        gate.wait().unwrap();
+        worker.join().unwrap();
+        assert_eq!(
+            queue.try_iter().collect::<Vec<_>>(),
+            ["old-format terminal packet"]
+        );
+    }
+
     #[test]
     fn delayed_fixture_poll_catches_up_without_extending_audio() {
         let directory = tempfile::tempdir().unwrap();
