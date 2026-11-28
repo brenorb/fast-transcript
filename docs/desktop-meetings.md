@@ -13,7 +13,7 @@ completion, the existing Copy, Export, and Create notes actions call the same CL
 commands as file transcription. External notes remain an explicit action using
 the selected agent and its own account.
 
-While a meeting is active, the macOS menu bar contains the ✍️ logo with its
+While a meeting is active, the macOS menu bar contains a monochrome ✍️ logo with its
 recording/progress label for accessibility and Stop/Cancel actions. The menu's
 status text distinguishes capture, saved-audio replay and finishing. Closing the
 main window keeps capture running;

@@ -3,6 +3,8 @@
 Fast Transcript has a native macOS interface around the same Rust CLI, with
 file/URL transcription, dictation, and live meetings.
 The app icon and active meeting menu-bar item use the ✍️ writing-hand logo.
+The menu icon is a native monochrome template that follows macOS appearance;
+the app icon retains the emoji's colors.
 Open a file, drop media, paste a link, or enter a path/URL and click Transcribe.
 Text appears incrementally. Copy is one click; Export defaults to timestamped text,
 with plain text, SRT, WebVTT, and JSON available from its menu. Partial selection
@@ -42,8 +44,10 @@ swiftc desktop/Sources/FastTranscriptApp/AppBrand.swift scripts/generate_macos_i
 ```
 
 Ordinary builds use the checked-in artwork, so the installed system font does not
-change the packaged logo. The menu uses native emoji text and retains its spoken
-recording/progress label for accessibility.
+change the packaged logo. The menu renders the same glyph as a template image
+and retains its spoken recording/progress label for accessibility. Native SwiftUI
+rendering was inspected beside system icons in light and dark appearances; a
+pixel check confirmed grayscale output in both, while the app artwork stays colored.
 
 Install FFmpeg/ffprobe and yt-dlp (or uv for the downloader fallback) as for the
 CLI. SDK models also use the CLI's existing runtime setup. The native child

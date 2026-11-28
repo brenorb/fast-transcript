@@ -110,7 +110,8 @@ struct FastTranscriptApp: App {
             })) {
             MeetingMenu(workspace: workspace, delegate: delegate)
         } label: {
-            Text(AppBrand.symbol)
+            Image(nsImage: AppBrand.menuBarImage)
+                .renderingMode(.template)
                 .accessibilityLabel(workspace.meeting.indicatorTitle)
         }
         .menuBarExtraStyle(.menu)
