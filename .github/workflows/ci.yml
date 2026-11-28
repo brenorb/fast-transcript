@@ -109,4 +109,4 @@ jobs:
         run: |
           set -euo pipefail
           artifact="$(python3 scripts/package_macos_app.py --debug --hardened-runtime --output-dir target/macos-package)"
-          FSCRIPT_MACOS_PACKAGE_DIR="$artifact" python3 -m unittest tests/test_macos_package.py
+          FSCRIPT_MACOS_PACKAGE_DIR="$artifact" FSCRIPT_EXPECTED_SOURCE_REVISION="$GITHUB_SHA" python3 -m unittest tests/test_macos_package.py

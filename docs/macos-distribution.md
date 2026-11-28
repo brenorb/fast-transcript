@@ -32,6 +32,10 @@ These are repeatable build/package steps, not a bit-for-bit reproducibility clai
 across toolchains, signature timestamps or builds. The manifest describes the
 actual bytes and architecture. `source.revision` and `source.dirty` identify a
 Git checkout when available; source archives without Git report null values.
+CI requires the exact workflow commit and `source.dirty: false`. Generated CLI
+archives under `dist/` and the `.wheel-smoke/` test environment are ignored build
+outputs; edited tracked files and other untracked files still mark a checkout
+dirty. Local developer packaging retains that dirty state rather than hiding it.
 
 ## Developer ID and notarization
 

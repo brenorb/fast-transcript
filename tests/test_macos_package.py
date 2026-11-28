@@ -97,6 +97,10 @@ class MacOSPackage(unittest.TestCase):
         subprocess.run(['codesign', '--verify', '--deep', '--strict', str(self.app)], check=True)
 
     def test_extracted_metadata_version_and_offline_agent_skill_match_source(self):
+        expected_revision = os.environ.get('FSCRIPT_EXPECTED_SOURCE_REVISION')
+        if expected_revision:
+            self.assertEqual(self.manifest['source'], dict(revision=expected_revision, dirty=False),
+                             'CI artifacts must identify the exact clean checkout, without masking source changes')
         info = plistlib.loads((self.app / 'Contents/Info.plist').read_bytes())
         result = subprocess.run([str(self.binary), '--version'], capture_output=True, text=True, check=True)
         self.assertEqual(result.stdout.strip(), 'fscript ' + info['CFBundleShortVersionString'])
