@@ -90,6 +90,7 @@ class MediaRangeCLI(unittest.TestCase):
             PATH=str(self.root) + os.pathsep + os.environ["PATH"],
             FSCRIPT_PYTHON_BINARY=str(self.root / "worker"),
             FSCRIPT_CONFIG_FILE=str(self.root / "config.json"),
+            FSCRIPT_CALENDAR_CONFIG_FILE=str(self.root / "calendar-config.json"),
             FSCRIPT_DIARIZATION_BINARY=str(self.root / "missing-helper"),
             RANGE_CAPTURE=str(self.capture), RANGE_DOWNLOAD_ARGS=str(self.download_args), RANGE_SOURCE=str(self.source),
         )

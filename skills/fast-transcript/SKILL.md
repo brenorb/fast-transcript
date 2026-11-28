@@ -111,3 +111,14 @@ as live status and result.meeting.route_interruptions as durable coverage eviden
 A stopped session can still contain a reconnect interval with no replacement
 audio; recognition completion does not imply uninterrupted recording. Native
 USB/Bluetooth and system-audio acceptance remain in progress.
+
+
+`fscript calendar` lists the next 24 hours from local macOS EventKit calendars;
+`--start RFC3339 --end RFC3339 --json` inventories another complete period.
+`calendar status --json` inspects authorization/preference without reading events.
+Only explicit `calendar connect` can request full OS access and enable optional
+meeting titles. `calendar disconnect` disables future naming without revoking OS
+access. `calendar match START END --json` uses the shared full-interval matcher.
+Inspection never prompts or loads models; calendar times do not trigger capture.
+Named meeting manifests and result.meeting contain optional calendar_event metadata;
+existing names survive replay/disconnect. See docs/calendar.md for access gaps.

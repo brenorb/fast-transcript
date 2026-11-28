@@ -63,6 +63,7 @@ first transcription when needed, not during application startup or model selecti
 | Last duration | Add `--last 5:00`. |
 | Start/end | Add `--start 10:00 --end 15:00`. |
 | Model picker | `fscript models --json`, `fscript models set NAME`. |
+| Calendar names (gear menu) | `fscript calendar connect` / `disconnect`; refresh uses `calendar status --json`. |
 | Agent picker | `fscript agents --json`, `fscript agents set NAME`. |
 | Create notes | `fscript notes RESULT.json --output notes.md --json`. |
 | Export transcript | `fscript export RESULT.json --format srt --output transcript.srt`. |

@@ -81,7 +81,7 @@ with tempfile.TemporaryDirectory(prefix='.fast-transcript-app-', dir=output.pare
                 CFBundleDocumentTypes=[dict(CFBundleTypeName='Audio and video', CFBundleTypeRole='Viewer',
                                            LSHandlerRank='Alternate', LSItemContentTypes=['public.audio', 'public.movie'])])
     permissions = plistlib.loads((root / 'resources/fscript-Info.plist').read_bytes())
-    for key in ('NSMicrophoneUsageDescription', 'NSAudioCaptureUsageDescription'):
+    for key in ('NSMicrophoneUsageDescription', 'NSAudioCaptureUsageDescription', 'NSCalendarsFullAccessUsageDescription'):
         info[key] = permissions[key]
     (bundle / 'Contents/Info.plist').write_bytes(plistlib.dumps(info))
     # Sign nested code before the app. A persistent certificate gives the same

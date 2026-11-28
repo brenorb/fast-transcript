@@ -93,9 +93,11 @@ Simultaneous native microphone/system capture, live text, recovery and menu
 controls passed acceptance. See [current contracts and hardware coverage limits](docs/live-meetings.md).
 
 Call inspection is available as `fscript calls`; `--watch --json` exposes the shared
-confirmed call detector without recording or opening permission prompts. Calendar
-integration and opt-in automatic recording are the next milestone-7 steps; see
-[call detection](docs/call-detection.md).
+confirmed call detector without recording or opening permission prompts; see
+[call detection](docs/call-detection.md). `fscript calendar connect` enables optional
+meeting titles from calendars already configured on macOS. The desktop gear menu
+uses the same actions. See [calendar context and permission coverage](docs/calendar.md).
+Opt-in automatic recording is the next milestone-7 step.
 
 ## Why this exists
 

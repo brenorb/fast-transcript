@@ -125,6 +125,34 @@ class MeetingCLI(unittest.TestCase):
         self.assertIn(b'Microphone', exported.stdout)
         self.assertIn(b'System', exported.stdout)
 
+    def test_calendar_name_is_shared_by_saved_events_final_result_and_replay(self):
+        now_ms = round(time.time() * 1000)
+        calendar_event = dict(id='team-call', calendar_id='work', title='Team planning é ✍️',
+                              start_ms=now_ms - 3600000, end_ms=now_ms + 3600000, with_others=True)
+        calendar_fixture = self.root / 'calendar-fixture.json'
+        calendar_fixture.write_text(json.dumps(dict(authorization='full_access', events=[calendar_event])))
+        self.env['FSCRIPT_CALENDAR_TEST_JSON'] = str(calendar_fixture)
+        connected = subprocess.run([str(fixture.BINARY), 'calendar', 'connect', '--json'],
+                                   env=self.env, capture_output=True, timeout=5)
+        self.assertEqual(connected.returncode, 0, connected.stderr)
+        process = self.spawn('--duration', '.3')
+        events = self.finish(process)
+        saved = next(event for event in events if event['type'] == 'saved')
+        directory = Path(saved['data']['directory'])
+        manifest = self.inspect(directory)
+        self.assertEqual(manifest['calendar_event']['title'], calendar_event['title'])
+        self.assertEqual(saved['data']['manifest'], manifest)
+        self.assertEqual(events[-1]['data']['result']['meeting'], manifest)
+        self.assertEqual(json.loads((directory / 'transcript.json').read_text())['meeting'], manifest)
+        disconnected = subprocess.run([str(fixture.BINARY), 'calendar', 'disconnect'],
+                                      env=self.env, capture_output=True, timeout=5)
+        self.assertEqual(disconnected.returncode, 0, disconnected.stderr)
+        self.env['FSCRIPT_CALENDAR_TEST_JSON'] = '/missing/calendar-fixture'
+        replay = self.replay(directory)
+        events = self.finish(replay)
+        self.assertEqual(next(event for event in events if event['type'] == 'restored')['data']['manifest'], manifest)
+        self.assertEqual(events[-1]['data']['result']['meeting'], manifest)
+
     def test_duration_and_disk_progress_do_not_wait_for_slow_inference(self):
         self.env['MEETING_INFERENCE_DELAY'] = '4'
         process = self.spawn('--duration', '3')

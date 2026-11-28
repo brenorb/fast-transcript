@@ -18,7 +18,7 @@ def check_cli_permissions(binary, template):
         info = plistlib.loads(source.read(int(size, 16)))
     version = subprocess.check_output([str(binary), '--version'], text=True).strip().split()[1]
     expected = plistlib.loads(template.read_bytes())
-    for key in ('NSMicrophoneUsageDescription', 'NSAudioCaptureUsageDescription', 'CFBundleIdentifier'):
+    for key in ('NSMicrophoneUsageDescription', 'NSAudioCaptureUsageDescription', 'NSCalendarsFullAccessUsageDescription', 'CFBundleIdentifier'):
         if not info.get(key) or info[key] != expected[key]:
             raise AssertionError(f'CLI metadata does not match the shared template: {key}')
     if info.get('CFBundleVersion') != version or info.get('CFBundleShortVersionString') != version:

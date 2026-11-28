@@ -3,6 +3,7 @@ mod diagnostics;
 mod agents;
 mod app;
 mod audio;
+mod calendar;
 mod calls;
 mod capture;
 mod cli;

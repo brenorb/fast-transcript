@@ -30,6 +30,13 @@ struct AgentCatalog: Decodable {
 
 struct NotesResponse: Decodable { let notes: String }
 
+struct CalendarStatus: Decodable {
+    let version: Int
+    let supported: Bool
+    let authorization: String
+    let name_meetings: Bool
+}
+
 struct PermissionStatus: Decodable {
     let version: Int
     let paste: Paste
@@ -77,6 +84,9 @@ enum ExportFormat: String, CaseIterable, Identifiable {
 
 @MainActor @Observable
 final class Workspace {
+    var calendar: CalendarStatus?
+    @ObservationIgnored private var controlJobs: [UUID: (process: CLIProcess, task: Task<Data, Error>)] = [:]
+    @ObservationIgnored private let controlEnvironment: [String: String]?
     let dictation = DictationController()
     let meeting = MeetingController()
     var meetingIndicatorVisible = true
@@ -126,6 +136,11 @@ final class Workspace {
     var canTranscribe: Bool { !busy && installation != nil && !input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     var displayedText: String { pane == .notes ? notes : transcript }
 
+    init(installation: CLIInstallation? = nil, controlEnvironment: [String: String]? = nil) {
+        self.installation = installation
+        self.controlEnvironment = controlEnvironment
+    }
+
     func bootstrap() async {
         guard !loading, installation == nil else { return }
         loading = true
@@ -149,6 +164,7 @@ final class Workspace {
             }
             try await refreshModels()
             await refreshAgents()
+            await refreshCalendar()
             status = "Ready"
             error = nil
             if pasteAfterDictation { checkPasteAccess(request: false) }
@@ -165,8 +181,13 @@ final class Workspace {
     }
 
     private func control(_ arguments: [String]) async throws -> Data {
-        guard let installation else { throw ClientError("The app is still preparing.") }
-        return try await CLIProcess().output(executable: installation.executable, arguments: arguments)
+        guard !shuttingDown, let installation else { throw ClientError("The app is not available.") }
+        let id = UUID()
+        let process = CLIProcess()
+        let task = Task { try await process.output(executable: installation.executable, arguments: arguments, environment: controlEnvironment) }
+        controlJobs[id] = (process, task)
+        defer { controlJobs[id] = nil }
+        return try await task.value
     }
 
     private func refreshModels() async throws {
@@ -178,6 +199,31 @@ final class Workspace {
     func refreshAgents() async {
         let catalog = try? await JSONDecoder().decode(AgentCatalog.self, from: control(["agents", "--json"]))
         agents = catalog?.version == 1 ? catalog : nil
+    }
+
+    func refreshCalendar() async {
+        let state = try? await JSONDecoder().decode(CalendarStatus.self, from: control(["calendar", "status", "--json"]))
+        calendar = state?.version == 1 ? state : nil
+    }
+
+    func setCalendarNames(_ enabled: Bool) {
+        guard !busy, installation != nil else { return }
+        savingPreference = true
+        Task {
+            defer { savingPreference = false }
+            do {
+                let data = try await control(["calendar", enabled ? "connect" : "disconnect", "--json"])
+                guard !shuttingDown else { return }
+                let state = try JSONDecoder().decode(CalendarStatus.self, from: data)
+                guard state.version == 1 else { throw ClientError("Unsupported calendar response. Update the app.") }
+                calendar = state
+                error = nil
+            } catch {
+                guard !shuttingDown else { return }
+                self.error = error.localizedDescription
+                await refreshCalendar()
+            }
+        }
     }
 
     func chooseModel(_ name: String) {
@@ -358,6 +404,7 @@ final class Workspace {
                 guard !cancelRequested else { status = "Cancelled"; return }
                 let result = try JSONDecoder().decode(TranscriptSnapshot.self, from: data)
                 transcript = result.text; meetingSegments = result.segments ?? []; completedURL = document
+                sourceTitle = result.meeting?.calendar_event?.title.nonempty ?? "Saved meeting"
                 meeting.manifest = result.meeting
                 meeting.coverageChanged = result.meeting?.hasCoverageChanges == true
                 status = meeting.coverageChanged ? "Saved meeting · review audio coverage" : "Saved meeting opened"
@@ -382,6 +429,7 @@ final class Workspace {
     func retrySavedMeeting() { if let lastMeetingDirectory { startMeeting(savedDirectory: lastMeetingDirectory) } }
 
     private func meetingEvent(_ message: MeetingEvent) {
+        if let title = message.data.manifest?.calendar_event?.title.nonempty { sourceTitle = title }
         if message.type == "started", let path = message.data.directory {
             let directory = URL(fileURLWithPath: path)
             lastMeetingDirectory = directory
@@ -398,6 +446,7 @@ final class Workspace {
     }
 
     private func meetingCompleted(_ message: MeetingEvent) {
+        sourceTitle = message.data.result?.meeting?.calendar_event?.title.nonempty ?? sourceTitle
         completedURL = message.data.output_path.map { URL(fileURLWithPath: $0) }
         transcript = message.data.result?.text ?? transcript
         meetingSegments = message.data.result?.segments ?? []
@@ -428,6 +477,8 @@ final class Workspace {
 
     func shutdown() async {
         shuttingDown = true
+        let pendingControls = Array(controlJobs.values)
+        for job in pendingControls { job.process.cancel() }
         meeting.cancel()
         activeProcess?.cancel()
         cancelRequested = true
@@ -440,6 +491,7 @@ final class Workspace {
         await jobTask?.value
         await deliveryTask?.value
         await permissionTask?.value
+        for job in pendingControls { _ = try? await job.task.value }
     }
 
     func setAutomaticPaste(_ enabled: Bool) {

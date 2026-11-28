@@ -70,6 +70,8 @@ pub(crate) struct Manifest {
     pub(crate) track_frames: [u64; 2],
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub(crate) route_interruptions: Vec<RouteInterruption>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) calendar_event: Option<crate::calendar::Event>,
 }
 
 fn options() -> OpenOptions {
@@ -197,6 +199,7 @@ impl Writer {
             state: State::Recording,
             track_frames: [0; 2],
             route_interruptions: Vec::new(),
+            calendar_event: None,
         };
         save(directory, &manifest)?;
         if let Some(parent) = directory.parent().filter(|p| !p.as_os_str().is_empty()) {
@@ -354,6 +357,33 @@ pub(crate) struct SavedSession {
 }
 
 impl SavedSession {
+    /// Enrich only a stopped/recovered owned recording. Audio and coverage stay intact.
+    pub(crate) fn name_from_calendar(&mut self, directory: &Path) -> Result<()> {
+        if self.manifest.calendar_event.is_some() {
+            return Ok(());
+        }
+        let start = i64::try_from(self.manifest.started_at_unix_ms)
+            .context("meeting start is outside calendar date range")?;
+        let frames = self.manifest.track_frames.into_iter().max().unwrap();
+        let duration = i64::try_from((u128::from(frames) * 1000).div_ceil(u128::from(RATE)))?;
+        if duration == 0 {
+            return Ok(());
+        }
+        let window = crate::calendar::Window {
+            start_ms: start,
+            end_ms: start
+                .checked_add(duration)
+                .context("meeting calendar date overflow")?,
+        };
+        if let Some(event) = crate::calendar::recording_context(window)? {
+            let mut manifest = self.manifest.clone();
+            manifest.calendar_event = Some(event);
+            save(directory, &manifest)?;
+            self.manifest = manifest;
+        }
+        Ok(())
+    }
+
     /// Repair an ownerless recording, then validate immutable audio before ASR.
     pub(crate) fn open(directory: &Path) -> Result<Self> {
         let lock = Lock::acquire(directory, false)?;

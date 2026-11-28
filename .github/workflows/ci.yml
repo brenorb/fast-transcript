@@ -51,6 +51,8 @@ jobs:
         run: uv run --no-project python -m unittest tests/test_meeting_cli.py
       - name: Passive call inspection and detector E2E
         run: uv run --no-project python -m unittest tests/test_calls_cli.py
+      - name: Calendar access, context matching and preference E2E
+        run: uv run --no-project python -m unittest tests/test_calendar_cli.py
       - name: External agent notes E2E and control CLI tests
         run: uv run --no-project python -m unittest tests/test_agent_notes_cli.py
       - name: Completed export E2E and batch differential tests

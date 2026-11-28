@@ -51,6 +51,7 @@ mod routing_tests {
             "record",
             "meeting",
             "calls",
+            "calendar",
             "permissions",
         ] {
             assert_eq!(arguments(&args(&[action])), Some(args(&[action])));
@@ -86,6 +87,16 @@ fn command() -> Command {
             .after_help("Examples:\n  fscript calls\n  fscript calls --json\n  fscript calls --watch --json\n  fscript calls --watch --duration 30\n\nA snapshot reports candidates, not a confirmed call. Watch confirms five seconds of microphone and output activity attributed to the same app, and ends after twenty seconds of confirmed microphone absence. Unknown observations reset timing. No audio/video, calendar, app windows, model, or permission prompt is opened. Ctrl-C cancels inspection.")
             .arg(Arg::new("watch").long("watch").action(ArgAction::SetTrue).help("Watch confirmed call starts/ends; --json streams versioned JSONL"))
             .arg(Arg::new("duration").long("duration").requires("watch").help("Stop watching automatically after positive finite seconds")))
+        .subcommand(Command::new("calendar").about("Inspect connected macOS calendars without prompting")
+            .after_help("Examples:\n  fscript calendar\n  fscript calendar --json\n  fscript calendar connect\n  fscript calendar disconnect\n  fscript calendar match 2026-11-27T14:00:00Z 2026-11-27T15:00:00Z --json\n\nThe default window is the next 24 hours. Supply both --start and --end for another RFC 3339 period. Only Connect can request macOS full calendar access (read/write OS scope); Fast Transcript only reads event metadata. Calendar times do not start recording. Disconnect disables calendar meeting names; manage OS access in System Settings.")
+            .arg(Arg::new("start").long("start").requires("end").help("Beginning of the requested period, RFC 3339 with timezone"))
+            .arg(Arg::new("end").long("end").requires("start").help("Exclusive end of the requested period, RFC 3339 with timezone"))
+            .subcommand(Command::new("connect").about("Request macOS calendar access and enable local meeting names"))
+            .subcommand(Command::new("status").about("Inspect calendar authorization and naming preference without reading events"))
+            .subcommand(Command::new("disconnect").about("Disable calendar meeting names without changing OS grants"))
+            .subcommand(Command::new("match").about("Find the best calendar context for a full recording interval")
+                .arg(Arg::new("start").required(true).help("Recording start, RFC 3339 with timezone"))
+                .arg(Arg::new("end").required(true).help("Recording end, RFC 3339 with timezone"))))
         .subcommand(Command::new("record").about("Dictate using the default microphone")
             .after_help("Examples:\n  fscript record\n  fscript record --duration 10\n  fscript record --control --json\n  fscript record --hotkey\n\nCtrl-C finishes bare/duration capture; a second interrupt cancels. In --control/--hotkey mode, Ctrl-C cancels. Control mode reads JSONL start/stop/cancel/shutdown requests on stdin and keeps the model loaded.")
             .arg(Arg::new("duration").long("duration").conflicts_with_all(["control", "hotkey"]).help("Stop automatically after this many seconds of microphone capture"))
@@ -147,6 +158,15 @@ fn command() -> Command {
 fn matches(raw: &[String]) -> std::result::Result<ArgMatches, clap::Error> {
     let parsed = command()
         .try_get_matches_from(std::iter::once("fscript".to_owned()).chain(raw.iter().cloned()))?;
+    if let Some(("calendar", values)) = parsed.subcommand() {
+        if values.subcommand_name().is_some()
+            && ["start", "end"].into_iter().any(|name| {
+                values.value_source(name) == Some(clap::parser::ValueSource::CommandLine)
+            })
+        {
+            return Err(clap::Error::raw(clap::error::ErrorKind::ArgumentConflict,"calendar --start/--end cannot be combined with a subcommand; match takes its own positional interval"));
+        }
+    }
     if let Some(("meeting", values)) = parsed.subcommand() {
         if values.subcommand_name().is_some() {
             if let Some(name) = [
@@ -170,14 +190,15 @@ fn matches(raw: &[String]) -> std::result::Result<ArgMatches, clap::Error> {
 
 pub(crate) fn needs_supervision(raw: &[String]) -> bool {
     matches(raw).is_ok_and(|matches| {
-        (matches!(matches.subcommand_name(), Some("notes" | "record"))
-            || matches.subcommand().is_some_and(|(name, values)| {
-                (name == "meeting" && matches!(values.subcommand_name(), None | Some("transcribe")))
-                    || (name == "export" && (values.get_flag("copy") || values.get_flag("paste")))
-                    || (name == "permissions" && values.get_one::<String>("request").is_some())
-                    || (name == "calls" && values.get_flag("watch"))
-            }))
-            && !matches.get_flag("manual")
+        (matches!(
+            matches.subcommand_name(),
+            Some("notes" | "record" | "calendar")
+        ) || matches.subcommand().is_some_and(|(name, values)| {
+            (name == "meeting" && matches!(values.subcommand_name(), None | Some("transcribe")))
+                || (name == "export" && (values.get_flag("copy") || values.get_flag("paste")))
+                || (name == "permissions" && values.get_one::<String>("request").is_some())
+                || (name == "calls" && values.get_flag("watch"))
+        })) && !matches.get_flag("manual")
     })
 }
 
@@ -221,6 +242,25 @@ pub(crate) fn run(raw: Vec<String>) -> Result<()> {
     }
     let json = matches.get_flag("json");
     match matches.subcommand() {
+        Some(("calendar", values)) => {
+            use crate::calendar::Action;
+            let (action, values) = match values.subcommand() {
+                Some(("status", nested)) => (Action::Status, nested),
+                Some(("connect", nested)) => (Action::Connect, nested),
+                Some(("disconnect", nested)) => (Action::Disconnect, nested),
+                Some(("match", nested)) => (Action::Match, nested),
+                _ => (Action::List, values),
+            };
+            let (start, end) = if matches!(action, Action::List | Action::Match) {
+                (
+                    values.get_one::<String>("start").map(String::as_str),
+                    values.get_one::<String>("end").map(String::as_str),
+                )
+            } else {
+                (None, None)
+            };
+            crate::calendar::run(action, start, end, json)
+        }
         Some(("calls", values)) => crate::calls::run(
             values.get_flag("watch"),
             values.get_one::<String>("duration").map(String::as_str),

@@ -12,5 +12,7 @@
     <string>Transcribe your microphone locally when you start recording.</string>
     <key>NSAudioCaptureUsageDescription</key>
     <string>Capture other apps' audio locally to transcribe meetings.</string>
+    <key>NSCalendarsFullAccessUsageDescription</key>
+    <string>Read connected calendar events locally to name recorded meetings. Fast Transcript does not modify your calendars.</string>
 </dict>
 </plist>

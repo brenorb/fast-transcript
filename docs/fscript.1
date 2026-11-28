@@ -400,6 +400,12 @@ fscript meeting \-\-duration 60 \-\-json
 fscript meeting \-\-control
 fscript meeting status SESSION [\-\-json]
 fscript meeting recover SESSION [\-\-json]
+fscript calendar [\-\-json]
+fscript calendar status [\-\-json]
+fscript calendar connect [\-\-json]
+fscript calendar disconnect [\-\-json]
+fscript calendar \-\-start RFC3339 \-\-end RFC3339 [\-\-json]
+fscript calendar match START END [\-\-json]
 fscript permissions [\-\-json]
 fscript permissions \-\-request paste [\-\-json]
 .fi
@@ -770,3 +776,48 @@ Crashes/cancellation
 can leave recording for explicit recovery. See docs/live\-meetings.md for the
 retry,
 clock, publication, and native\-acceptance limits.
+.SH "CALENDAR CONTEXT"
+Bare fscript calendar lists the next 24 hours from all locally visible
+EventKit
+calendars. Supply both \-\-start and \-\-end RFC 3339 timestamps with
+timezones for
+another complete period. Status reads only authorization and naming
+preference.
+Inspection never prompts or loads a model. Without full access, listing
+returns
+queried:false; match fails instead of implying no matching event.
+.PP
+Only calendar connect requests macOS full calendar access (OS read/write
+scope;
+Fast Transcript only reads metadata) and enables meeting names. Disconnect
+disables
+future naming without revoking OS access or removing saved titles. Background
+naming never requests access. Unsupported inspection succeeds; Connect
+requires
+macOS 14.2 or later. Ctrl\-C cancels a pending request.
+.PP
+Calendar match START END selects the largest full\-recording overlap among
+titled,
+non\-all\-day, non\-cancelled, non\-declined events with another attendee or
+call link.
+It requires at least one\-quarter overlap of the shorter interval, then breaks
+ties
+by shorter event, earlier start and stable IDs. Calendar times never start
+capture.
+The optional manifest.calendar_event is persisted before final recognition and
+included in saved/restored events and result.meeting. Existing names survive
+replay
+and disconnect. Read failures warn without losing audio or failing
+recognition.
+.PP
+With \-\-json, calendar returns one version\-1 object: supported,
+authorization,
+name_meetings, queried, window, calendars, events, matched_event. Dates are
+UTC
+milliseconds. Listing retains personal/all\-day/declined events and
+inventories the
+complete requested period; only match filters eligibility. Only match fills
+matched_event. No participant identities, links or event notes are stored.
+FSCRIPT_CALENDAR_CONFIG_FILE overrides the private calendar.json preferences.
+See docs/calendar.md for fields, matching rules, native permission and
+coverage.

@@ -179,7 +179,10 @@ fn run_session(options: &Options, events: &mut Events) -> Result<()> {
         Some(&id),
         serde_json::json!({"directory":directory,"tracks":["Microphone","System"]}),
     )?;
-    if let Some(session) = &saved_session {
+    if let Some(session) = &mut saved_session {
+        if let Err(error) = session.name_from_calendar(&directory) {
+            std::eprintln!("warning: calendar meeting name unavailable: {error:#}");
+        }
         events.send(
             "restored",
             Some(&id),
@@ -339,6 +342,13 @@ fn run_session(options: &Options, events: &mut Events) -> Result<()> {
         }
         if capture.as_ref().is_some_and(Capture::finished) {
             saved_session = Some(capture.take().unwrap().finish()?);
+            if let Err(error) = saved_session
+                .as_mut()
+                .unwrap()
+                .name_from_calendar(&directory)
+            {
+                std::eprintln!("warning: calendar meeting name unavailable: {error:#}");
+            }
             let manifest = &saved_session.as_ref().unwrap().manifest;
             saved = true;
             events.send(

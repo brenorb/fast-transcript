@@ -5,6 +5,11 @@ public struct MeetingManifest: Decodable, Equatable, Sendable {
     public let state: String
     public let track_frames: [UInt64]
     public let route_interruptions: [RouteInterruption]?
+    public let calendar_event: CalendarEvent?
+
+    public struct CalendarEvent: Decodable, Equatable, Sendable {
+        public let title: String
+    }
 
     public struct RouteInterruption: Decodable, Equatable, Sendable {
         public let track: String

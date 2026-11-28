@@ -38,12 +38,13 @@ flag-based actions. We do not add a second flag spelling for each new action.
 | Warm dictation shortcut | `fscript record --hotkey` | First available exclusive hold chord; explicit chord override supported. |
 | Clipboard | `fscript export transcript.json --copy` | Copy the shared rendering; optional paste requires an explicit target PID. |
 | Paste access | `fscript permissions` | Inspect without prompting. Only explicit `--request paste` asks macOS for access. |
-| Meetings | `fscript meeting` | Live preview on stderr, final transcript path on stdout; Ctrl-C finishes capture and final recognition. Native acceptance remains in progress. |
+| Meetings | `fscript meeting` | Live preview on stderr, final transcript path on stdout; Ctrl-C finishes capture and final recognition. Native acceptance passed on built-in devices. |
 | Meeting control | `fscript meeting --control`, `meeting status DIR`, `meeting recover DIR`, `meeting transcribe DIR` | Explicit JSONL start/stop/cancel; durable inspection/recovery and shared transcription of retained audio. |
-| Detection (planned) | `fscript calls watch`, `fscript calendar list` | Inspect native adapter evidence. |
+| Call inspection | `fscript calls`, `fscript calls --watch --json` | Passive activity and confirmed transitions without capture. |
+| Calendar context | `fscript calendar`, `fscript calendar connect` | Passive local inventory; explicit permission and optional meeting titles. |
 
 Action names are reserved in command position. Files named notes, models, agents,
-export, skill, record, meeting, or permissions use explicit paths such as `./notes`, or `fscript -- notes`. This is
+export, skill, record, meeting, calls, calendar, or permissions use explicit paths such as `./notes`, or `fscript -- notes`. This is
 an intentional breaking choice for this young app, avoiding a separate command
 and filesystem-dependent guessing. Normal filenames and URLs remain unchanged.
 Root --help discovers actions; `fscript notes --help` and `fscript help notes`

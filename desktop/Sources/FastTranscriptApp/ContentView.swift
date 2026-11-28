@@ -21,6 +21,9 @@ struct ContentView: View {
         .background(Color(nsColor: .windowBackgroundColor))
         .overlay { if dropTarget { RoundedRectangle(cornerRadius: 12).stroke(.tint, lineWidth: 3).padding(8).allowsHitTesting(false) } }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didResignActiveNotification)) { _ in workspace.dictation.releasePhysicalHold() }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            if !workspace.busy { Task { await workspace.refreshCalendar() } }
+        }
         .background(WindowCloseObserver { workspace.dictation.windowClosed(origin: "native-main-window") }.frame(width: 0, height: 0).allowsHitTesting(false))
         .onDisappear { workspace.dictation.windowClosed(origin: "view-disappeared") }
         .onDrop(of: [.fileURL, .url, .plainText], isTargeted: $dropTarget, perform: acceptDrop)
@@ -100,6 +103,19 @@ struct ContentView: View {
                 .fixedSize()
                 .help("The selected external agent uses its own login and model provider.")
                 .accessibilityIdentifier("agentPicker")
+                Menu {
+                    Toggle("Use calendar meeting names", isOn: Binding(get: { workspace.calendar?.name_meetings ?? false }, set: { workspace.setCalendarNames($0) }))
+                        .disabled(workspace.calendar?.supported == false)
+                    Text("Calendar access: \(workspace.calendar?.authorization.replacingOccurrences(of: "_", with: " ") ?? "unavailable")")
+                    Button("Refresh calendar status") { Task { await workspace.refreshCalendar() } }
+                } label: {
+                    Image(systemName: "gearshape")
+                }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+                .help("Meeting settings")
+                .accessibilityLabel("Meeting settings")
+                .accessibilityIdentifier("meetingSettings")
             }
             .disabled(workspace.busy)
             HStack(spacing: 12) {
