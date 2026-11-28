@@ -31,6 +31,10 @@ calendar. Matching without full access fails. Denied/restricted grants require a
 change in System Settings; the app does not repeatedly request them. Disconnect
 disables future naming but leaves OS authorization and existing titles intact.
 The desktop refreshes status when activated and through **Refresh calendar status**.
+While Connect is pending, its status says **Connecting calendar… Respond to macOS
+if prompted.** Successful changes confirm that meeting names are enabled or
+disabled; a failed request says **Calendar setup needs attention**. The desktop
+uses the same shared CLI request and does not treat waiting as a ready state.
 
 ## Matching and saved meetings
 

@@ -286,6 +286,7 @@ final class Workspace {
     func setCalendarNames(_ enabled: Bool) {
         guard !busy, installation != nil else { return }
         savingPreference = true
+        status = enabled ? "Connecting calendar… Respond to macOS if prompted." : "Disabling calendar meeting names…"
         Task {
             defer { savingPreference = false }
             do {
@@ -295,9 +296,11 @@ final class Workspace {
                 guard state.version == 1 else { throw ClientError("Unsupported calendar response. Update the app.") }
                 calendar = state
                 error = nil
+                status = state.name_meetings ? "Calendar meeting names enabled" : "Calendar meeting names disabled"
             } catch {
                 guard !shuttingDown else { return }
                 self.error = error.localizedDescription
+                status = "Calendar setup needs attention"
                 await refreshCalendar()
             }
         }
