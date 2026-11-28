@@ -1,6 +1,6 @@
 ---
 name: fast-transcript
-description: Transcribe and inspect local audio/video or remote media URLs with fscript, including selected intervals, incremental results, speaker labels, exports, and notes through installed agents.
+description: Use fscript for local or remote media transcription, dictation, and live meetings, including selected intervals, streaming results, speaker labels, exports, and notes through installed agents.
 ---
 
 # Fast Transcript
@@ -72,9 +72,9 @@ and configured model provider. Use `fscript agents` to inspect availability and
 
 Use `fscript --help`, nested help such as `fscript notes --help`, or the complete
 offline `fscript --manual` when details are needed. Action names are reserved:
-for an actual file named notes, models, agents, export, skill, record, or meeting, pass an explicit
-path such as `./notes` or use `fscript -- notes`. Help/discovery never loads a
-speech model or starts a note agent.
+for an actual file named notes, models, agents, export, skill, record, meeting,
+calls, calendar, or permissions, pass an explicit path such as `./notes` or use
+`fscript -- notes`. Help/discovery never loads a speech model or starts a note agent.
 
 For live meetings, `fscript meeting --duration 60 --json` saves microphone and
 system audio separately and emits provisional channel-attributed text. macOS
@@ -88,14 +88,15 @@ owner exits. Live snapshots are `transcript.partial.json`; only
 longer context and can revise the preview. Plain output prints its final path on
 stdout and preview/status on stderr; --json exposes the live protocol. The desktop
 Record meeting/Stop controls and saved-audio transcription use these same commands.
-Native microphone/system capture passed on the current built-in devices. Real
-hardware-route switching remains unverified; see docs/live-meetings.md for limits.
 
 `fscript calls` inspects current call-app audio metadata without recording or
 prompting. `fscript calls --watch --duration 30 --json` streams confirmed call
 starts/ends and snapshots for unattended consumers. Calendar times and an open
 app alone cannot trigger detection. This inspector does not enable automatic
-recording; see docs/call-detection.md for timing and heuristic limits.
+recording. Detection confirms five seconds of same-app microphone/output activity
+and ends after twenty seconds of observed microphone absence. A browser voice
+assistant or mic test with playback can qualify; this is an app-level heuristic,
+not identification of a meeting or browser tab.
 
 For a stopped or interrupted meeting, run `fscript meeting transcribe SESSION`
 to transcribe retained audio without opening capture devices. It repairs an
@@ -110,7 +111,8 @@ Meeting route changes are handled by the shared CLI service. Treat source_status
 as live status and result.meeting.route_interruptions as durable coverage evidence.
 A stopped session can still contain a reconnect interval with no replacement
 audio; recognition completion does not imply uninterrupted recording. Native
-USB/Bluetooth and system-audio acceptance remain in progress.
+microphone/system capture passed on the current built-in devices. USB/Bluetooth
+route switching remains unverified.
 
 
 `fscript calendar` lists the next 24 hours from local macOS EventKit calendars;
@@ -121,7 +123,8 @@ meeting titles. `calendar disconnect` disables future naming without revoking OS
 access. `calendar match START END --json` uses the shared full-interval matcher.
 Inspection never prompts or loads models; calendar times do not trigger capture.
 Named meeting manifests and result.meeting contain optional calendar_event metadata;
-existing names survive replay/disconnect. See docs/calendar.md for access gaps.
+existing names survive replay/disconnect. First-use OS authorization and real
+calendar-account delivery remain unverified; fixture coverage does not prove them.
 
 
 `fscript meeting watch` explicitly arms foreground automatic recording; optional
@@ -134,10 +137,15 @@ Ctrl-C terminate the whole watch group and retain audio; do not eagerly restart 
 failed/cancelled generation into the same ongoing call. `meeting auto` inspects the
 passive desktop-startup preference; enable/disable save it without starting a
 service. FSCRIPT_MEETING_CONFIG_FILE isolates preferences and watch/capture locks.
-See docs/automatic-meetings.md for protocol fields and native/GUI acceptance gaps.
+Require a completed inner transcript and successful session_exit before consuming
+an automatic meeting result. Watch completion or EOF alone is not transcript
+success. Use `fscript meeting watch --help` and `fscript --manual` for options.
 
 The desktop automatic-recording toggle saves `meeting auto` preferences and owns
 one `meeting watch --control --json`. It reserves the workspace and stops warm
 dictation before accepting. Stop suppresses the continuing call; turning off
 finishes active capture. Cancel disables the preference; Quit preserves it for
 future startup. The GUI and manual CLI share the same meeting decoder/service.
+Desktop control acceptance passed with explicit call/audio fixtures and real
+local speech recognition. A native call triggering the entire automatic lifecycle
+remains unverified; separate native capture acceptance does not establish it.

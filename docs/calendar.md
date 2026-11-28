@@ -4,7 +4,7 @@ Calendar context is optional. In the desktop gear menu, enable **Use calendar
 meeting names**, or run `fscript calendar connect`. It uses accounts already
 configured in macOS Calendar through EventKit. No separate Google/Microsoft login
 or cloud calendar client is required. Calendar times do not start recordings.
-Automatic recording remains the next milestone-7 step.
+Automatic recording is a separate explicit preference; see [automatic meetings](automatic-meetings.md).
 
 ```bash
 fscript calendar

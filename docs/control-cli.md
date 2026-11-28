@@ -357,7 +357,7 @@ must reserve its workspace before accepting. Each outer meeting event contains
 episode and the unchanged inner meeting event; decode each episode independently.
 All outer events have version 1 and contiguous sequence. Watch EOF/completion is
 not evidence of an inner transcript's success. See docs/automatic-meetings.md for
-the complete protocol, ownership, fixture boundaries and remaining GUI/native checks.
+the complete protocol, ownership, fixture boundaries and remaining native checks.
 
 meeting auto defaults to status. Enable/disable save the desktop startup preference
 without capture, model loading or permission prompts; they do not start a daemon.
