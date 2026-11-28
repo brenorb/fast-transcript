@@ -71,6 +71,32 @@ class CallsCLI(unittest.TestCase):
         self.write_trace([frame])
         self.assertEqual(json.loads(self.cli('--json').stdout)['candidates'], [])
 
+    def test_zoom_meeting_helper_corroborates_launcher_but_capture_helpers_do_not(self):
+        frames = []
+        for at in range(0, 56_000, 2_000):
+            output = ('us.zoom.CptHost' if at < 10_000 else
+                      'us.zoom.ZMScreenshot' if at < 20_000 else 'us.zoom.ZoomMeeting')
+            clients = [
+                {'pid': 12, 'bundle_id': 'us.zoom.xos', 'input': at < 30_000, 'output': False},
+                {'pid': 20, 'bundle_id': output, 'input': False, 'output': True},
+            ]
+            if at == 28_000:
+                # Mic ownership can move to the meeting process without a new call.
+                clients[0].update(input=False, output=True)
+                clients[1].update(input=True, output=False)
+            frames.append({'at_ms': at, 'complete': True, 'clients': clients})
+        self.write_trace(frames)
+        events = [json.loads(line) for line in self.cli('--watch', '--json').stdout.splitlines()]
+        transitions = [(e['type'], e['data']['app'], e['data']['observed_ms'])
+                       for e in events if e['type'] in ('started', 'ended')]
+        self.assertEqual(transitions, [('started', 'Zoom', 26_000), ('ended', 'Zoom', 50_000)])
+        snapshots = {e['data']['observed_ms']: e['data'] for e in events if e['type'] == 'snapshot'}
+        self.assertTrue(all(not s['candidates'] for at, s in snapshots.items() if at < 20_000))
+        self.assertEqual(snapshots[28_000]['active'], ['Zoom'])
+        self.assertEqual({c['bundle_id'] for c in snapshots[20_000]['snapshot']['clients']},
+                         {'us.zoom.xos', 'us.zoom.ZoomMeeting'})
+        self.assertEqual(events[-1]['type'], 'completed')
+
     def test_unknown_intervals_and_sleep_do_not_confirm_a_call(self):
         self.write_trace([self.frame(0), self.frame(4_000), self.frame(5_000, complete=False),
                           self.frame(6_000), self.frame(60_000)])

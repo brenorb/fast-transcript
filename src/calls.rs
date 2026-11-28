@@ -14,6 +14,7 @@ const INTERVAL: Duration = Duration::from_secs(2);
 // Match actual audio-process identities, including dotted helper identities.
 const APPS: &[(&str, &str)] = &[
     ("us.zoom.xos", "Zoom"),
+    ("us.zoom.ZoomMeeting", "Zoom"),
     ("com.microsoft.teams2", "Microsoft Teams"),
     ("com.microsoft.teams", "Microsoft Teams"),
     ("com.apple.FaceTime", "FaceTime"),
@@ -523,7 +524,53 @@ mod tests {
             snapshot.clients[1].bundle_id = "US.ZOOM.XOS.helper.output".into();
             assert_eq!(snapshot.candidates(), ["Zoom"]);
             assert!(app_name(&format!("us.zoom.xos{index}")).is_none());
+            assert!(app_name(&format!("us.zoom.ZoomMeeting{index}")).is_none());
             assert!(app_name("com.brenorb.fast-transcript.cli").is_none());
+        }
+    }
+
+    #[test]
+    fn meeting_and_launcher_audio_share_zoom_but_other_zoom_bundles_do_not() {
+        for input in [
+            "us.zoom.xos",
+            "us.zoom.ZoomMeeting",
+            "US.ZOOM.ZOOMMEETING.audio",
+        ] {
+            for output in [
+                "us.zoom.xos",
+                "us.zoom.ZoomMeeting",
+                "us.zoom.ZoomMeeting.output",
+            ] {
+                let mut snapshot = sample(true, false);
+                snapshot.clients[0].bundle_id = input.into();
+                snapshot.clients.push(AudioClient {
+                    pid: 20,
+                    bundle_id: output.into(),
+                    input: false,
+                    output: true,
+                });
+                assert_eq!(snapshot.candidates(), ["Zoom"]);
+            }
+        }
+        for other in [
+            "us.zoom.CptHost",
+            "us.zoom.caphost",
+            "us.zoom.ZMScreenshot",
+            "us.zoom.updater",
+            "us.zoom.ZoomUninstaller",
+            "us.zoom.ZoomMeeting2",
+        ] {
+            let mut snapshot = sample(true, false);
+            snapshot.clients.push(AudioClient {
+                pid: 20,
+                bundle_id: other.into(),
+                input: true,
+                output: true,
+            });
+            assert!(
+                snapshot.candidates().is_empty(),
+                "unexpected Zoom audio identity: {other}"
+            );
         }
     }
 

@@ -37,6 +37,12 @@ cannot provide corroboration. Voice/dictation apps and Fast Transcript itself
 are not call apps. A running app, calendar slot, camera, or output alone cannot
 start detection.
 
+Zoom's launcher (`us.zoom.xos`) and separate meeting process
+(`us.zoom.ZoomMeeting`) belong to the same Zoom family. Microphone/output can
+come from different PIDs in that family. Screen/video capture helpers
+(`us.zoom.CptHost`, `us.zoom.caphost`), screenshots, updaters and uninstallers are
+not included merely because their identifiers start with `us.zoom`.
+
 After confirmation, microphone activity keeps the call active even if its output
 is idle. Twenty seconds of continuously observed microphone absence ends it.
 Unknown observations or a sample gap over five seconds reset candidate and absence
@@ -99,3 +105,16 @@ corroboration.
 The full clean Rust regression run passed 250 tests; the separate hour-long
 waveform check remains an explicit release-mode CI job rather than part of this
 debug invocation.
+
+On 2026-11-28, all 64 Info.plist files in the installed Zoom 7.2.1 (88329) bundle
+were inventoried. Its ZoomMeeting application has its own identifier and explicitly
+describes microphone use to speak to participants. The previous root-only mapping
+missed that identity. A process regression first reproduced the missing call start,
+then verified launcher/meeting corroboration, microphone handoff within one call,
+and one end after twenty seconds of absence despite continuing output. Capture
+and screenshot helpers cannot supply the confirming output. Core properties also
+cover case/dotted-child matching, unrelated Zoom bundles and near-prefix collisions.
+These are static identity and explicit trace checks; no native HAL observation of
+the ZoomMeeting helper or real Zoom call is claimed. Native lifecycle acceptance
+remains open. The pinned OpenOats detector also recognizes only the launcher;
+its family rule is a reference, not evidence that it covers every installed helper.
