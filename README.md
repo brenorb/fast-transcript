@@ -92,6 +92,11 @@ and notes through those same commands; see [desktop meeting controls and validat
 Simultaneous native microphone/system capture, live text, recovery and menu
 controls passed acceptance. See [current contracts and hardware coverage limits](docs/live-meetings.md).
 
+Call inspection is available as `fscript calls`; `--watch --json` exposes the shared
+confirmed call detector without recording or opening permission prompts. Calendar
+integration and opt-in automatic recording are the next milestone-7 steps; see
+[call detection](docs/call-detection.md).
+
 ## Why this exists
 
 I wanted a tool for **transcribing long classes and lectures quickly on a laptop while still using the computer for normal work**.

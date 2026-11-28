@@ -91,6 +91,12 @@ Record meeting/Stop controls and saved-audio transcription use these same comman
 Native microphone/system capture passed on the current built-in devices. Real
 hardware-route switching remains unverified; see docs/live-meetings.md for limits.
 
+`fscript calls` inspects current call-app audio metadata without recording or
+prompting. `fscript calls --watch --duration 30 --json` streams confirmed call
+starts/ends and snapshots for unattended consumers. Calendar times and an open
+app alone cannot trigger detection. This inspector does not enable automatic
+recording; see docs/call-detection.md for timing and heuristic limits.
+
 For a stopped or interrupted meeting, run `fscript meeting transcribe SESSION`
 to transcribe retained audio without opening capture devices. It repairs an
 ownerless recording automatically; --model/--device/--model-dir follow transcribe.

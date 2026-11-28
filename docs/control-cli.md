@@ -202,6 +202,19 @@ returns 130, stops owned helpers, and removes job scratch files. Timeouts fail
 without replacing existing notes. The caller must provide a complete transcript;
 literal JSON-like prose can be forced with --input-format text.
 
+## Call inspection
+
+`fscript calls` inspects one snapshot of native call-app audio activity without
+recording, models, calendar access or permission prompts. --json supplies raw
+active audio-process metadata and same-app microphone/output candidates.
+--watch confirms five seconds of same-app input/output activity, emits one start
+per call, and ends after twenty seconds of observed microphone absence. Unknown
+observations and long observation gaps reset timing. --duration SECONDS requires
+--watch and stops inspection without a terminal. --json with --watch emits flushed,
+versioned JSONL snapshots, started/ended events and a terminal completed event.
+Ctrl-C cancels inspection. This command does not automatically record calls.
+Native inspection requires macOS 14.2+. See docs/call-detection.md for coverage.
+
 ## Live meeting sessions
 
 `fscript meeting` records the default microphone and system output into separate,

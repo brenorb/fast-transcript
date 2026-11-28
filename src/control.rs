@@ -50,6 +50,7 @@ mod routing_tests {
             "skill",
             "record",
             "meeting",
+            "calls",
             "permissions",
         ] {
             assert_eq!(arguments(&args(&[action])), Some(args(&[action])));
@@ -81,6 +82,10 @@ fn command() -> Command {
         .subcommand(Command::new("permissions").about("Inspect automatic-paste access without prompting")
             .after_help("Inspection does not open Settings, record audio, or post keys. Only --request paste asks macOS for access; it never resets an existing grant. Run it from the app or terminal that will deliver text, since grants depend on that process's code identity.")
             .arg(Arg::new("request").long("request").value_parser(["paste"]).help("Explicitly request automatic-paste access; may show a macOS permission prompt")))
+        .subcommand(Command::new("calls").about("Inspect call-app audio activity without recording")
+            .after_help("Examples:\n  fscript calls\n  fscript calls --json\n  fscript calls --watch --json\n  fscript calls --watch --duration 30\n\nA snapshot reports candidates, not a confirmed call. Watch confirms five seconds of microphone and output activity attributed to the same app, and ends after twenty seconds of confirmed microphone absence. Unknown observations reset timing. No audio/video, calendar, app windows, model, or permission prompt is opened. Ctrl-C cancels inspection.")
+            .arg(Arg::new("watch").long("watch").action(ArgAction::SetTrue).help("Watch confirmed call starts/ends; --json streams versioned JSONL"))
+            .arg(Arg::new("duration").long("duration").requires("watch").help("Stop watching automatically after positive finite seconds")))
         .subcommand(Command::new("record").about("Dictate using the default microphone")
             .after_help("Examples:\n  fscript record\n  fscript record --duration 10\n  fscript record --control --json\n  fscript record --hotkey\n\nCtrl-C finishes bare/duration capture; a second interrupt cancels. In --control/--hotkey mode, Ctrl-C cancels. Control mode reads JSONL start/stop/cancel/shutdown requests on stdin and keeps the model loaded.")
             .arg(Arg::new("duration").long("duration").conflicts_with_all(["control", "hotkey"]).help("Stop automatically after this many seconds of microphone capture"))
@@ -170,6 +175,7 @@ pub(crate) fn needs_supervision(raw: &[String]) -> bool {
                 (name == "meeting" && matches!(values.subcommand_name(), None | Some("transcribe")))
                     || (name == "export" && (values.get_flag("copy") || values.get_flag("paste")))
                     || (name == "permissions" && values.get_one::<String>("request").is_some())
+                    || (name == "calls" && values.get_flag("watch"))
             }))
             && !matches.get_flag("manual")
     })
@@ -215,6 +221,11 @@ pub(crate) fn run(raw: Vec<String>) -> Result<()> {
     }
     let json = matches.get_flag("json");
     match matches.subcommand() {
+        Some(("calls", values)) => crate::calls::run(
+            values.get_flag("watch"),
+            values.get_one::<String>("duration").map(String::as_str),
+            json,
+        ),
         Some(("permissions", values)) => {
             let access =
                 crate::clipboard::paste_access(values.get_one::<String>("request").is_some())?;

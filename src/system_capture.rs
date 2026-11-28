@@ -79,8 +79,66 @@ fn check(status: i32, operation: &str) -> Result<()> {
 
 /// The callers below pair each selector with its SDK-documented output
 /// type: AudioObjectID or an owned CFString pointer, and optional pid_t input.
-unsafe fn property<T>(object: AudioObjectID, selector: u32, pid: Option<&i32>) -> Result<T> {
+pub(crate) unsafe fn property<T>(
+    object: AudioObjectID,
+    selector: u32,
+    pid: Option<&i32>,
+) -> Result<T> {
     unsafe { scoped_property(object, selector, kAudioObjectPropertyScopeGlobal, pid) }
+}
+
+/// Bounded metadata inventory. Lists can change between size and data queries.
+pub(crate) unsafe fn object_ids(selector: u32) -> Result<Vec<AudioObjectID>> {
+    let mut address = AudioObjectPropertyAddress {
+        mSelector: selector,
+        mScope: kAudioObjectPropertyScopeGlobal,
+        mElement: kAudioObjectPropertyElementMain,
+    };
+    let mut last_status = 0;
+    for _ in 0..3 {
+        let mut size = 0u32;
+        check(
+            unsafe {
+                AudioObjectGetPropertyDataSize(
+                    kAudioObjectSystemObject as _,
+                    NonNull::from(&mut address),
+                    0,
+                    std::ptr::null(),
+                    NonNull::from(&mut size),
+                )
+            },
+            "inspect the audio-process inventory",
+        )?;
+        if size as usize % size_of::<AudioObjectID>() != 0 || size > 1024 * 1024 {
+            bail!("unexpected Core Audio inventory size");
+        }
+        if size == 0 {
+            return Ok(Vec::new());
+        }
+        let mut objects = vec![0; size as usize / size_of::<AudioObjectID>()];
+        let status = unsafe {
+            AudioObjectGetPropertyData(
+                kAudioObjectSystemObject as _,
+                NonNull::from(&mut address),
+                0,
+                std::ptr::null(),
+                NonNull::from(&mut size),
+                NonNull::new(objects.as_mut_ptr()).unwrap().cast(),
+            )
+        };
+        if status != 0 {
+            last_status = status;
+            continue;
+        }
+        if size as usize > objects.len() * size_of::<AudioObjectID>()
+            || size as usize % size_of::<AudioObjectID>() != 0
+        {
+            bail!("unexpected Core Audio inventory result");
+        }
+        objects.truncate(size as usize / size_of::<AudioObjectID>());
+        return Ok(objects);
+    }
+    bail!("cannot read Core Audio process inventory after three attempts (OSStatus {last_status})")
 }
 
 unsafe fn scoped_property<T>(
