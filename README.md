@@ -65,7 +65,7 @@ For agent instructions, run `fscript skill`. Like Say It's skill interface,
 
 ## Desktop app
 
-For the native file/URL app, run `scripts/build_macos_app.sh` from a checkout and
+For the native macOS app, run `scripts/build_macos_app.sh` from a checkout and
 open `target/desktop/Fast Transcript.app`. Open/drop a file or paste a link to see
 text arrive; copy, export, select a partial interval, choose a model, and create
 notes with an installed external agent. The app uses the same CLI operations.
@@ -89,8 +89,8 @@ runs. Live preview is followed by longer-context final recognition;
 recognition failure. Default-device/format changes have bounded recovery.
 The desktop provides one-click Record/Stop, live channel rows, saved-audio retry,
 and notes through those same commands; see [desktop meeting controls and validation](docs/desktop-meetings.md).
-Simultaneous native microphone/system capture passed on the built-in devices;
-the final menu-bar action check remains pending. See [current contracts](docs/live-meetings.md).
+Simultaneous native microphone/system capture, live text, recovery and menu
+controls passed acceptance. See [current contracts and hardware coverage limits](docs/live-meetings.md).
 
 ## Why this exists
 

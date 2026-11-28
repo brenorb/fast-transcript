@@ -68,6 +68,7 @@ was played. Recognition used cached parakeet-v3-int8 ONNX locally on CPU.
 | Stop meeting | Closed both tracks at a shared frame and replaced provisional text with the final document; Copy/Export/notes became available. |
 | Dictation/resource exclusion | Hold, model/agent changes and file actions were disabled during capture and saved replay. An initial GUI check exposed an enabled native Hold bridge; both the SwiftUI disabled state and guarded presenter entry points now prevent that second recording. |
 | Close/reopen | Closing the main window kept the same CLI session running. Opening the bundle from Finder reopened exactly one document in the same app process; live rows continued and Stop completed the same recording. |
+| Menu Show transcript/Stop meeting | The user operated both actual menu items in a final fixture run, reopening the closed document and stopping the same session. The saved manifest was stopped, both tracks had 512,671 frames, and the GUI showed Meeting complete. |
 | Transcribe saved audio | After cancellation retained raw audio, the button repaired the ownerless session and produced a final transcript. Its manifest remained interrupted and the GUI kept the coverage notice. |
 | Open last meeting | Read the completed document through CLI export; showed channel rows and capture coverage without loading a model. |
 | Create notes | One click used an explicitly registered local deterministic test agent and saved/displayed Markdown from the recovered transcript. This checks integration, not another real-provider login. |
@@ -122,12 +123,18 @@ native simultaneous capture, pre-stop local recognition, final publication and
 batch agreement on the current built-in devices. The app was then closed and its
 owned capture/model processes exited. No real external agent was invoked.
 
-### Remaining acceptance
+### Menu acceptance and coverage limits
 
-Actual menu-bar Show transcript/Stop controls have not been operated. Computer
-Use hung while inspecting the system menu-bar surface; that surface is excluded
-from further automation; a short manual menu check is pending. The Finder reopen
-path is verified separately. Real USB/Bluetooth switching, a first-use OS grant
-flow, echo cancellation and individual participant diarization remain unverified.
-The core native capture check above does not establish those behaviors. A stable
-milestone-6 tag still awaits the final menu check and green CI.
+Computer Use could not expose the menu-bar surface safely, so the user operated
+the actual menu items. An earlier take stopped through the app window and was
+not counted as menu-Stop evidence. In the final take, both Show transcript and
+Stop meeting were explicitly confirmed. Filesystem inspection found the same
+session stopped with 512,671 frames per track and a completed transcript; a fresh
+native UI observation showed Meeting complete. Quit then exited the app. No
+microphone was opened in this fixture test.
+
+The Finder reopen path is independently verified. Real USB/Bluetooth switching,
+a first-use OS grant flow, echo cancellation and individual participant
+diarization remain unverified. The built-in native capture and scripted route
+tests do not establish those behaviors. They are explicit coverage limits of
+the completed core live-meeting milestone.

@@ -1,12 +1,12 @@
 # Live meetings
 
-Roadmap milestone 6 is in progress. The meeting CLI now connects shared capture,
+Roadmap milestone 6 is complete. The meeting CLI connects shared capture,
 continuous normalization, durable storage, incremental inference, final export,
 and recovery, with adaptive clock alignment. Simultaneous native microphone and
 system-audio capture passed on the built-in devices. Route/format recovery and
 the [desktop meeting interface and acceptance](desktop-meetings.md) use the shared
-service; the final menu-bar action check is pending, so this milestone has no
-stable tag. Dictation is independently complete at
+service. Native Record/Stop and both menu-bar actions passed acceptance, with
+hardware coverage limits documented alongside the results. Dictation is complete at
 stable/dictation. Calendar/call detection remains milestone 7.
 
 ## Everyday use and unattended control

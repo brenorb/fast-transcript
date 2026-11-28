@@ -1,6 +1,7 @@
 # Desktop application
 
-Fast Transcript has a native macOS file/URL interface around the same Rust CLI.
+Fast Transcript has a native macOS interface around the same Rust CLI, with
+file/URL transcription, dictation, and live meetings.
 Open a file, drop media, paste a link, or enter a path/URL and click Transcribe.
 Text appears incrementally. Copy is one click; Export defaults to timestamped text,
 with plain text, SRT, WebVTT, and JSON available from its menu. Partial selection
