@@ -15,6 +15,28 @@ fscript calendar match 2026-11-27T14:00:00Z 2026-11-27T15:00:00Z --json
 fscript calendar disconnect
 ```
 
+## Google Calendar
+
+Google Calendar works through the same local EventKit path. Add the Google account
+in **System Settings → Internet Accounts → Add Account → Google**, then enable
+**Calendars** for that account. You can keep using Google Calendar in your browser;
+you do not need to switch to Apple's Calendar interface. Enabling other account
+services is not required for Fast Transcript.
+
+Calendar permission and account setup are separate: **full access** authorizes
+Fast Transcript to read calendars visible to macOS; it does not sign into Google
+or make a browser-only Google account visible. If Google is absent from Internet
+Accounts, or Calendars is disabled for it, its events cannot appear in this
+integration. Local visibility also depends on the account's synchronization.
+
+This matches OpenOats' current
+[EventKit implementation](https://github.com/yazinsai/OpenOats/blob/d8caac78ea283dc791f8d1c4185450e445d3f336/OpenOats/Sources/OpenOats/CalendarTitles.swift),
+rechecked against upstream on 2026-11-28. Neither that implementation nor Fast
+Transcript's current calendar adapter provides a separate Google OAuth client.
+Apple documents [adding calendar accounts](https://support.apple.com/guide/calendar/icl4308d6701/mac).
+
+## Reading and authorization
+
 Bare calendar lists the next 24 hours. Explicit periods require both RFC 3339
 timestamps, including timezone; the end is exclusive. Listing inventories every
 calendar and overlapping event visible to EventKit, including personal, declined,
@@ -88,9 +110,17 @@ states, connect/disconnect/revocation, invalid input, and cancellation after a
 confirmed blocked request. Meeting E2E checks durable title agreement and replay
 after disconnect. Native presenter tests use the actual CLI with explicit
 calendar fixtures, including bounded Quit during a blocked permission helper.
-These fixtures never request an OS grant. A passive native status probe reported
-`not_determined` on this host; real account-event delivery and the first-use macOS
-grant remain unverified until that grant can be tested with the user present.
+These fixtures never request an OS grant. On 2026-11-28, after the user allowed
+the native permission, the existing isolated developer app's actual **Refresh
+calendar status** action reported **full access**. Enabling **Use calendar meeting
+names** then returned successfully, cleared the earlier request-timeout error,
+and saved `{"version":1,"name_meetings":true}`. System Settings independently
+showed Fast Transcript's Full Access switch enabled. The frozen app was extracted
+from commit `7e56ed29cd7537e489d69b252bef703475328072`; its permission implementation
+is unchanged by the subsequent status-feedback and call-identity fixes. This
+validates native grant recognition and Connect after the grant. It does not
+establish delivery of real account events or Google synchronization; those remain
+unverified. No native microphone or meeting recording was opened for this check.
 
 The design follows OpenOats' separation of optional calendar titles from actual
 call detection; see [reference study](reference-apps.md). Relevant Apple contracts:

@@ -21,6 +21,17 @@ It queries events near now (a 15-minute window on either side), filters excluded
 calendars and all-day events, and ranks likely meetings using attendees and join
 links. At the end it can rebind using the recording's overlap with the event.
 
+The Google Calendar path was rechecked on 2026-11-28 against current upstream
+`d8caac78ea283dc791f8d1c4185450e445d3f336` (unchanged from the pinned revision).
+[CalendarTitles.swift](https://github.com/yazinsai/OpenOats/blob/d8caac78ea283dc791f8d1c4185450e445d3f336/OpenOats/Sources/OpenOats/CalendarTitles.swift)
+requests EventKit full access and reads all locally visible event calendars.
+[SettingsModel.swift](https://github.com/yazinsai/OpenOats/blob/d8caac78ea283dc791f8d1c4185450e445d3f336/OpenOats/Sources/OpenOats/SettingsModel.swift)
+invokes it from the naming toggle. There is no separate Google sign-in in this
+calendar path. Google must be connected to macOS Internet Accounts with Calendars
+enabled; granting OpenOats or Fast Transcript Calendar access alone does not add
+that account. The user can continue using Google's browser interface. See
+[Fast Transcript setup and native coverage](calendar.md#google-calendar).
+
 Recording detection is separate: physical input-device activity comes from Core
 Audio HAL listeners; a five-second debounce correlates it with running meeting
 apps. Camera activity can also trigger detection. The controller either prompts

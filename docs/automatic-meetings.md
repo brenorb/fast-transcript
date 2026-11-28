@@ -202,4 +202,6 @@ blocked inference request with no surviving logged model PID.
 
 These desktop checks use the real CLI and speech engine where stated. They do
 not prove actual native call metadata initiating capture; that remaining native
-acceptance gate and the first-use calendar grant are recorded in the roadmap.
+acceptance gate and real account-event delivery are recorded in the roadmap.
+Native Calendar full-access recognition and Connect after the user's grant were
+subsequently verified; see [calendar validation](calendar.md#validation-coverage).
