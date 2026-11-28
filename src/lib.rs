@@ -21,6 +21,7 @@ mod job;
 mod media_range;
 mod meeting_capture;
 mod meeting_store;
+mod meeting_watch;
 mod meetings;
 mod model;
 mod model_catalog;

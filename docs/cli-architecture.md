@@ -40,6 +40,7 @@ flag-based actions. We do not add a second flag spelling for each new action.
 | Paste access | `fscript permissions` | Inspect without prompting. Only explicit `--request paste` asks macOS for access. |
 | Meetings | `fscript meeting` | Live preview on stderr, final transcript path on stdout; Ctrl-C finishes capture and final recognition. Native acceptance passed on built-in devices. |
 | Meeting control | `fscript meeting --control`, `meeting status DIR`, `meeting recover DIR`, `meeting transcribe DIR` | Explicit JSONL start/stop/cancel; durable inspection/recovery and shared transcription of retained audio. |
+| Automatic meetings | `fscript meeting watch` | Foreground opt-in; shared call detector and existing capture; optional admission protocol. |
 | Call inspection | `fscript calls`, `fscript calls --watch --json` | Passive activity and confirmed transitions without capture. |
 | Calendar context | `fscript calendar`, `fscript calendar connect` | Passive local inventory; explicit permission and optional meeting titles. |
 

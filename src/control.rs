@@ -114,6 +114,16 @@ fn command() -> Command {
             .arg(Arg::new("model").long("model").help("Override the shared speech-model preference"))
             .arg(Arg::new("device").long("device").default_value("auto").help("Inference device supported by the model"))
             .arg(Arg::new("model-dir").long("model-dir").help("Existing speech-model directory"))
+            .subcommand(Command::new("auto").about("Inspect or save the desktop automatic-recording preference")
+                .arg(Arg::new("action").value_parser(["status", "enable", "disable"]).default_value("status")))
+            .subcommand(Command::new("watch").about("Record confirmed calls automatically until cancelled")
+                .after_help("This foreground action explicitly arms automatic recording, regardless of the desktop startup preference. The same app must use microphone and output for five seconds; twenty seconds of confirmed absence ends only the automatically owned session. --control requires an explicit accept for each offered episode; closing stdin cancels the watcher. Manual Stop suppresses restarting the same call. One watcher/capture per configuration profile. Ctrl-C cancels the entire job and retains saved audio. --duration finishes active capture and drains recognition before exiting.")
+                .arg(Arg::new("control").long("control").action(ArgAction::SetTrue).help("Offer detected episodes and wait for JSONL accept/skip/stop/cancel/suppress/shutdown requests"))
+                .arg(Arg::new("duration").long("duration").help("Positive finite seconds to watch; then finish pending recording"))
+                .arg(Arg::new("output-dir").long("output-dir").default_value("meetings").help("Parent directory for private meeting sessions"))
+                .arg(Arg::new("model").long("model").help("Override the shared speech-model preference"))
+                .arg(Arg::new("device").long("device").default_value("auto").help("Inference device supported by the model"))
+                .arg(Arg::new("model-dir").long("model-dir").help("Existing speech-model directory")))
             .subcommand(Command::new("status").about("Inspect the last durable checkpoint without recording").arg(Arg::new("directory").required(true)))
             .subcommand(Command::new("recover").about("Recover audio from an interrupted, unowned session").arg(Arg::new("directory").required(true)))
             .subcommand(Command::new("transcribe").about("Transcribe saved meeting audio without opening devices")
@@ -194,7 +204,11 @@ pub(crate) fn needs_supervision(raw: &[String]) -> bool {
             matches.subcommand_name(),
             Some("notes" | "record" | "calendar")
         ) || matches.subcommand().is_some_and(|(name, values)| {
-            (name == "meeting" && matches!(values.subcommand_name(), None | Some("transcribe")))
+            (name == "meeting"
+                && matches!(
+                    values.subcommand_name(),
+                    None | Some("transcribe" | "watch")
+                ))
                 || (name == "export" && (values.get_flag("copy") || values.get_flag("paste")))
                 || (name == "permissions" && values.get_one::<String>("request").is_some())
                 || (name == "calls" && values.get_flag("watch"))
@@ -350,6 +364,46 @@ pub(crate) fn run(raw: Vec<String>) -> Result<()> {
                     .context("--timeout is outside the supported duration range")?,
             })?;
             crate::notes::emit(&result, json)
+        }
+        Some(("meeting", values)) if values.subcommand_name() == Some("auto") => {
+            let values = values.subcommand_matches("auto").unwrap();
+            crate::meeting_watch::preference(values.get_one::<String>("action").unwrap(), json)
+        }
+        Some(("meeting", values)) if values.subcommand_name() == Some("watch") => {
+            let values = values.subcommand_matches("watch").unwrap();
+            let duration = values
+                .get_one::<String>("duration")
+                .map(|value| -> Result<_> {
+                    let seconds: f64 = value
+                        .parse()
+                        .context("--duration requires positive finite seconds")?;
+                    if !seconds.is_finite() || seconds <= 0.0 {
+                        bail!("--duration requires positive finite seconds");
+                    }
+                    std::time::Duration::try_from_secs_f64(seconds)
+                        .context("--duration is too large")
+                })
+                .transpose()?;
+            let mut arguments = vec![
+                "--output-dir".to_owned(),
+                std::path::absolute(values.get_one::<String>("output-dir").unwrap())?
+                    .to_string_lossy()
+                    .into_owned(),
+            ];
+            if matches.get_flag("quiet") {
+                arguments.push("--quiet".to_owned());
+            }
+            for name in ["model", "device", "model-dir"] {
+                if let Some(value) = values.get_one::<String>(name) {
+                    arguments.extend([format!("--{name}"), value.clone()]);
+                }
+            }
+            crate::meeting_watch::run(crate::meeting_watch::Options {
+                control: values.get_flag("control"),
+                json,
+                duration,
+                meeting_arguments: arguments,
+            })
         }
         Some(("meeting", values)) if values.subcommand_name() == Some("transcribe") => {
             let values = values.subcommand_matches("transcribe").unwrap();

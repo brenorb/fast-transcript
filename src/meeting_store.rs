@@ -86,11 +86,45 @@ fn options() -> OpenOptions {
     options
 }
 
-struct Lock {
+pub(crate) struct Lock {
     _file: File,
 }
 
 impl Lock {
+    pub(crate) fn profile(kind: &str, description: &str) -> Result<Self> {
+        let preferences = crate::meeting_watch::preferences_path();
+        let name = preferences
+            .file_name()
+            .context("meeting preference path has no filename")?
+            .to_string_lossy();
+        let path = preferences.with_file_name(format!("{name}.{kind}.lock"));
+        if let Some(parent) = path.parent().filter(|p| !p.as_os_str().is_empty()) {
+            std::fs::create_dir_all(parent)?;
+        }
+        let file = options()
+            .read(true)
+            .write(true)
+            .create(true)
+            .open(path)
+            .context("cannot open meeting profile lock")?;
+        if !file.metadata()?.is_file() {
+            bail!("meeting profile lock is not a regular file");
+        }
+        #[cfg(unix)]
+        {
+            use std::os::fd::AsRawFd;
+            if unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } != 0 {
+                return Err(std::io::Error::last_os_error()).context(description.to_owned());
+            }
+            Ok(Self { _file: file })
+        }
+        #[cfg(not(unix))]
+        {
+            let _ = file;
+            bail!("meeting ownership requires Unix");
+        }
+    }
+
     fn acquire(directory: &Path, create: bool) -> Result<Self> {
         let file = options()
             .read(true)

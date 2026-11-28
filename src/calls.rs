@@ -92,6 +92,10 @@ impl Snapshot {
         (input, output)
     }
 
+    pub(crate) fn has_call_input(&self) -> bool {
+        !self.activity().0.is_empty()
+    }
+
     fn candidates(&self) -> Vec<&'static str> {
         let (input, output) = self.activity();
         input.intersection(&output).copied().collect()
@@ -170,6 +174,89 @@ struct Trace {
     frames: Vec<Frame>,
     #[serde(default)]
     hold: bool,
+    #[serde(default)]
+    interval_ms: u64,
+}
+
+/// One evidence source and timing policy for inspection and automatic meetings.
+/// Explicit traces may compress wall time; native observations always use Instant.
+pub(crate) struct Monitor {
+    trace: Option<Trace>,
+    began: Instant,
+    next: Instant,
+    index: usize,
+    detector: Detector,
+}
+
+pub(crate) struct Observation {
+    pub at_ms: u64,
+    pub snapshot: Snapshot,
+    pub transitions: Vec<(&'static str, &'static str)>,
+    pub active: Vec<&'static str>,
+}
+
+impl Monitor {
+    pub(crate) fn new() -> Result<Self> {
+        let trace = std::env::var_os("FSCRIPT_CALLS_TEST_TRACE")
+            .map(|path| -> Result<Trace> {
+                let bytes = std::fs::read(path).context("cannot read call test trace")?;
+                let trace: Trace =
+                    serde_json::from_slice(&bytes).context("invalid call test trace")?;
+                if trace.frames.is_empty() {
+                    bail!("call test trace has no frames");
+                }
+                Ok(trace)
+            })
+            .transpose()?;
+        let began = Instant::now();
+        Ok(Self {
+            trace,
+            began,
+            next: began,
+            index: 0,
+            detector: Detector::default(),
+        })
+    }
+
+    pub(crate) fn finished(&self) -> bool {
+        self.trace
+            .as_ref()
+            .is_some_and(|trace| !trace.hold && self.index >= trace.frames.len())
+    }
+
+    pub(crate) fn poll(&mut self) -> Result<Option<Observation>> {
+        if Instant::now() < self.next {
+            return Ok(None);
+        }
+        let (at_ms, snapshot, interval) = if let Some(trace) = &self.trace {
+            let Some(frame) = trace.frames.get(self.index) else {
+                return Ok(None);
+            };
+            (
+                frame.at_ms,
+                frame.snapshot.clone(),
+                Duration::from_millis(trace.interval_ms),
+            )
+        } else {
+            (
+                u64::try_from(self.began.elapsed().as_millis())
+                    .context("call observation clock overflow")?,
+                native_snapshot()?,
+                INTERVAL,
+            )
+        };
+        let transitions = self.detector.update(at_ms, &snapshot)?;
+        self.index += 1;
+        self.next = Instant::now()
+            .checked_add(interval)
+            .context("call observation interval is too large")?;
+        Ok(Some(Observation {
+            at_ms,
+            snapshot,
+            transitions,
+            active: self.detector.active.keys().copied().collect(),
+        }))
+    }
 }
 
 pub(crate) fn run(watch: bool, duration: Option<&str>, json: bool) -> Result<()> {
@@ -184,41 +271,28 @@ pub(crate) fn run(watch: bool, duration: Option<&str>, json: bool) -> Result<()>
             Duration::try_from_secs_f64(seconds).context("duration is too large")
         })
         .transpose()?;
-    // Explicit, finite test evidence. Never silently replaces native metadata.
-    let trace = std::env::var_os("FSCRIPT_CALLS_TEST_TRACE")
-        .map(|path| -> Result<Trace> {
-            let bytes = std::fs::read(path).context("cannot read call test trace")?;
-            let trace: Trace = serde_json::from_slice(&bytes).context("invalid call test trace")?;
-            if trace.frames.is_empty() {
-                bail!("call test trace has no frames");
-            }
-            Ok(trace)
-        })
-        .transpose()?;
     let began = Instant::now();
-    let mut detector = Detector::default();
+    let mut monitor = Monitor::new()?;
     let mut sequence = 0u64;
     let mut index = 0usize;
     let mut stdout = std::io::stdout().lock();
     loop {
-        let elapsed = began.elapsed();
-        if watch && index > 0 && duration.is_some_and(|duration| elapsed >= duration) {
+        if watch && index > 0 && duration.is_some_and(|duration| began.elapsed() >= duration) {
             break;
         }
-        let (at_ms, snapshot) = if let Some(trace) = &trace {
-            if let Some(frame) = trace.frames.get(index) {
-                (frame.at_ms, frame.snapshot.clone())
-            } else if trace.hold {
-                std::thread::sleep(Duration::from_millis(20));
-                continue;
-            } else {
+        let Some(observation) = monitor.poll()? else {
+            if monitor.finished() {
                 break;
             }
-        } else {
-            let at_ms =
-                u64::try_from(elapsed.as_millis()).context("call observation clock overflow")?;
-            (at_ms, native_snapshot()?)
+            std::thread::sleep(Duration::from_millis(10));
+            continue;
         };
+        let Observation {
+            at_ms,
+            snapshot,
+            transitions,
+            active,
+        } = observation;
         let candidates = snapshot.candidates();
         if !watch {
             if json {
@@ -244,7 +318,7 @@ pub(crate) fn run(watch: bool, duration: Option<&str>, json: bool) -> Result<()>
             stdout.flush()?;
             return Ok(());
         }
-        for (kind, app) in detector.update(at_ms, &snapshot)? {
+        for (kind, app) in transitions {
             if json {
                 event(
                     &mut stdout,
@@ -264,7 +338,7 @@ pub(crate) fn run(watch: bool, duration: Option<&str>, json: bool) -> Result<()>
                 "snapshot",
                 serde_json::json!({
                     "observed_ms":at_ms,"snapshot":snapshot,"candidates":candidates,
-                    "active":detector.active.keys().collect::<Vec<_>>()
+                    "active":active
                 }),
             )?;
         } else if index == 0 {
@@ -273,12 +347,6 @@ pub(crate) fn run(watch: bool, duration: Option<&str>, json: bool) -> Result<()>
             );
         }
         index += 1;
-        if trace.is_none() {
-            let pause = duration
-                .map(|duration| duration.saturating_sub(began.elapsed()).min(INTERVAL))
-                .unwrap_or(INTERVAL);
-            std::thread::sleep(pause);
-        }
     }
     if json {
         event(

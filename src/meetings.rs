@@ -146,6 +146,14 @@ fn run_session(options: &Options, events: &mut Events) -> Result<()> {
             _ => bail!("meeting control requires start before stop or cancel"),
         }
     }
+    let _live_lease = if options.saved_directory.is_none() {
+        Some(crate::meeting_store::Lock::profile(
+            "capture",
+            "meeting capture is already active for this profile",
+        )?)
+    } else {
+        None
+    };
     let mut saved_session = options
         .saved_directory
         .as_deref()

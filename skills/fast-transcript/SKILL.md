@@ -122,3 +122,16 @@ access. `calendar match START END --json` uses the shared full-interval matcher.
 Inspection never prompts or loads models; calendar times do not trigger capture.
 Named meeting manifests and result.meeting contain optional calendar_event metadata;
 existing names survive replay/disconnect. See docs/calendar.md for access gaps.
+
+
+`fscript meeting watch` explicitly arms foreground automatic recording; optional
+--duration stops watching and finishes the current transcript. --json emits a
+versioned outer stream wrapping original meeting events per episode. --control
+requires JSONL accept/skip/stop/cancel with episode IDs; suppress/shutdown need no
+ID. Do not accept before reserving capture/model resources. A pending offer opens
+no capture or model. Manual Stop suppresses the continuing call. Cancel, EOF and
+Ctrl-C terminate the whole watch group and retain audio; do not eagerly restart a
+failed/cancelled generation into the same ongoing call. `meeting auto` inspects the
+passive desktop-startup preference; enable/disable save it without starting a
+service. FSCRIPT_MEETING_CONFIG_FILE isolates preferences and watch/capture locks.
+See docs/automatic-meetings.md for protocol fields and native/GUI acceptance gaps.

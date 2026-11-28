@@ -25,6 +25,8 @@ fscript record --control --json
 fscript record --hotkey
 fscript meeting
 fscript meeting --duration 60 --json
+fscript meeting watch [--duration SECONDS] [--control] [--json]
+fscript meeting auto [status|enable|disable] [--json]
 fscript meeting --control
 fscript meeting status SESSION [--json]
 fscript meeting recover SESSION [--json]
@@ -330,3 +332,35 @@ complete requested period; only match filters eligibility. Only match fills
 matched_event. No participant identities, links or event notes are stored.
 FSCRIPT_CALENDAR_CONFIG_FILE overrides the private calendar.json preferences.
 See docs/calendar.md for fields, matching rules, native permission and coverage.
+
+
+## Automatic meetings
+
+fscript meeting watch explicitly arms foreground automatic recording. It uses the
+shared process-attributed detector, starts the existing meeting service once per
+continuous confirmed call episode, and stops only automatically owned capture
+after twenty seconds of confirmed absence. Overlapping apps share one recording.
+Calendar times never start capture. Default stdout prints completed transcript
+paths; preview/status uses stderr. --quiet also reaches the meeting child.
+
+--duration limits watching then finishes active capture and final recognition.
+Ctrl-C cancels the entire supervised group and retains saved audio. One watcher
+per settings profile and one live meeting through final recognition prevent
+parallel automatic/manual capture. A manual recording already covering a call is
+left running and consumes that episode. Stop cannot restart the same call.
+Failure/cancellation disarms that watch generation; restart explicitly.
+
+--control emits offers without opening capture/model. Send newline-terminated
+JSON accept/skip/stop/cancel requests with the offered episode, or suppress/shutdown
+without an episode. Only a current unconsumed accept can start a session. A GUI
+must reserve its workspace before accepting. Each outer meeting event contains
+episode and the unchanged inner meeting event; decode each episode independently.
+All outer events have version 1 and contiguous sequence. Watch EOF/completion is
+not evidence of an inner transcript's success. See docs/automatic-meetings.md for
+the complete protocol, ownership, fixture boundaries and remaining GUI/native checks.
+
+meeting auto defaults to status. Enable/disable save the desktop startup preference
+without capture, model loading or permission prompts; they do not start a daemon.
+Watch is an explicit opt-in independent of that preference. Override the shared
+meetings.json preference/lock profile with FSCRIPT_MEETING_CONFIG_FILE. Desktop
+automatic controls are the next implementation step.

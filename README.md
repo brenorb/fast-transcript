@@ -97,7 +97,10 @@ confirmed call detector without recording or opening permission prompts; see
 [call detection](docs/call-detection.md). `fscript calendar connect` enables optional
 meeting titles from calendars already configured on macOS. The desktop gear menu
 uses the same actions. See [calendar context and permission coverage](docs/calendar.md).
-Opt-in automatic recording is the next milestone-7 step.
+`fscript meeting watch` provides opt-in automatic recording through the shared
+detector and capture service. [Automatic CLI behavior and current acceptance limits](docs/automatic-meetings.md)
+cover call episodes, manual-stop suppression and cancellation. Automatic desktop
+controls are the next milestone-7 step.
 
 ## Why this exists
 

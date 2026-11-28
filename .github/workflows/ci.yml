@@ -49,6 +49,8 @@ jobs:
         run: uv run --no-project --with yt-dlp python -m unittest tests/test_recording_cli.py
       - name: Meeting capture, live updates, cancellation, and recovery E2E
         run: uv run --no-project python -m unittest tests/test_meeting_cli.py
+      - name: Automatic meeting lifecycle, admission and ownership E2E
+        run: uv run --no-project python -m unittest tests/test_meeting_watch_cli.py
       - name: Passive call inspection and detector E2E
         run: uv run --no-project python -m unittest tests/test_calls_cli.py
       - name: Calendar access, context matching and preference E2E
