@@ -135,3 +135,9 @@ failed/cancelled generation into the same ongoing call. `meeting auto` inspects 
 passive desktop-startup preference; enable/disable save it without starting a
 service. FSCRIPT_MEETING_CONFIG_FILE isolates preferences and watch/capture locks.
 See docs/automatic-meetings.md for protocol fields and native/GUI acceptance gaps.
+
+The desktop automatic-recording toggle saves `meeting auto` preferences and owns
+one `meeting watch --control --json`. It reserves the workspace and stops warm
+dictation before accepting. Stop suppresses the continuing call; turning off
+finishes active capture. Cancel disables the preference; Quit preserves it for
+future startup. The GUI and manual CLI share the same meeting decoder/service.

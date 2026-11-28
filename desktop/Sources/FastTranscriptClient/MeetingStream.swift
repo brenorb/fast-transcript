@@ -72,73 +72,78 @@ public struct MeetingStreamDecoder {
         var events: [MeetingEvent] = []
         for line in lines.append(bytes) {
             let event = try JSONDecoder().decode(MeetingEvent.self, from: line)
-            guard !terminal, event.version == 1, event.sequence == sequence, sequence < UInt64.max else {
-                throw ClientError("Unsupported or out-of-order meeting event.")
-            }
-            if event.type == "error" {
-                guard event.data.fatal == true, let message = event.data.message, !message.isEmpty,
-                      event.session_id == nil || event.session_id == id else { throw ClientError("Incomplete meeting failure.") }
-                terminal = true
-                errorMessage = message
-            } else if event.type == "ready" {
-                guard !ready, id == nil, event.session_id == nil,
-                      event.data.requires_start == (mode == .live) else { throw ClientError("Unexpected meeting readiness event.") }
-                ready = true
-            } else if event.type == "started" {
-                guard ready, id == nil, let session = event.session_id, !session.isEmpty,
-                      let path = event.data.directory, path.hasPrefix("/") else { throw ClientError("Meeting did not supply its session directory.") }
-                id = session
-                directory = path
-            } else {
-                guard let id, event.session_id == id else { throw ClientError("Meeting event names an inactive session.") }
-                switch event.type {
-                case "restored":
-                    guard mode == .saved, !audioSaved, let manifest = event.data.manifest,
-                          ["stopped", "interrupted"].contains(manifest.state), manifest.track_frames.count == 2,
-                          event.data.directory == directory else { throw ClientError("Invalid restored meeting.") }
-                    audioSaved = true
-                    savedManifest = manifest
-                case "recording":
-                    guard mode == .live, !recording, !audioSaved, event.data.directory == directory else { throw ClientError("Unexpected meeting capture readiness.") }
-                    recording = true
-                case "source_status":
-                    guard mode == .live, !audioSaved, ["microphone", "system"].contains(event.data.track ?? ""),
-                          ["ready", "reconnecting", "receiving"].contains(event.data.state ?? "") else { throw ClientError("Invalid meeting source status.") }
-                case "model_ready":
-                    guard !modelReady, !recognitionFailed else { throw ClientError("Unexpected meeting model readiness.") }
-                    modelReady = true
-                case "update":
-                    guard mode == .live, modelReady, !recognitionFailed, event.data.text != nil else { throw ClientError("Invalid live meeting update.") }
-                case "recognition_error":
-                    guard !recognitionFailed, let message = event.data.message, !message.isEmpty,
-                          event.data.recording_continues == !audioSaved else { throw ClientError("Incomplete recognition failure.") }
-                    recognitionFailed = true
-                case "saved":
-                    guard mode == .live, !audioSaved, let manifest = event.data.manifest,
-                          manifest.state == "stopped", manifest.track_frames.count == 2,
-                          event.data.directory == directory else { throw ClientError("Invalid saved meeting audio.") }
-                    audioSaved = true
-                    savedManifest = manifest
-                case "completed":
-                    guard audioSaved, modelReady, !recognitionFailed, let result = event.data.result,
-                          result.meeting == savedManifest,
-                          event.data.directory == directory,
-                          event.data.output_path == directory.map({ URL(fileURLWithPath: $0).appendingPathComponent("transcript.json").path }) else { throw ClientError("Meeting ended without a complete saved transcript.") }
-                    terminal = true
-                    completed = true
-                case "cancelled":
-                    guard mode == .live, event.data.directory == directory,
-                          event.data.audio_stopped == audioSaved,
-                          event.data.recoverable == !audioSaved else { throw ClientError("Invalid meeting cancellation.") }
-                    terminal = true
-                    cancelled = true
-                default: throw ClientError("Unsupported meeting event: \(event.type)")
-                }
-            }
-            sequence += 1
+            try consume(event)
             events.append(event)
         }
         return events
+    }
+
+    /// Shared validation for direct and watcher-wrapped meeting events.
+    public mutating func consume(_ event: MeetingEvent) throws {
+        guard !terminal, event.version == 1, event.sequence == sequence, sequence < UInt64.max else {
+            throw ClientError("Unsupported or out-of-order meeting event.")
+        }
+        if event.type == "error" {
+            guard event.data.fatal == true, let message = event.data.message, !message.isEmpty,
+                  event.session_id == nil || event.session_id == id else { throw ClientError("Incomplete meeting failure.") }
+            terminal = true
+            errorMessage = message
+        } else if event.type == "ready" {
+            guard !ready, id == nil, event.session_id == nil,
+                  event.data.requires_start == (mode == .live) else { throw ClientError("Unexpected meeting readiness event.") }
+            ready = true
+        } else if event.type == "started" {
+            guard ready, id == nil, let session = event.session_id, !session.isEmpty,
+                  let path = event.data.directory, path.hasPrefix("/") else { throw ClientError("Meeting did not supply its session directory.") }
+            id = session
+            directory = path
+        } else {
+            guard let id, event.session_id == id else { throw ClientError("Meeting event names an inactive session.") }
+            switch event.type {
+            case "restored":
+                guard mode == .saved, !audioSaved, let manifest = event.data.manifest,
+                      ["stopped", "interrupted"].contains(manifest.state), manifest.track_frames.count == 2,
+                      event.data.directory == directory else { throw ClientError("Invalid restored meeting.") }
+                audioSaved = true
+                savedManifest = manifest
+            case "recording":
+                guard mode == .live, !recording, !audioSaved, event.data.directory == directory else { throw ClientError("Unexpected meeting capture readiness.") }
+                recording = true
+            case "source_status":
+                guard mode == .live, !audioSaved, ["microphone", "system"].contains(event.data.track ?? ""),
+                      ["ready", "reconnecting", "receiving"].contains(event.data.state ?? "") else { throw ClientError("Invalid meeting source status.") }
+            case "model_ready":
+                guard !modelReady, !recognitionFailed else { throw ClientError("Unexpected meeting model readiness.") }
+                modelReady = true
+            case "update":
+                guard mode == .live, modelReady, !recognitionFailed, event.data.text != nil else { throw ClientError("Invalid live meeting update.") }
+            case "recognition_error":
+                guard !recognitionFailed, let message = event.data.message, !message.isEmpty,
+                      event.data.recording_continues == !audioSaved else { throw ClientError("Incomplete recognition failure.") }
+                recognitionFailed = true
+            case "saved":
+                guard mode == .live, !audioSaved, let manifest = event.data.manifest,
+                      manifest.state == "stopped", manifest.track_frames.count == 2,
+                      event.data.directory == directory else { throw ClientError("Invalid saved meeting audio.") }
+                audioSaved = true
+                savedManifest = manifest
+            case "completed":
+                guard audioSaved, modelReady, !recognitionFailed, let result = event.data.result,
+                      result.meeting == savedManifest,
+                      event.data.directory == directory,
+                      event.data.output_path == directory.map({ URL(fileURLWithPath: $0).appendingPathComponent("transcript.json").path }) else { throw ClientError("Meeting ended without a complete saved transcript.") }
+                terminal = true
+                completed = true
+            case "cancelled":
+                guard mode == .live, event.data.directory == directory,
+                      event.data.audio_stopped == audioSaved,
+                      event.data.recoverable == !audioSaved else { throw ClientError("Invalid meeting cancellation.") }
+                terminal = true
+                cancelled = true
+            default: throw ClientError("Unsupported meeting event: \(event.type)")
+            }
+        }
+        sequence += 1
     }
 
     public func finish(exitStatus: Int32) throws {

@@ -1,7 +1,7 @@
 # Desktop application
 
 Fast Transcript has a native macOS interface around the same Rust CLI, with
-file/URL transcription, dictation, and live meetings.
+file/URL transcription, dictation, live meetings, and opt-in automatic recording.
 The app icon and active meeting menu-bar item use the ✍️ writing-hand logo.
 The menu icon is a native monochrome template that follows macOS appearance;
 the app icon retains the emoji's colors.
@@ -69,6 +69,7 @@ first transcription when needed, not during application startup or model selecti
 | Export transcript | `fscript export RESULT.json --format srt --output transcript.srt`. |
 | Export notes | `fscript export notes.md --format markdown --output exported.md`. |
 | Copy | Read the CLI-provided text; scripts can pipe `fscript export RESULT.json --format compact --stdout` to a clipboard tool. |
+| Record calls automatically (gear/menu) | `fscript meeting auto enable` and one owned `fscript meeting watch --control --json`; disable saves the preference and finishes/stops that watcher. |
 | Record/Stop meeting | `fscript meeting --control --json`; send JSONL start/stop requests. |
 | Open last meeting | `fscript export SESSION/transcript.json --format json --stdout`. |
 | Transcribe saved meeting audio | `fscript meeting transcribe SESSION --json`. |
@@ -207,3 +208,10 @@ ad-hoc signing, whose designated requirement is tied to that exact build; an
 existing enabled permission entry may then refer to a previous code hash.
 Do not diagnose that mismatch as a disabled user setting. See [Apple's code
 identity explanation](https://developer.apple.com/documentation/technotes/tn3127-inside-code-signing-requirements/).
+
+
+Automatic meetings use an offer/accept protocol: an idle watcher leaves everyday
+controls available; the app reserves the workspace and stops warm dictation before
+accepting. The existing meeting decoder and presentation path handle both manual
+and automatic sessions. The ✍️ menu remains while watching or reporting a disarmed
+failure. See [automatic controls and acceptance](automatic-meetings.md#desktop-controls-and-acceptance).

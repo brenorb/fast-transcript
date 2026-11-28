@@ -99,8 +99,8 @@ meeting titles from calendars already configured on macOS. The desktop gear menu
 uses the same actions. See [calendar context and permission coverage](docs/calendar.md).
 `fscript meeting watch` provides opt-in automatic recording through the shared
 detector and capture service. [Automatic CLI behavior and current acceptance limits](docs/automatic-meetings.md)
-cover call episodes, manual-stop suppression and cancellation. Automatic desktop
-controls are the next milestone-7 step.
+cover call episodes, manual-stop suppression and cancellation. The desktop
+gear/menu toggle uses the same service and keeps the ✍️ indicator visible while armed.
 
 ## Why this exists
 

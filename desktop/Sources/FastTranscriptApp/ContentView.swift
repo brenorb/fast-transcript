@@ -66,46 +66,53 @@ struct ContentView: View {
                 }
             }
             HStack {
-                Button("Open file…", systemImage: "folder", action: workspace.openFile)
-                    .accessibilityIdentifier("openFile")
-                Button("Paste link", systemImage: "link", action: workspace.pasteLink)
-                    .accessibilityIdentifier("pasteLink")
-                if !workspace.meeting.isActive {
-                    Button("Record meeting", systemImage: "record.circle", action: { workspace.startMeeting() })
-                        .accessibilityIdentifier("recordMeeting")
-                        .disabled(!workspace.canStartMeeting)
-                        .help("Record microphone and system audio locally. Click Stop when the meeting ends.")
-                }
-                if workspace.lastMeetingDirectory != nil && !workspace.meeting.isActive {
-                    Button("Open last meeting", systemImage: "clock", action: workspace.openLastMeeting)
-                        .disabled(!workspace.canStartMeeting)
-                        .accessibilityIdentifier("openLastMeeting")
-                }
-                Spacer()
-                modelMenu
-                Menu {
-                    if let agents = workspace.agents {
-                        ForEach(agents.agents) { agent in
-                            Button {
-                                workspace.chooseAgent(agent.name)
-                            } label: {
-                                if agent.name == agents.default_agent { Label(agent.name, systemImage: "checkmark") }
-                                else { Text(agent.name) }
-                            }
-                            .disabled(!agent.available)
-                        }
+                Group {
+                    Button("Open file…", systemImage: "folder", action: workspace.openFile)
+                        .accessibilityIdentifier("openFile")
+                    Button("Paste link", systemImage: "link", action: workspace.pasteLink)
+                        .accessibilityIdentifier("pasteLink")
+                    if !workspace.meeting.isActive {
+                        Button("Record meeting", systemImage: "record.circle", action: { workspace.startMeeting() })
+                            .accessibilityIdentifier("recordMeeting")
+                            .disabled(!workspace.canStartMeeting)
+                            .help("Record microphone and system audio locally. Click Stop when the meeting ends.")
                     }
-                    Button("Choose automatically") { workspace.chooseAgent("auto") }
-                } label: {
-                    Label(workspace.agents?.default_agent ?? "Notes agent", systemImage: "sparkles")
+                    if workspace.lastMeetingDirectory != nil && !workspace.meeting.isActive {
+                        Button("Open last meeting", systemImage: "clock", action: workspace.openLastMeeting)
+                            .disabled(!workspace.canStartMeeting)
+                            .accessibilityIdentifier("openLastMeeting")
+                    }
+                    Spacer()
+                    modelMenu
+                    Menu {
+                        if let agents = workspace.agents {
+                            ForEach(agents.agents) { agent in
+                                Button {
+                                    workspace.chooseAgent(agent.name)
+                                } label: {
+                                    if agent.name == agents.default_agent { Label(agent.name, systemImage: "checkmark") }
+                                    else { Text(agent.name) }
+                                }
+                                .disabled(!agent.available)
+                            }
+                        }
+                        Button("Choose automatically") { workspace.chooseAgent("auto") }
+                    } label: {
+                        Label(workspace.agents?.default_agent ?? "Notes agent", systemImage: "sparkles")
+                    }
+                    .menuStyle(.borderlessButton)
+                    .fixedSize()
+                    .help("The selected external agent uses its own login and model provider.")
+                    .accessibilityIdentifier("agentPicker")
                 }
-                .menuStyle(.borderlessButton)
-                .fixedSize()
-                .help("The selected external agent uses its own login and model provider.")
-                .accessibilityIdentifier("agentPicker")
+                .disabled(workspace.busy)
                 Menu {
+                    Toggle("Record calls automatically", isOn: Binding(get: { workspace.automaticMeetingsEnabled }, set: { workspace.setAutomaticMeetings($0) }))
+                        .disabled(workspace.savingPreference || workspace.loading)
+                    Text(workspace.automatic.status)
+                    Divider()
                     Toggle("Use calendar meeting names", isOn: Binding(get: { workspace.calendar?.name_meetings ?? false }, set: { workspace.setCalendarNames($0) }))
-                        .disabled(workspace.calendar?.supported == false)
+                        .disabled(workspace.busy || workspace.calendar?.supported == false)
                     Text("Calendar access: \(workspace.calendar?.authorization.replacingOccurrences(of: "_", with: " ") ?? "unavailable")")
                     Button("Refresh calendar status") { Task { await workspace.refreshCalendar() } }
                 } label: {
@@ -117,7 +124,6 @@ struct ContentView: View {
                 .accessibilityLabel("Meeting settings")
                 .accessibilityIdentifier("meetingSettings")
             }
-            .disabled(workspace.busy)
             HStack(spacing: 12) {
                 HoldToTalkButton(title: workspace.dictation.title,
                     enabled: workspace.canDictate,

@@ -362,5 +362,6 @@ the complete protocol, ownership, fixture boundaries and remaining GUI/native ch
 meeting auto defaults to status. Enable/disable save the desktop startup preference
 without capture, model loading or permission prompts; they do not start a daemon.
 Watch is an explicit opt-in independent of that preference. Override the shared
-meetings.json preference/lock profile with FSCRIPT_MEETING_CONFIG_FILE. Desktop
-automatic controls are the next implementation step.
+meetings.json preference/lock profile with FSCRIPT_MEETING_CONFIG_FILE. The desktop gear/menu toggle uses this preference and one controlled watcher. It
+reserves the workspace before accepting an offer; disabling finishes active capture.
+Cancel disables the saved preference, while Quit preserves it for future startup.

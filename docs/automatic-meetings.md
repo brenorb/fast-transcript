@@ -22,9 +22,9 @@ fscript meeting auto disable
 Watch explicitly authorizes recording for that invocation, independently of the
 saved desktop-startup preference. `meeting auto` defaults to status; enable and
 disable persist that preference without inspecting devices, requesting permission,
-loading a model or starting a daemon. Desktop consumption of the preference and
-the automatic-recording toggle are the next implementation step. They are not
-present in the calendar settings menu yet.
+loading a model or starting a daemon. The desktop gear/menu toggle saves this same preference and owns one controlled
+watcher while the app runs. It arms on startup only when previously enabled.
+Refreshing status never restarts a failed or cancelled watcher.
 
 By default, watch prints provisional text/status on stderr and one absolute
 transcript path per completed recording on stdout. `--json` selects versioned
@@ -132,7 +132,8 @@ accidentally opening native devices.
 
 Native microphone/system capture and passive native Core Audio attribution were
 validated separately in earlier milestones. A real native call triggering the
-entire automatic lifecycle and the automatic GUI controls remain unverified.
+entire automatic lifecycle remains unverified; desktop control acceptance is
+described below.
 The fixture checks do not establish those native acceptance results. The design
 was reviewed with Astra against the existing supervisor and pinned OpenOats
 detector/older automatic-recording controller; see [reference study](reference-apps.md).
@@ -146,3 +147,59 @@ protocol/process/presenter checks using isolated settings. The blocked-inference
 case observed the model request before sending Ctrl-C and verified that every
 logged model PID disappeared. These are fixture/process acceptance results,
 not a claim of a real Zoom/Teams call or automatic GUI acceptance.
+
+
+## Desktop controls and acceptance
+
+Enable **Record calls automatically** in the gear menu or the ✍️ menu-bar menu.
+An idle watcher leaves file transcription, model/agent choices and dictation
+available. Rust offers a confirmed episode; the desktop reserves its single
+workspace synchronously, stops warm dictation, then accepts. Offers received
+while another job is busy remain pending. The GUI does not calculate attribution,
+five-/twenty-second timing, overlap, episode deduplication or calendar matching.
+
+The existing meeting view shows provisional Microphone/System rows, then replaces
+them with the completed document. Stop finishes the automatic session and suppresses
+its continuing call while the watcher stays armed. Turning automatic recording
+off during capture finishes that transcript before shutting down the watcher.
+Cancel disarms the watcher and saves the disabled preference; it never eagerly
+restarts into the same call. Quit cancels the owned group and preserves the explicit
+startup preference for a future app launch. Failed watching stays visibly disarmed
+in the menu bar, with its failure status and off/on retry available.
+
+The monochrome ✍️ item remains while armed, including when the document window is
+closed. Its idle label says that no audio is recorded. Removing the active item
+disables watching/cancels owned capture, preventing an invisible recorder. An
+initially hidden item is not a removal request and must not write preferences.
+
+On 2026-11-27 the isolated native bundle was checked with explicit call metadata
+and microphone/system WAV transports plus real cached parakeet-v3-int8 inference
+on CPU. No native capture endpoint or real Zoom call was opened. Enabling the
+actual gear-menu toggle started capture after confirmation; live recognized words
+appeared on both channels before automatic Stop. The final document had six
+segments and 258,017 retained frames per channel. Independent batch recognition
+of each saved track matched all three segments per channel exactly.
+
+A continuing-call fixture then verified actual toggle-off during capture: it
+completed a stopped manifest with 233,376 frames on each track and disarmed the
+watcher. A separate actual Stop-button check retained 196,627 frames per track,
+completed successfully, and did not restart the continuing call. The final toggle
+was off, the test window size was restored, and Quit closed the app. Earlier
+popup interactions outside the cropped test window could not be verified; enlarging
+the window kept the menu inside it and resolved that Computer Use limitation.
+Those unsuccessful attempts were not counted as successful toggle-off checks.
+
+The GUI check also exposed macOS reporting an initially hidden status item through
+its binding setter. Treating that as removal repeatedly wrote the disabled
+preference and kept controls busy. The handler now requires an actually visible,
+owned indicator; a native regression checks that startup creates no preference or
+operation. The complete native suite passes 35 tests: 20 protocol/process checks
+and 15 presenter/window checks. This includes 128 randomized byte-fragmentation
+runs over two independent watch episodes, invalid/unfinished lifecycle rejection,
+busy admission, idle resource availability, manual Stop, graceful disable,
+Cancel/refresh suppression, visible failure, and bounded Quit after a confirmed
+blocked inference request with no surviving logged model PID.
+
+These desktop checks use the real CLI and speech engine where stated. They do
+not prove actual native call metadata initiating capture; that remaining native
+acceptance gate and the first-use calendar grant are recorded in the roadmap.

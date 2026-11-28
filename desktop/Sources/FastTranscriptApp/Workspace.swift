@@ -30,6 +30,8 @@ struct AgentCatalog: Decodable {
 
 struct NotesResponse: Decodable { let notes: String }
 
+struct AutomaticMeetingPreference: Decodable { let version: Int; let enabled: Bool }
+
 struct CalendarStatus: Decodable {
     let version: Int
     let supported: Bool
@@ -89,6 +91,8 @@ final class Workspace {
     @ObservationIgnored private let controlEnvironment: [String: String]?
     let dictation = DictationController()
     let meeting = MeetingController()
+    let automatic = AutomaticMeetingController()
+    var automaticMeetingsEnabled = false
     var meetingIndicatorVisible = true
     @ObservationIgnored private var shuttingDown = false
     @ObservationIgnored private var restoreDictation = false
@@ -135,10 +139,31 @@ final class Workspace {
     var canStartMeeting: Bool { !busy && installation != nil }
     var canTranscribe: Bool { !busy && installation != nil && !input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     var displayedText: String { pane == .notes ? notes : transcript }
+    var hasMeetingIndicator: Bool { meetingIndicatorVisible && (meeting.isActive || automatic.isRunning || automaticMeetingsEnabled) }
 
     init(installation: CLIInstallation? = nil, controlEnvironment: [String: String]? = nil) {
         self.installation = installation
         self.controlEnvironment = controlEnvironment
+        dictation.onRecording = { [weak self] shortcut in self?.recordingBegan(shortcut: shortcut) }
+        dictation.onCompleted = { [weak self] message in self?.dictationCompleted(message) }
+        meeting.onEvent = { [weak self] message in self?.meetingEvent(message) }
+        meeting.onCompleted = { [weak self] message in self?.meetingCompleted(message) }
+        meeting.onFinished = { [weak self] in
+            guard let self else { return }
+            status = meeting.status
+            if restoreDictation && !shuttingDown { dictation.prepareForShortcut() }
+            restoreDictation = false
+        }
+        meeting.onManualEndRequested = { [weak self] in self?.automatic.suppress() }
+        automatic.admit = { [weak self] episode, apps in await self?.admitAutomaticMeeting(episode: episode, apps: apps) ?? false }
+        automatic.onMeeting = { [weak self] in self?.meeting.receiveAutomatic($0) }
+        automatic.onSessionExit = { [weak self] in self?.meeting.finishAutomatic() }
+        automatic.onReservationExpired = { [weak self] in self?.meeting.endAutomatic() }
+        automatic.onEnded = { [weak self] message in
+            guard let self else { return }
+            meeting.endAutomatic(error: message)
+            if let message, !shuttingDown { error = message }
+        }
     }
 
     func bootstrap() async {
@@ -152,19 +177,11 @@ final class Workspace {
             guard version.hasPrefix("fscript ") else { throw ClientError("The app's command helper is invalid. Reinstall the app.") }
             self.installation = installation
             dictation.configure(executable: installation.executable, directory: jobDirectory())
-            dictation.onRecording = { [weak self] shortcut in self?.recordingBegan(shortcut: shortcut) }
-            dictation.onCompleted = { [weak self] message in self?.dictationCompleted(message) }
-            meeting.onEvent = { [weak self] message in self?.meetingEvent(message) }
-            meeting.onCompleted = { [weak self] message in self?.meetingCompleted(message) }
-            meeting.onFinished = { [weak self] in
-                guard let self else { return }
-                status = meeting.status
-                if restoreDictation && !shuttingDown { dictation.prepareForShortcut() }
-                restoreDictation = false
-            }
             try await refreshModels()
             await refreshAgents()
             await refreshCalendar()
+            await refreshAutomaticMeetings()
+            if automaticMeetingsEnabled { startAutomaticWatcher() }
             status = "Ready"
             error = nil
             if pasteAfterDictation { checkPasteAccess(request: false) }
@@ -205,6 +222,66 @@ final class Workspace {
         let state = try? await JSONDecoder().decode(CalendarStatus.self, from: control(["calendar", "status", "--json"]))
         calendar = state?.version == 1 ? state : nil
     }
+
+    /// Refresh is passive: it never restarts a failed/cancelled watch generation.
+    func refreshAutomaticMeetings() async {
+        if let data = try? await control(["meeting", "auto", "status", "--json"]),
+           let preference = try? JSONDecoder().decode(AutomaticMeetingPreference.self, from: data), preference.version == 1 {
+            automaticMeetingsEnabled = preference.enabled
+        }
+    }
+
+    func setAutomaticMeetings(_ enabled: Bool) {
+        guard !loading, !savingPreference, !shuttingDown, installation != nil else { return }
+        savingPreference = true
+        Task {
+            defer { savingPreference = false }
+            do {
+                let data = try await control(["meeting", "auto", enabled ? "enable" : "disable", "--json"])
+                guard !shuttingDown else { return }
+                let preference = try JSONDecoder().decode(AutomaticMeetingPreference.self, from: data)
+                guard preference.version == 1 else { throw ClientError("Unsupported automatic meeting preference.") }
+                automaticMeetingsEnabled = preference.enabled
+                error = nil
+                if preference.enabled { startAutomaticWatcher() }
+                else { automatic.stopWatching() }
+            } catch { if !shuttingDown { self.error = error.localizedDescription } }
+        }
+    }
+
+    private func startAutomaticWatcher() {
+        guard !shuttingDown, automaticMeetingsEnabled, let installation else { return }
+        meetingIndicatorVisible = true
+        automatic.start(executable: installation.executable,
+            outputDirectory: dataDirectory().appendingPathComponent("meetings", isDirectory: true), environment: controlEnvironment)
+    }
+
+    private func cancelAutomaticMeeting() {
+        automatic.cancel()
+        if !shuttingDown { setAutomaticMeetings(false) }
+    }
+
+    private func admitAutomaticMeeting(episode: UInt64, apps: [String]) async -> Bool {
+        guard automaticMeetingsEnabled, !shuttingDown, !busy else { return false }
+        guard meeting.beginAutomatic(stop: { [weak self] in self?.automatic.stopCurrent() },
+            cancel: { [weak self] in self?.cancelAutomaticMeeting() }) else { return false }
+        restoreDictation = dictation.isRunning
+        dictation.cancel(); dictation.error = nil
+        meetingIndicatorVisible = true
+        completedURL = nil; notesURL = nil; transcript = ""; notes = ""; meetingSegments = []
+        pane = .transcript; error = nil; sourceTitle = apps.isEmpty ? "Meeting" : apps.joined(separator: ", ")
+        await dictation.shutdown()
+        return !shuttingDown && automaticMeetingsEnabled && meeting.state == .starting
+    }
+
+    func removeMeetingIndicator() {
+        guard hasMeetingIndicator else { return }
+        meetingIndicatorVisible = false
+        cancelAutomaticMeeting()
+        meeting.cancel()
+    }
+
+    func prepareToQuit() { shuttingDown = true; automatic.cancel() }
 
     func setCalendarNames(_ enabled: Bool) {
         guard !busy, installation != nil else { return }
@@ -376,6 +453,7 @@ final class Workspace {
 
     func startMeeting(savedDirectory: URL? = nil) {
         guard !busy, let installation else { return }
+        automatic.suppress()
         restoreDictation = dictation.isRunning
         dictation.cancel()
         dictation.error = nil
@@ -476,7 +554,7 @@ final class Workspace {
     }
 
     func shutdown() async {
-        shuttingDown = true
+        prepareToQuit()
         let pendingControls = Array(controlJobs.values)
         for job in pendingControls { job.process.cancel() }
         meeting.cancel()
@@ -487,6 +565,7 @@ final class Workspace {
         permissionProcess?.cancel()
         permissionTask?.cancel()
         await dictation.shutdown()
+        await automatic.shutdown()
         await meeting.shutdown()
         await jobTask?.value
         await deliveryTask?.value
@@ -592,7 +671,7 @@ final class Workspace {
     private func finishOperation() { activeProcess = nil; jobTask = nil; operation = nil }
 
     private func dataDirectory() -> URL {
-        let root = ProcessInfo.processInfo.environment["FSCRIPT_APP_DATA_DIR"].map { URL(fileURLWithPath: $0) }
+        let root = (controlEnvironment ?? ProcessInfo.processInfo.environment)["FSCRIPT_APP_DATA_DIR"].map { URL(fileURLWithPath: $0) }
             ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("fast-transcript/desktop", isDirectory: true)
         return root
     }

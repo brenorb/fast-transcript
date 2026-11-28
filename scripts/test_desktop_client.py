@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import sys
 import wave
+import uuid
 
 from macos_metadata import check_cli_permissions
 
@@ -62,7 +63,8 @@ def main():
             writer.writeframes(reader.readframes(reader.getframerate()))
         recording_batch = fixture.root / 'recording-batch.json'
         recording_batch.write_text(json.dumps(fixture.fixture.run_cli(capture)), encoding='utf-8')
-        environment = dict(fixture.env, FSCRIPT_CAPTURE_TEST_WAV=str(capture), FSCRIPT_SYSTEM_CAPTURE_TEST_WAV=str(source), FSCRIPT_DESKTOP_TEST_CAPTURE=str(capture),
+        environment = dict(fixture.env, FSCRIPT_APP_PREFERENCES_SUITE="com.brenorb.FastTranscript.NativeTests." + uuid.uuid4().hex,
+                           FSCRIPT_APP_DATA_DIR=str(fixture.root / "desktop-data"), FSCRIPT_CAPTURE_TEST_WAV=str(capture), FSCRIPT_SYSTEM_CAPTURE_TEST_WAV=str(source), FSCRIPT_DESKTOP_TEST_CAPTURE=str(capture),
                            FSCRIPT_DESKTOP_TEST_RECORDING_BATCH=str(recording_batch), FSCRIPT_DESKTOP_TEST_CLI=str(binary),
                            FSCRIPT_DESKTOP_TEST_SOURCE=str(source),
                            FSCRIPT_DESKTOP_TEST_BATCH=str(batch))

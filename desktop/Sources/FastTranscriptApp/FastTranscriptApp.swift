@@ -53,6 +53,7 @@ final class ApplicationDelegate: NSObject, NSApplicationDelegate {
         terminating = true
         // Stop capture synchronously before closing-window notifications can
         // turn Quit into a normal finish-and-export request.
+        workspace.prepareToQuit()
         workspace.meeting.cancel()
         workspace.dictation.cancel()
         Task {
@@ -101,18 +102,15 @@ struct FastTranscriptApp: App {
             }
         }
         MenuBarExtra(isInserted: Binding(
-            get: { workspace.meeting.isActive && workspace.meetingIndicatorVisible },
+            get: { workspace.hasMeetingIndicator },
             set: { visible in
-                if !visible && workspace.meeting.isActive {
-                    workspace.meetingIndicatorVisible = false
-                    workspace.meeting.cancel()
-                }
+                if !visible { workspace.removeMeetingIndicator() }
             })) {
             MeetingMenu(workspace: workspace, delegate: delegate)
         } label: {
             Image(nsImage: AppBrand.menuBarImage)
                 .renderingMode(.template)
-                .accessibilityLabel(workspace.meeting.indicatorTitle)
+                .accessibilityLabel(workspace.meeting.isActive ? workspace.meeting.indicatorTitle : workspace.automatic.status)
         }
         .menuBarExtraStyle(.menu)
     }
@@ -125,14 +123,18 @@ private struct MeetingMenu: View {
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
-        Text(workspace.meeting.status)
+        Text(workspace.meeting.isActive ? workspace.meeting.status : workspace.automatic.status)
         Button("Show transcript") {
             NSApp.activate(ignoringOtherApps: true)
             delegate.showMainWindow(opener: { openWindow(id: "main") })
         }
         if workspace.meeting.canStop { Button("Stop meeting", action: workspace.meeting.stop) }
-        Button("Cancel and keep saved audio", action: workspace.meeting.cancel)
-            .disabled(workspace.meeting.state == .cancelling)
+        if workspace.meeting.isActive {
+            Button("Cancel and keep saved audio", action: workspace.meeting.cancel)
+                .disabled(workspace.meeting.state == .cancelling)
+        }
+        Toggle("Record calls automatically", isOn: Binding(get: { workspace.automaticMeetingsEnabled }, set: { workspace.setAutomaticMeetings($0) }))
+            .disabled(workspace.savingPreference || workspace.loading)
         Divider()
         Button("Quit Fast Transcript") { NSApp.terminate(nil) }
     }

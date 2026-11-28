@@ -5,7 +5,9 @@ service as unattended clients. Saved audio uses `fscript meeting transcribe DIR`
 No audio capture, model loading, resampling, transcript merging, recovery policy,
 or note-agent adapter is implemented in Swift.
 
-Click **Record meeting**, then **Stop meeting**. Microphone and system text appears
+For manual capture, click **Record meeting**, then **Stop meeting**.
+For automatic capture, enable **Record calls automatically** in the gear/menu;
+see [automatic meeting controls and acceptance](automatic-meetings.md#desktop-controls-and-acceptance). Microphone and system text appears
 in the main document as recognition arrives. Short-context text is provisional;
 the final result replaces it. Audio is saved independently of recognition. If
 recognition fails, the app reports that capture continues until Stop. After
