@@ -1,4 +1,4 @@
-# fast-transcript
+# ✍️ fast-transcript
 
 **`fast-transcript` transcribes large audio and video recordings locally, with a native macOS interface and a noninteractive CLI.**
 

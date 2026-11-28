@@ -72,10 +72,12 @@ with tempfile.TemporaryDirectory(prefix='.fast-transcript-app-', dir=output.pare
         shutil.copy2(binary, helpers / name)
     for name in ('LICENSE', 'README.md'):
         shutil.copy2(root / name, resources / name)
+    shutil.copy2(root / 'resources/FastTranscript.icns', resources / 'FastTranscript.icns')
     info = dict(CFBundleName='Fast Transcript', CFBundleDisplayName='Fast Transcript',
                 CFBundleIdentifier='com.brenorb.fast-transcript', CFBundleExecutable='FastTranscriptApp',
                 CFBundlePackageType='APPL', CFBundleShortVersionString=version, CFBundleVersion=version,
                 LSMinimumSystemVersion=minimum, NSHighResolutionCapable=True,
+                CFBundleIconFile='FastTranscript.icns',
                 CFBundleDocumentTypes=[dict(CFBundleTypeName='Audio and video', CFBundleTypeRole='Viewer',
                                            LSHandlerRank='Alternate', LSItemContentTypes=['public.audio', 'public.movie'])])
     permissions = plistlib.loads((root / 'resources/fscript-Info.plist').read_bytes())

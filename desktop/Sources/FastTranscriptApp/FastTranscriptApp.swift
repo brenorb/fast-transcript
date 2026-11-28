@@ -100,7 +100,7 @@ struct FastTranscriptApp: App {
                     .disabled(workspace.meeting.isActive || workspace.operation != nil || workspace.loading || workspace.savingPreference || !workspace.dictation.canHold || workspace.dictation.state == .preparing)
             }
         }
-        MenuBarExtra(workspace.meeting.indicatorTitle, systemImage: workspace.meeting.state == .recording ? "record.circle.fill" : "waveform", isInserted: Binding(
+        MenuBarExtra(isInserted: Binding(
             get: { workspace.meeting.isActive && workspace.meetingIndicatorVisible },
             set: { visible in
                 if !visible && workspace.meeting.isActive {
@@ -109,6 +109,9 @@ struct FastTranscriptApp: App {
                 }
             })) {
             MeetingMenu(workspace: workspace, delegate: delegate)
+        } label: {
+            Text(AppBrand.symbol)
+                .accessibilityLabel(workspace.meeting.indicatorTitle)
         }
         .menuBarExtraStyle(.menu)
     }
