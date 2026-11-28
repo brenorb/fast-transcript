@@ -94,11 +94,40 @@ six presenter/window tests), including Unicode fragmentation, invalid lifecycles
 500 resource-exclusion states, batch/live/saved agreement, preparation stop, and
 bounded cancellation after an inference request is confirmed.
 
+### Native audio acceptance
+
+The same frozen committed development bundle then ran without either WAV
+transport override. Clicking Record opened native microphone capture and a Core
+Audio process tap simultaneously; existing OS grants allowed both without a new
+prompt. The defaults were MacBook Pro Microphone (48 kHz, one input channel) and
+MacBook Pro Speakers (48 kHz, two output channels). The tap mixes system output
+to mono; shared Rust normalization saves each track as 16 kHz mono PCM16.
+
+The checked-in public 15-second Portuguese speech sample was played with afplay
+through the normal output during the recording. Both channel labels showed
+recognized words before Stop. Stop completed capture and recognition, with no
+route interruption in the manifest. Raw tracks were independently wrapped as
+WAV and passed through the packaged CLI with the same cached model, CPU device,
+30-second chunks and 2-second overlap.
+
+| Track | Retained frames | Duration | Nonzero samples | PCM peak | Final segments | Independent batch agreement |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| Microphone | 542,866 | 33.929125 s | 500,738 | 23,378 | 2 | Exact timestamps and text for every segment |
+| System | 542,866 | 33.929125 s | 239,578 | 18,154 | 4 | Exact timestamps and text for every segment |
+
+Both sources delivered nonempty audio and ended at the same frame. The microphone
+also picked up playback acoustically; this does not demonstrate echo cancellation
+or separation of individual remote speakers. This check establishes working
+native simultaneous capture, pre-stop local recognition, final publication and
+batch agreement on the current built-in devices. The app was then closed and its
+owned capture/model processes exited. No real external agent was invoked.
+
 ### Remaining acceptance
 
 Actual menu-bar Show transcript/Stop controls have not been operated. Computer
 Use hung while inspecting the system menu-bar surface; that surface is excluded
-from further automation. The Finder reopen path is verified separately. Native
-microphone/system-audio delivery and real USB/Bluetooth switching also remain
-unverified in milestone 6. This interface does not by itself complete that
-milestone or justify a stable tag.
+from further automation; a short manual menu check is pending. The Finder reopen
+path is verified separately. Real USB/Bluetooth switching, a first-use OS grant
+flow, echo cancellation and individual participant diarization remain unverified.
+The core native capture check above does not establish those behaviors. A stable
+milestone-6 tag still awaits the final menu check and green CI.

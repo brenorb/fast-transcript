@@ -210,7 +210,7 @@ preview on stderr. On success, stdout prints only the absolute completed transcr
 path. --quiet hides preview/status without removing this path. It uses the shared
 saved model. The capture service requires macOS 14.2+
 and OS microphone/system-audio access. The desktop uses these same commands.
-Native capture delivery remains under validation; see docs/live-meetings.md for the implemented protocol and limits.
+Native capture passed local acceptance on built-in devices; see docs/live-meetings.md for the protocol and hardware coverage limits.
 
 --duration SECONDS stops capture without a terminal. --output-dir DIR chooses the
 parent session directory; each recording creates a new child and never overwrites

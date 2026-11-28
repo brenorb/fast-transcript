@@ -88,8 +88,8 @@ owner exits. Live snapshots are `transcript.partial.json`; only
 longer context and can revise the preview. Plain output prints its final path on
 stdout and preview/status on stderr; --json exposes the live protocol. The desktop
 Record meeting/Stop controls and saved-audio transcription use these same commands.
-Native system-audio and hardware-route acceptance remain in progress; see
-docs/live-meetings.md for coverage and current limits.
+Native microphone/system capture passed on the current built-in devices. Real
+hardware-route switching remains unverified; see docs/live-meetings.md for limits.
 
 For a stopped or interrupted meeting, run `fscript meeting transcribe SESSION`
 to transcribe retained audio without opening capture devices. It repairs an

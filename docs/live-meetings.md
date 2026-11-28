@@ -2,10 +2,11 @@
 
 Roadmap milestone 6 is in progress. The meeting CLI now connects shared capture,
 continuous normalization, durable storage, incremental inference, final export,
-and recovery, with adaptive clock alignment. Native system-audio delivery remains
-unverified. Route/format recovery and the [desktop meeting interface](desktop-meetings.md)
-are implemented through the shared service; native acceptance is still outstanding,
-so this milestone has no stable tag. Dictation is independently complete at
+and recovery, with adaptive clock alignment. Simultaneous native microphone and
+system-audio capture passed on the built-in devices. Route/format recovery and
+the [desktop meeting interface and acceptance](desktop-meetings.md) use the shared
+service; the final menu-bar action check is pending, so this milestone has no
+stable tag. Dictation is independently complete at
 stable/dictation. Calendar/call detection remains milestone 7.
 
 ## Everyday use and unattended control
@@ -554,9 +555,8 @@ and a healthy idle replacement followed by another route change. Existing shared
 recording and file/export regressions remain applicable. Hour-long waveform and
 clock alignment acceptance still runs separately in release mode. These checks
 prove the shared controller and normalization behavior under simulated routing;
-they do not prove real USB/Bluetooth switching, native system-audio delivery,
-first-use OS permission behavior, or meeting GUI behavior. Native acceptance and
-the meeting GUI remain required before a stable milestone-6 tag.
+they do not prove real USB/Bluetooth switching or first-use OS permission behavior.
+The later native and GUI checks are recorded in [desktop meetings](desktop-meetings.md).
 
 A lock-lifetime regression deliberately retains the lock's open-file description
 in a disposable child. Explicit owner unlock releases it even while that child
@@ -566,3 +566,15 @@ parallel process tests. A stop-during-tail-flush check covers future-dated fixtu
 frames and delayed cutoff publication, requiring exact final length or an
 interrupted result. Global --json placement remains valid on either side of the
 meeting verb while capture-only options are rejected with subcommands.
+
+## Native capture acceptance follow-up
+
+The committed desktop bundle captured the real built-in microphone and system
+output together, showed recognized channel rows before Stop, and finalized both
+tracks at 542,866 frames (33.929125 seconds). Each retained track matched an
+independent batch run exactly: two microphone segments and four system segments.
+The [full acceptance record](desktop-meetings.md#native-audio-acceptance) identifies
+devices, transport, model and coverage limits. Earlier sections record the evidence
+available at each implementation checkpoint; their fixture-only limits do not
+supersede this later native check. Physical route switching and first-use grant
+UX remain unverified.

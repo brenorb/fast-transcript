@@ -78,9 +78,8 @@ Microphone dictation is available through `fscript record` on macOS. Ctrl-C
 finishes the clip; agents can use `fscript record --duration 10`. A warm JSONL
 controller supports repeated recordings without reloading the model. See
 [recording and its validation coverage](docs/recording.md). Desktop hold-to-talk
-and a shared global shortcut are implemented and under end-to-end validation.
-[Dictation controls and validation status](docs/dictation-validation.md) track the
-remaining checks.
+and a shared global shortcut passed native paste and focus-change acceptance.
+See [dictation controls and validation coverage](docs/dictation-validation.md).
 
 Live meeting capture is available in the development CLI as `fscript meeting`:
 separate microphone/system tracks, live channel-attributed text, durable recovery,
@@ -90,7 +89,8 @@ runs. Live preview is followed by longer-context final recognition;
 recognition failure. Default-device/format changes have bounded recovery.
 The desktop provides one-click Record/Stop, live channel rows, saved-audio retry,
 and notes through those same commands; see [desktop meeting controls and validation](docs/desktop-meetings.md).
-Native system-audio acceptance remains in progress; see [current contracts](docs/live-meetings.md).
+Simultaneous native microphone/system capture passed on the built-in devices;
+the final menu-bar action check remains pending. See [current contracts](docs/live-meetings.md).
 
 ## Why this exists
 

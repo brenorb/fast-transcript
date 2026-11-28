@@ -49,6 +49,9 @@ first transcription when needed, not during application startup or model selecti
 | Export transcript | `fscript export RESULT.json --format srt --output transcript.srt`. |
 | Export notes | `fscript export notes.md --format markdown --output exported.md`. |
 | Copy | Read the CLI-provided text; scripts can pipe `fscript export RESULT.json --format compact --stdout` to a clipboard tool. |
+| Record/Stop meeting | `fscript meeting --control --json`; send JSONL start/stop requests. |
+| Open last meeting | `fscript export SESSION/transcript.json --format json --stdout`. |
+| Transcribe saved meeting audio | `fscript meeting transcribe SESSION --json`. |
 | Cancel/Quit during work | Send SIGTERM to the CLI supervisor; owned helpers are reaped. |
 
 Model choice saves the same preference used by the CLI. A FSCRIPT_MODEL_URL
@@ -59,8 +62,8 @@ agent commands through fscript; ordinary use requires only Create notes.
 The app keeps one current job. Completed JSON transcripts and Markdown notes are
 saved under ~/Library/Application Support/fast-transcript/desktop/UUID. Export
 chooses another destination through the native Save dialog. The CLI creates these
-files atomically. Cancel retains provisional text on screen for Copy, but does
-not label it complete or allow a completed-document export. A transcript is only
+files atomically. Cancel retains provisional text on screen, but does
+not enable completed-document Copy, Export or notes. A transcript is only
 successful after a completed event and zero process status.
 
 FSCRIPT_APP_DATA_DIR overrides desktop output storage. FSCRIPT_APP_HELPERS points
@@ -97,21 +100,23 @@ cargo build --locked
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer python3 scripts/test_desktop_client.py
 ```
 
-Python, FFmpeg, and ffprobe are required. Sixteen native checks cover the process
+Python, FFmpeg, and ffprobe are required. Twenty-four native checks cover the process
 client, real CLI/batch parity, cancellation, native file-provider input, malformed
 lifecycles, 500 randomized UTF-8 event fragmentation cases, and 500 file-path
-transport cases, and 500 hosting-window close/detachment cases. The window
+transport cases, 500 hosting-window close/detachment cases, meeting capture/replay,
+resource exclusion, and reopening with visible status windows. The window
 regression creates only unshown test-process windows. The real CLI and FFmpeg run with a deterministic ASR worker;
 these checks download no model and call no paid agent. Running swift test directly
-skips the four fixture-dependent integration cases unless their environment is
+skips fixture-dependent integration cases unless their environment is
 supplied. macOS CI runs the full script and verifies the built app signature and
 bundled command. See [desktop-validation.md](desktop-validation.md) for actual
 GUI controls and local ONNX inference evidence.
 
-Dictation is under acceptance validation. Live meeting capture, calendar/call
-detection, session history/recovery, and stable distribution remain later milestones.
+Dictation acceptance is complete. The [meeting interface](desktop-meetings.md)
+supports live capture, saved audio and recovery through the same CLI. Calendar/call
+detection and stable distribution remain later milestones.
 
-## Dictation (under validation)
+## Dictation
 
 Hold the microphone button to dictate; release to transcribe and copy the result.
 First use prepares the model and requests microphone authorization if needed;
