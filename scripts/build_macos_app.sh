@@ -9,17 +9,21 @@ root="$(cd "$(dirname "$0")/.." && pwd)"
 configuration=release
 signing_identity="${FSCRIPT_SIGNING_IDENTITY:--}"
 output="$root/target/desktop/Fast Transcript.app"
+hardened_runtime=false
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --debug) configuration=debug; shift ;;
     --output) output="$2"; shift 2 ;;
     --sign-identity) signing_identity="$2"; shift 2 ;;
+    --hardened-runtime) hardened_runtime=true; shift ;;
     -h|--help)
-      echo 'Usage: scripts/build_macos_app.sh [--debug] [--output APP_PATH] [--sign-identity IDENTITY]'
+      echo 'Usage: scripts/build_macos_app.sh [--debug] [--output APP_PATH] [--sign-identity IDENTITY] [--hardened-runtime]'
       exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
   esac
 done
+
+if [[ "$signing_identity" != - ]]; then hardened_runtime=true; fi
 
 cargo_args=(build --locked --manifest-path "$root/Cargo.toml")
 if [[ "$configuration" == release ]]; then cargo_args+=(--release); fi
@@ -38,7 +42,7 @@ print(paths.pop())
 swift_args=(--package-path "$root/desktop" --scratch-path "$root/target/desktop-build" --configuration "$configuration" --product FastTranscriptApp)
 swift build "${swift_args[@]}"
 app_bin="$(swift build "${swift_args[@]}" --show-bin-path)/FastTranscriptApp"
-python3 - "$root" "$cargo_bin" "$app_bin" "$output" "$signing_identity" <<'PY'
+python3 - "$root" "$cargo_bin" "$app_bin" "$output" "$signing_identity" "$hardened_runtime" <<'PY'
 from pathlib import Path
 import os
 import plistlib
@@ -48,10 +52,12 @@ import subprocess
 import sys
 import tempfile
 
-root, cargo_binary, app_binary, output, signing_identity = sys.argv[1:]
+root, cargo_binary, app_binary, output, signing_identity, hardened_runtime = sys.argv[1:]
+hardened_runtime = hardened_runtime == "true"
 root, output = Path(root), Path(output).absolute()
 sys.path.insert(0, str(root / 'scripts'))
 from macos_metadata import check_cli_permissions
+from macos_bundle import check_bundle
 minimum = check_cli_permissions(Path(cargo_binary), root / 'resources/fscript-Info.plist')
 version = re.search(r'^version = "([^"]+)"', (root / 'Cargo.toml').read_text(), re.M)[1]
 output.parent.mkdir(parents=True, exist_ok=True)
@@ -86,11 +92,13 @@ with tempfile.TemporaryDirectory(prefix='.fast-transcript-app-', dir=output.pare
     (bundle / 'Contents/Info.plist').write_bytes(plistlib.dumps(info))
     # Sign nested code before the app. A persistent certificate gives the same
     # signer/identifier requirement across rebuilds; ad-hoc identity is per-build.
+    signing = ['--options', 'runtime', '--entitlements', str(root / 'resources/FastTranscript.entitlements')] if hardened_runtime else []
+    if signing_identity != '-': signing += ['--timestamp']
     for binary in helpers.iterdir():
         subprocess.run(['codesign', '--force', '--sign', signing_identity,
-                        '--identifier', 'com.brenorb.fast-transcript.cli', str(binary)], check=True)
-    subprocess.run(['codesign', '--force', '--sign', signing_identity, str(bundle)], check=True)
-    subprocess.run(['codesign', '--verify', '--deep', '--strict', str(bundle)], check=True)
+                        '--identifier', 'com.brenorb.fast-transcript.cli', *signing, str(binary)], check=True)
+    subprocess.run(['codesign', '--force', '--sign', signing_identity, *signing, str(bundle)], check=True)
+    check_bundle(bundle, root, require_hardened=hardened_runtime)
     if output.is_symlink() or (output.exists() and not (output / 'Contents/Info.plist').is_file()):
         raise SystemExit(f'refusing to replace a non-app destination: {output}')
     if output.exists():

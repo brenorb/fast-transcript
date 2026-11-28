@@ -27,12 +27,14 @@ scripts/build_macos_app.sh
 open 'target/desktop/Fast Transcript.app'
 ```
 
-Use --debug for a faster development build or --output APP_PATH to choose another
+Use --debug for a faster development build, --hardened-runtime to exercise resource
+entitlements with an ad-hoc identity, or --output APP_PATH to choose another
 bundle location. The builder stages a complete app beside its destination,
 checks the command version, copies the matching fscript executable,
 and applies an ad-hoc signature. It replaces only a prior Fast Transcript bundle.
-This is a local development build; signing/notarization and release distribution
-are a separate roadmap milestone.
+This is a local development build. [Archive/signing/notarization packaging](macos-distribution.md)
+provides verified developer artifacts and the credentialed distribution path;
+real notarized acceptance remains open.
 
 The checked-in resources/FastTranscript.icns is copied into every app bundle and
 declared in Info.plist. Its source is the same AppBrand.symbol used by the menu

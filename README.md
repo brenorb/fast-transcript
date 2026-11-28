@@ -102,6 +102,10 @@ detector and capture service. [Automatic CLI behavior and current acceptance lim
 cover call episodes, manual-stop suppression and cancellation. The desktop
 gear/menu toggle uses the same service and keeps the ✍️ indicator visible while armed.
 
+`python3 scripts/package_macos_app.py` builds and verifies an app ZIP with its
+matching CLI, checksum and manifest. See [macOS packaging and delivery status](docs/macos-distribution.md)
+for developer archives, installation, and the Developer ID/notarization path.
+
 ## Why this exists
 
 I wanted a tool for **transcribing long classes and lectures quickly on a laptop while still using the computer for normal work**.

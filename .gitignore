@@ -5,6 +5,7 @@
 *.whl
 .DS_Store
 dist-pypi/
+dist-macos/
 build/
 .venv/
 uv.lock

@@ -103,3 +103,10 @@ jobs:
           plutil -lint 'target/desktop/Fast Transcript.app/Contents/Info.plist'
           'target/desktop/Fast Transcript.app/Contents/Helpers/fscript' --version
           'target/desktop/Fast Transcript.app/Contents/Helpers/fscript' models --json
+
+      - name: Hardened app archive, checksum, installed CLI and notarization contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          artifact="$(python3 scripts/package_macos_app.py --debug --hardened-runtime --output-dir target/macos-package)"
+          FSCRIPT_MACOS_PACKAGE_DIR="$artifact" python3 -m unittest tests/test_macos_package.py

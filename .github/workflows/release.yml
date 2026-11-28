@@ -60,6 +60,22 @@ jobs:
           python -m pip install dist-pypi/*.whl
           fscript --version
           fscript --help >/dev/null
+      - name: Install desktop archive test dependency
+        if: runner.os == 'macOS' && github.event_name == 'workflow_dispatch' && github.ref_type == 'branch'
+        run: brew install ffmpeg
+      - name: Build and validate the desktop developer archive
+        if: runner.os == 'macOS' && github.event_name == 'workflow_dispatch' && github.ref_type == 'branch'
+        shell: bash
+        run: |
+          set -euo pipefail
+          artifact="$(python3 scripts/package_macos_app.py --output-dir dist-macos)"
+          FSCRIPT_MACOS_PACKAGE_DIR="$artifact" python3 -m unittest tests/test_macos_package.py
+      - uses: actions/upload-artifact@v5
+        if: runner.os == 'macOS' && github.event_name == 'workflow_dispatch' && github.ref_type == 'branch'
+        with:
+          name: desktop-macos-developer
+          path: dist-macos/*/*
+          if-no-files-found: error
       - uses: actions/upload-artifact@v5
         with:
           name: ${{ matrix.artifact_name }}
