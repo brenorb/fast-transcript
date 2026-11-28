@@ -37,6 +37,14 @@ struct CalendarStatus: Decodable {
     let supported: Bool
     let authorization: String
     let name_meetings: Bool
+    let queried: Bool
+    let calendars: [Calendar]
+
+    struct Calendar: Decodable, Identifiable, Equatable {
+        let id: String
+        let title: String
+        let source: String
+    }
 }
 
 struct PermissionStatus: Decodable {
@@ -221,6 +229,15 @@ final class Workspace {
     func refreshCalendar() async {
         let state = try? await JSONDecoder().decode(CalendarStatus.self, from: control(["calendar", "status", "--json"]))
         calendar = state?.version == 1 ? state : nil
+    }
+
+    /// The existing CLI inventories local calendars; this never requests access.
+    func readCalendarAccounts() async throws -> CalendarStatus {
+        let state = try JSONDecoder().decode(CalendarStatus.self, from: await control(["calendar", "--json"]))
+        guard state.version == 1 else { throw ClientError("Unsupported calendar response. Update the app.") }
+        guard !shuttingDown, !Task.isCancelled else { throw CancellationError() }
+        calendar = state
+        return state
     }
 
     /// Refresh is passive: it never restarts a failed/cancelled watch generation.

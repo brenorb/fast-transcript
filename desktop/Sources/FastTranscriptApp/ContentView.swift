@@ -8,6 +8,7 @@ struct ContentView: View {
     @Bindable var workspace: Workspace
     @State private var advanced = false
     @State private var dropTarget = false
+    @State private var calendarAccounts = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -27,6 +28,7 @@ struct ContentView: View {
         .background(WindowCloseObserver { workspace.dictation.windowClosed(origin: "native-main-window") }.frame(width: 0, height: 0).allowsHitTesting(false))
         .onDisappear { workspace.dictation.windowClosed(origin: "view-disappeared") }
         .onDrop(of: [.fileURL, .url, .plainText], isTargeted: $dropTarget, perform: acceptDrop)
+        .sheet(isPresented: $calendarAccounts) { CalendarAccountsView(workspace: workspace) }
     }
 
     private var inputControls: some View {
@@ -114,6 +116,8 @@ struct ContentView: View {
                     Toggle("Use calendar meeting names", isOn: Binding(get: { workspace.calendar?.name_meetings ?? false }, set: { workspace.setCalendarNames($0) }))
                         .disabled(workspace.busy || workspace.calendar?.supported == false)
                     Text("Calendar access: \(workspace.calendar?.authorization.replacingOccurrences(of: "_", with: " ") ?? "unavailable")")
+                    Button("Calendar accounts…") { calendarAccounts = true }
+                        .accessibilityIdentifier("calendarAccounts")
                     Button("Refresh calendar status") { Task { await workspace.refreshCalendar() } }
                 } label: {
                     Image(systemName: "gearshape")

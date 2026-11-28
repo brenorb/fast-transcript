@@ -35,6 +35,13 @@ rechecked against upstream on 2026-11-28. Neither that implementation nor Fast
 Transcript's current calendar adapter provides a separate Google OAuth client.
 Apple documents [adding calendar accounts](https://support.apple.com/guide/calendar/icl4308d6701/mac).
 
+The desktop gear menu's **Calendar accounts…** view shows every calendar and its
+source returned by the same `fscript calendar --json` command. It includes Google
+setup guidance, Refresh and Done. Opening or refreshing this view never requests
+permission or enables naming. Without access it explicitly says accounts have not
+been read; a successful empty inventory is a different state. Event titles are
+not displayed. Local calendar visibility does not establish remote sync freshness.
+
 ## Reading and authorization
 
 Bare calendar lists the next 24 hours. Explicit periods require both RFC 3339
@@ -121,6 +128,17 @@ is unchanged by the subsequent status-feedback and call-identity fixes. This
 validates native grant recognition and Connect after the grant. It does not
 establish delivery of real account events or Google synchronization; those remain
 unverified. No native microphone or meeting recording was opened for this check.
+
+The account view subsequently passed native button checks with an explicit calendar
+fixture: three calendars remained visible, including two titled Work under
+different sources; event titles were absent. Refresh preserved the populated
+inventory, removed old rows after denied access, and distinguished a successful
+empty inventory. Done returned to the transcript window. Inspection wrote no
+naming preference and requested no OS grant. The complete native suite passed
+38 checks, including 16 seeded inventory variations that preserve every calendar
+and source, passive inspection before access, and refresh after revocation.
+These account-view checks use the real shared CLI with calendar fixtures; they
+do not establish native account-event delivery or Google synchronization.
 
 The design follows OpenOats' separation of optional calendar titles from actual
 call detection; see [reference study](reference-apps.md). Relevant Apple contracts:
