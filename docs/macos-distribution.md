@@ -5,11 +5,20 @@ produces a ZIP, its SHA-256 sidecar, and a machine-readable manifest. The archiv
 is extracted and verified before publication; the CLI inside the extracted app
 must have the expected version, permissions, architecture and code identity.
 
-From a macOS checkout with Rust, Python 3 and Xcode developer tools:
+From a macOS checkout with Rust, Python 3 and the full Xcode developer tools:
 
 ```bash
 python3 scripts/package_macos_app.py
 ```
+
+If `xcode-select -p` points to Command Line Tools and SwiftUI compilation reports
+a missing macro plugin, select the installed full Xcode for this command only:
+
+```bash
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer python3 scripts/package_macos_app.py
+```
+
+This leaves the system's developer-tool selection unchanged.
 
 The default is a release build with an ad-hoc developer signature, saved under
 `dist-macos/fast-transcript-VERSION-macos-ARCH-developer/`. Stdout prints that

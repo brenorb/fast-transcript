@@ -1,8 +1,9 @@
 # Call detection
 
-Milestone 7 is in progress. The shared passive inspector and detector are
-implemented first. Calendar access, automatic recording policy, and its desktop
-controls follow separately. Inspection never starts recording.
+Milestone 7 is in progress. The shared passive inspector, calendar context and
+automatic CLI/desktop policy are implemented. Native automatic-call acceptance
+and the first-use calendar grant remain open; see [automatic meetings](automatic-meetings.md)
+and [calendar context](calendar.md). Inspection never starts recording.
 
 ```sh
 fscript calls
@@ -62,16 +63,15 @@ explain why global microphone activity plus an open meeting app caused false
 recordings. Fast Transcript adopts attribution to actual audio processes and
 same-app corroboration. Its [watcher](https://github.com/yazinsai/OpenOats/blob/d8caac78ea283dc791f8d1c4185450e445d3f336/OpenOats/Sources/OatsCapture/CallWatcher.swift)
 uses device listeners to avoid idle polling; this first inspector uses bounded
-two-second polling and does not yet run automatically in the GUI. Camera-based
+two-second polling, shared by the explicit desktop automatic-recording preference. Camera-based
 corroboration is not included. Calls whose output is unattributed or whose input
 has not started cannot yet be confirmed.
 
 Browser audio is an app-level heuristic: a browser voice assistant or microphone
 test that also plays audio can qualify. This is evidence of call-like activity,
 not identification of a particular tab or a guaranteed meeting. No automatic
-recording preference is enabled by this command. Later automatic recording must
-remain explicit opt-in and use the same Rust detector, rather than duplicating
-these rules in Swift.
+recording preference is enabled by this command. Automatic recording is explicit
+opt-in and uses this same Rust detector through `fscript meeting watch`.
 
 ## Validation
 

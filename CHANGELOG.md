@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+The next app version is 1.2.0. Developer archives identify their source commit;
+this version has not been tagged or published as a stable desktop release.
+Native automatic-call/calendar acceptance and signed distribution remain open in
+the [delivery ledger](docs/app-roadmap.md).
+
+- Add hold-to-talk dictation, Control–Shift–Space, warm local inference, and native paste through the shared recording CLI.
+- Record local meetings with separate microphone/system tracks, incremental text, durable audio recovery, shared CLI/desktop controls, and a monochrome ✍️ menu-bar icon.
+- Add passive process-attributed call detection, optional local calendar titles, and explicit opt-in automatic recording with shared admission, deduplication, stop and cancellation rules.
+- Package matching macOS app/CLI archives with checksum manifests, signature and extraction checks, hardened-runtime support, and an existing-credential Developer ID/notarization path. Manual branch builds provide developer artifacts; credentialed distribution is not yet accepted.
+
 - Add fscript skill for bundled agent instructions and fscript skill path for a Say It-style local skill path, without model startup or login.
 
 - Consolidate every action under fscript, removing fscriptctl from binaries, packages, and the desktop. Everyday file/URL transcription still needs no subcommand or extra flags; model/agent catalogs default to listing.
@@ -13,7 +23,7 @@
 
 - Reject missing local media and directory inputs before model setup or decoding, with the same direct path errors in batch, streaming, and desktop use.
 
-- Add the native macOS process/protocol client for the desktop app milestone, with pre-EOF pipe delivery, strict JSONL lifecycle checks, cancellation, and CLI/batch differential tests. The desktop interface remains in development.
+- Add the native macOS process/protocol client with pre-EOF pipe delivery, strict JSONL lifecycle checks, cancellation, and CLI/batch differential tests.
 
 - Export completed JSON/JSONL transcripts with `fscript export`, reusing text, speaker, SRT, VTT, and JSON renderers without rerunning inference.
 
