@@ -3,6 +3,7 @@ import Foundation
 public struct TranscriptSnapshot: Decodable, Equatable, Sendable {
     public let text: String
     public let segments: [TranscriptSegment]?
+    public let meeting: MeetingManifest?
 }
 
 public struct TranscriptSegment: Decodable, Equatable, Sendable {

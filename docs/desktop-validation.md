@@ -92,3 +92,11 @@ with no flags, verifies explicit paths for reserved filenames, and checks skill
 text/path output without inference or agent startup. The rebuilt app contains
 only fscript; its model picker and reset were exercised again through that helper.
 The bundled skill passed the skill-creator validator.
+
+## Meeting interface follow-up
+
+The desktop now calls the shared meeting service for live capture and retained
+audio. [Desktop meetings](desktop-meetings.md) records the actual Record/Stop,
+window-close/reopen, recovery, saved-document and notes checks, plus native
+property/E2E tests and real-model differential results. These fixture-based checks
+do not establish real microphone/system-audio delivery or complete milestone 6.

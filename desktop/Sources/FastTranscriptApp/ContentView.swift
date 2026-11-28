@@ -29,20 +29,37 @@ struct ContentView: View {
     private var inputControls: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 8) {
-                TextField("Video URL or file path", text: $workspace.input)
-                    .textFieldStyle(.roundedBorder)
-                    .accessibilityIdentifier("mediaInput")
-                    .onSubmit { workspace.start() }
-                    .disabled(workspace.busy)
-                if workspace.operation != nil || workspace.dictation.isBusy {
-                    Button("Cancel", systemImage: "stop.fill", action: workspace.cancel)
-                        .disabled((workspace.operation != nil && workspace.cancelRequested) || workspace.dictation.state == .stopping)
-                        .accessibilityIdentifier("cancelJob")
+                if workspace.meeting.isActive {
+                    Label(workspace.meeting.status, systemImage: workspace.meeting.state == .recording ? "record.circle.fill" : "waveform")
+                        .lineLimit(1)
+                        .accessibilityIdentifier("meetingStatus")
+                    Spacer()
+                    if workspace.meeting.canStop {
+                        Button("Stop meeting", systemImage: "stop.fill", action: workspace.meeting.stop)
+                            .buttonStyle(.borderedProminent)
+                            .tint(.red)
+                            .accessibilityIdentifier("stopMeeting")
+                    } else {
+                        Button("Cancel", systemImage: "xmark", action: workspace.meeting.cancel)
+                            .disabled(workspace.meeting.state == .cancelling)
+                            .accessibilityIdentifier("cancelMeeting")
+                    }
                 } else {
-                    Button("Transcribe", systemImage: "waveform", action: { workspace.start() })
-                        .buttonStyle(.borderedProminent)
-                        .disabled(!workspace.canTranscribe)
-                        .accessibilityIdentifier("transcribe")
+                    TextField("Video URL or file path", text: $workspace.input)
+                        .textFieldStyle(.roundedBorder)
+                        .accessibilityIdentifier("mediaInput")
+                        .onSubmit { workspace.start() }
+                        .disabled(workspace.busy)
+                    if workspace.operation != nil || workspace.dictation.isBusy {
+                        Button("Cancel", systemImage: "stop.fill", action: workspace.cancel)
+                            .disabled((workspace.operation != nil && workspace.cancelRequested) || workspace.dictation.state == .stopping)
+                            .accessibilityIdentifier("cancelJob")
+                    } else {
+                        Button("Transcribe", systemImage: "waveform", action: { workspace.start() })
+                            .buttonStyle(.borderedProminent)
+                            .disabled(!workspace.canTranscribe)
+                            .accessibilityIdentifier("transcribe")
+                    }
                 }
             }
             HStack {
@@ -50,6 +67,17 @@ struct ContentView: View {
                     .accessibilityIdentifier("openFile")
                 Button("Paste link", systemImage: "link", action: workspace.pasteLink)
                     .accessibilityIdentifier("pasteLink")
+                if !workspace.meeting.isActive {
+                    Button("Record meeting", systemImage: "record.circle", action: { workspace.startMeeting() })
+                        .accessibilityIdentifier("recordMeeting")
+                        .disabled(!workspace.canStartMeeting)
+                        .help("Record microphone and system audio locally. Click Stop when the meeting ends.")
+                }
+                if workspace.lastMeetingDirectory != nil && !workspace.meeting.isActive {
+                    Button("Open last meeting", systemImage: "clock", action: workspace.openLastMeeting)
+                        .disabled(!workspace.canStartMeeting)
+                        .accessibilityIdentifier("openLastMeeting")
+                }
                 Spacer()
                 modelMenu
                 Menu {
@@ -76,10 +104,11 @@ struct ContentView: View {
             .disabled(workspace.busy)
             HStack(spacing: 12) {
                 HoldToTalkButton(title: workspace.dictation.title,
-                    enabled: workspace.operation == nil && !workspace.loading && !workspace.savingPreference && workspace.dictation.canHold,
+                    enabled: workspace.canDictate,
                     shortcutLabel: workspace.dictation.shortcutWarning == nil ? workspace.dictation.shortcutLabel : nil,
-                    pressed: workspace.dictation.hold,
-                    accessiblePress: workspace.dictation.accessiblePress)
+                    pressed: workspace.holdDictation,
+                    accessiblePress: workspace.toggleDictation)
+                    .disabled(!workspace.canDictate)
                     .frame(width: 260, height: 30)
                 Text(workspace.dictation.shortcutWarning == nil ? "\(workspace.dictation.shortcutLabel) anywhere once prepared" : "Use the hold button").font(.caption).foregroundStyle(.secondary)
                 Spacer()
@@ -117,7 +146,15 @@ struct ContentView: View {
             }
             .font(.callout)
             .disabled(workspace.busy)
-            if let error = workspace.error ?? workspace.dictation.error {
+            if workspace.meeting.coverageChanged {
+                Label("Audio coverage may be incomplete. Review the saved meeting for interruptions or device changes.", systemImage: "exclamationmark.circle")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .accessibilityIdentifier("meetingCoverage")
+            }
+            if let warning = workspace.meeting.recognitionWarning {
+                Text(warning).font(.caption).foregroundStyle(.secondary)
+            }
+            if let error = workspace.error ?? workspace.meeting.error ?? workspace.dictation.error {
                 errorBanner(error)
             }
         }
@@ -181,17 +218,33 @@ struct ContentView: View {
                 ContentUnavailableView {
                     Label(emptyDocumentTitle, systemImage: "waveform")
                 } description: {
-                    Text(workspace.dictation.isBusy ? "Recognition runs locally. Your transcript appears when recording finishes." : workspace.completedURL != nil ? "No speech was recognized." : "Open a file or paste a video link. Transcription runs locally and appears as it arrives.")
+                    Text(workspace.meeting.isActive ? "Microphone and system audio are saved locally. Live text appears as it is recognized." : workspace.dictation.isBusy ? "Recognition runs locally. Your transcript appears when recording finishes." : workspace.completedURL != nil ? "No speech was recognized." : "Open a file or paste a video link. Transcription runs locally and appears as it arrives.")
                 }
             } else {
                 ScrollView {
-                    Text(workspace.displayedText)
-                        .font(.system(size: 16))
-                        .lineSpacing(5)
-                        .textSelection(.enabled)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    if workspace.pane == .transcript && !workspace.meetingSegments.isEmpty {
+                        LazyVStack(alignment: .leading, spacing: 20) {
+                            ForEach(Array(workspace.meetingSegments.enumerated()), id: \.offset) { index, segment in
+                                VStack(alignment: .leading, spacing: 5) {
+                                    Text(segment.speaker ?? "Speech").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                                    Text(segment.text).font(.system(size: 16)).lineSpacing(5).textSelection(.enabled)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .accessibilityElement(children: .combine)
+                                .accessibilityIdentifier("meetingSegment-\(index)")
+                            }
+                        }
                         .padding(24)
-                        .accessibilityIdentifier("transcriptText")
+                        .accessibilityIdentifier("meetingTranscript")
+                    } else {
+                        Text(workspace.displayedText)
+                            .font(.system(size: 16))
+                            .lineSpacing(5)
+                            .textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(24)
+                            .accessibilityIdentifier("transcriptText")
+                    }
                 }
             }
         }
@@ -199,6 +252,7 @@ struct ContentView: View {
     }
 
     private var emptyDocumentTitle: String {
+        if workspace.meeting.isActive { return workspace.meeting.status }
         if workspace.dictation.isBusy { return workspace.dictation.title }
         if workspace.completedURL != nil { return "No speech recognized" }
         return workspace.operation == nil ? "Drop audio or video" : "Preparing your transcript"
@@ -207,15 +261,20 @@ struct ContentView: View {
     private var footer: some View {
         HStack(spacing: 12) {
             if workspace.busy { ProgressView().controlSize(.small) }
-            Text(workspace.dictation.isBusy ? workspace.dictation.title : workspace.status).font(.callout).foregroundStyle(.secondary)
+            Text(workspace.meeting.isActive ? workspace.meeting.status : workspace.dictation.isBusy ? workspace.dictation.title : workspace.status).font(.callout).foregroundStyle(.secondary)
                 .lineLimit(1).accessibilityIdentifier("jobStatus")
             Spacer()
+            if workspace.completedURL == nil, workspace.meeting.directory != nil, !workspace.meeting.isActive {
+                Button("Transcribe saved audio", action: workspace.retrySavedMeeting)
+                    .disabled(workspace.busy)
+                    .accessibilityIdentifier("retryMeeting")
+            }
             Button("Create notes", systemImage: "sparkles", action: workspace.generateNotes)
                 .disabled(workspace.busy || workspace.completedURL == nil)
                 .accessibilityIdentifier("createNotes")
                 .help("Create a summary and action items using your selected external agent.")
             Button("Copy", systemImage: "doc.on.doc", action: workspace.copy)
-                .disabled(workspace.displayedText.isEmpty)
+                .disabled(!workspace.canCopy)
                 .accessibilityIdentifier("copyDocument")
             HStack(spacing: 0) {
                 Button("Export…", action: { workspace.export() })
@@ -251,7 +310,7 @@ struct ContentView: View {
                 }
             }
             Spacer()
-            Button { workspace.error = nil; workspace.dictation.error = nil } label: { Image(systemName: "xmark") }
+            Button { workspace.error = nil; workspace.dictation.error = nil; workspace.meeting.error = nil } label: { Image(systemName: "xmark") }
                 .buttonStyle(.plain).accessibilityLabel("Dismiss error")
         }
         .padding(12)
@@ -275,3 +334,12 @@ struct ContentView: View {
         return false
     }
 }
+
+#if DEBUG
+#Preview("Ready") {
+    ContentView(workspace: Workspace.previewMeeting(recording: false))
+}
+#Preview("Meeting recording") {
+    ContentView(workspace: Workspace.previewMeeting(recording: true))
+}
+#endif

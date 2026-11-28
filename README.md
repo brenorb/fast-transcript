@@ -88,8 +88,9 @@ and the same export/notes commands. `--duration 60 --json` supports unattended
 runs. Live preview is followed by longer-context final recognition;
 `fscript meeting transcribe SESSION` processes retained audio after interruption or
 recognition failure. Default-device/format changes have bounded recovery.
-The meeting GUI and native system-audio
-acceptance are still in progress; see [current contracts and validation](docs/live-meetings.md).
+The desktop provides one-click Record/Stop, live channel rows, saved-audio retry,
+and notes through those same commands; see [desktop meeting controls and validation](docs/desktop-meetings.md).
+Native system-audio acceptance remains in progress; see [current contracts](docs/live-meetings.md).
 
 ## Why this exists
 

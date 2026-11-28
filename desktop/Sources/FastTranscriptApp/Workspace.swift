@@ -78,6 +78,11 @@ enum ExportFormat: String, CaseIterable, Identifiable {
 @MainActor @Observable
 final class Workspace {
     let dictation = DictationController()
+    let meeting = MeetingController()
+    var meetingIndicatorVisible = true
+    @ObservationIgnored private var shuttingDown = false
+    @ObservationIgnored private var restoreDictation = false
+    var lastMeetingDirectory: URL? = preferences.string(forKey: "lastMeetingDirectory").map { URL(fileURLWithPath: $0) }
     var pasteAfterDictation = preferences.bool(forKey: "pasteAfterDictation") { didSet { Self.preferences.set(pasteAfterDictation, forKey: "pasteAfterDictation") } }
     private static var preferences: UserDefaults {
         ProcessInfo.processInfo.environment["FSCRIPT_APP_PREFERENCES_SUITE"].flatMap(UserDefaults.init(suiteName:)) ?? .standard
@@ -96,6 +101,7 @@ final class Workspace {
     var rangeLast = "5:00"
     var pane = DocumentPane.transcript
     var transcript = ""
+    var meetingSegments: [TranscriptSegment] = []
     var notes = ""
     var status = "Preparing…"
     var error: String?
@@ -113,7 +119,10 @@ final class Workspace {
     @ObservationIgnored private var jobTask: Task<Void, Never>?
     @ObservationIgnored private var pendingInput: String?
 
-    var busy: Bool { operation != nil || loading || savingPreference || dictation.isBusy }
+    var busy: Bool { operation != nil || loading || savingPreference || dictation.isBusy || meeting.isActive }
+    var canDictate: Bool { !meeting.isActive && operation == nil && !loading && !savingPreference && dictation.canHold }
+    var canCopy: Bool { !busy && !displayedText.isEmpty && (pane == .notes ? notesURL != nil : completedURL != nil) }
+    var canStartMeeting: Bool { !busy && installation != nil }
     var canTranscribe: Bool { !busy && installation != nil && !input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     var displayedText: String { pane == .notes ? notes : transcript }
 
@@ -130,6 +139,14 @@ final class Workspace {
             dictation.configure(executable: installation.executable, directory: jobDirectory())
             dictation.onRecording = { [weak self] shortcut in self?.recordingBegan(shortcut: shortcut) }
             dictation.onCompleted = { [weak self] message in self?.dictationCompleted(message) }
+            meeting.onEvent = { [weak self] message in self?.meetingEvent(message) }
+            meeting.onCompleted = { [weak self] message in self?.meetingCompleted(message) }
+            meeting.onFinished = { [weak self] in
+                guard let self else { return }
+                status = meeting.status
+                if restoreDictation && !shuttingDown { dictation.prepareForShortcut() }
+                restoreDictation = false
+            }
             try await refreshModels()
             await refreshAgents()
             status = "Ready"
@@ -239,6 +256,8 @@ final class Workspace {
         guard let installation else { pendingInput = input; return }
         guard canTranscribe else { return }
         let source = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        meeting.clearPresentation()
+        meetingSegments = []
         let process = CLIProcess()
         activeProcess = process
         operation = "Transcribing"
@@ -299,6 +318,92 @@ final class Workspace {
         }
     }
 
+    func holdDictation(_ pressed: Bool) {
+        guard !pressed || canDictate else { return }
+        dictation.hold(pressed)
+    }
+
+    func toggleDictation() {
+        guard canDictate else { return }
+        dictation.accessiblePress()
+    }
+
+    func startMeeting(savedDirectory: URL? = nil) {
+        guard !busy, let installation else { return }
+        restoreDictation = dictation.isRunning
+        dictation.cancel()
+        dictation.error = nil
+        meetingIndicatorVisible = true
+        completedURL = nil; notesURL = nil; transcript = ""; notes = ""; meetingSegments = []
+        pane = .transcript; error = nil; sourceTitle = savedDirectory == nil ? "Meeting" : "Saved meeting"
+        meeting.start(executable: installation.executable, outputDirectory: dataDirectory().appendingPathComponent("meetings", isDirectory: true), savedDirectory: savedDirectory) { [weak self] in
+            await self?.dictation.shutdown()
+        }
+    }
+
+    func openLastMeeting() {
+        guard canStartMeeting, let directory = lastMeetingDirectory, let installation else { return }
+        meeting.clearPresentation()
+        meeting.directory = directory
+        let process = CLIProcess()
+        activeProcess = process; operation = "Opening meeting"; cancelRequested = false
+        completedURL = nil; notesURL = nil; transcript = ""; notes = ""; meetingSegments = []; pane = .transcript
+        sourceTitle = "Saved meeting"; error = nil; status = "Opening saved meeting…"
+        jobTask = Task {
+            defer { finishOperation() }
+            do {
+                await dictation.shutdown()
+                let document = directory.appendingPathComponent("transcript.json")
+                let data = try await process.output(executable: installation.executable, arguments: ["export", document.path, "--format", "json", "--stdout", "--quiet"])
+                guard !cancelRequested else { status = "Cancelled"; return }
+                let result = try JSONDecoder().decode(TranscriptSnapshot.self, from: data)
+                transcript = result.text; meetingSegments = result.segments ?? []; completedURL = document
+                meeting.manifest = result.meeting
+                meeting.coverageChanged = result.meeting?.hasCoverageChanges == true
+                status = meeting.coverageChanged ? "Saved meeting · review audio coverage" : "Saved meeting opened"
+            } catch {
+                if !cancelRequested { self.error = error.localizedDescription; status = "Saved audio needs attention" }
+            }
+        }
+    }
+
+    func openSavedMeeting() {
+        guard !busy else { return }
+        let panel = NSOpenPanel()
+        panel.title = "Transcribe saved meeting audio"
+        panel.canChooseDirectories = true; panel.canChooseFiles = false
+        panel.allowsMultipleSelection = false
+        panel.directoryURL = lastMeetingDirectory?.deletingLastPathComponent() ?? dataDirectory().appendingPathComponent("meetings")
+        panel.begin { response in
+            if response == .OK, let url = panel.url { Task { @MainActor in self.startMeeting(savedDirectory: url) } }
+        }
+    }
+
+    func retrySavedMeeting() { if let lastMeetingDirectory { startMeeting(savedDirectory: lastMeetingDirectory) } }
+
+    private func meetingEvent(_ message: MeetingEvent) {
+        if message.type == "started", let path = message.data.directory {
+            let directory = URL(fileURLWithPath: path)
+            lastMeetingDirectory = directory
+            Self.preferences.set(path, forKey: "lastMeetingDirectory")
+        }
+        if message.type == "update" {
+            transcript = message.data.text ?? transcript
+            meetingSegments = message.data.segments ?? []
+        }
+        if message.type == "completed" {
+            transcript = message.data.result?.text ?? transcript
+            meetingSegments = message.data.result?.segments ?? []
+        }
+    }
+
+    private func meetingCompleted(_ message: MeetingEvent) {
+        completedURL = message.data.output_path.map { URL(fileURLWithPath: $0) }
+        transcript = message.data.result?.text ?? transcript
+        meetingSegments = message.data.result?.segments ?? []
+        status = meeting.status
+    }
+
     private func rangeArguments() -> [String] {
         switch rangeMode {
         case .all: return []
@@ -312,6 +417,7 @@ final class Workspace {
     }
 
     func cancel() {
+        if meeting.isActive { meeting.cancel(); return }
         if dictation.isBusy {
             status = "Stopping dictation…"
             Task { await dictation.shutdown(); status = "Dictation cancelled" }
@@ -321,6 +427,8 @@ final class Workspace {
     }
 
     func shutdown() async {
+        shuttingDown = true
+        meeting.cancel()
         activeProcess?.cancel()
         cancelRequested = true
         deliveryProcess?.cancel()
@@ -328,6 +436,7 @@ final class Workspace {
         permissionProcess?.cancel()
         permissionTask?.cancel()
         await dictation.shutdown()
+        await meeting.shutdown()
         await jobTask?.value
         await deliveryTask?.value
         await permissionTask?.value
@@ -370,6 +479,9 @@ final class Workspace {
     }
 
     private func recordingBegan(shortcut: Bool) {
+        guard operation == nil, !meeting.isActive, !shuttingDown else { return }
+        meeting.clearPresentation()
+        meetingSegments = []
         deliveryID = UUID()
         deliveryProcess?.cancel()
         deliveryTask?.cancel()
@@ -380,6 +492,9 @@ final class Workspace {
     }
 
     private func dictationCompleted(_ event: RecordingEvent) {
+        guard operation == nil, !meeting.isActive, !shuttingDown else { return }
+        meeting.clearPresentation()
+        meetingSegments = []
         guard let result = event.data.result else { return }
         completedURL = event.data.output_path.map { URL(fileURLWithPath: $0) }
         transcript = result.text
@@ -424,12 +539,31 @@ final class Workspace {
 
     private func finishOperation() { activeProcess = nil; jobTask = nil; operation = nil }
 
-    private func jobDirectory() -> URL {
+    private func dataDirectory() -> URL {
         let root = ProcessInfo.processInfo.environment["FSCRIPT_APP_DATA_DIR"].map { URL(fileURLWithPath: $0) }
             ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("fast-transcript/desktop", isDirectory: true)
-        // Rust creates the destination and writes the completed document atomically.
-        return root.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        return root
     }
+
+    private func jobDirectory() -> URL {
+        // Rust creates the destination and writes the completed document atomically.
+        return dataDirectory().appendingPathComponent(UUID().uuidString, isDirectory: true)
+    }
+
+    #if DEBUG
+    static func previewMeeting(recording: Bool) -> Workspace {
+        let workspace = Workspace()
+        workspace.installation = CLIInstallation(executable: URL(fileURLWithPath: "/preview/fscript"))
+        workspace.status = "Ready"
+        if recording {
+            workspace.meeting.state = .recording
+            workspace.meeting.status = "Recording meeting · microphone and system audio"
+            workspace.sourceTitle = "Meeting"
+            workspace.transcript = "Microphone: Let's agree on next steps.\nSystem: I'll prepare the draft."
+        }
+        return workspace
+    }
+    #endif
 
     func generateNotes() {
         guard !busy, let completedURL, let installation else { return }
@@ -458,7 +592,7 @@ final class Workspace {
     }
 
     func copy() {
-        guard !busy, let installation else { return }
+        guard canCopy, let installation else { return }
         let source = pane == .notes ? notesURL : completedURL
         guard let source else { return }
         let format = pane == .notes ? "markdown" : "compact"

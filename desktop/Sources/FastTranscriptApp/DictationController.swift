@@ -82,6 +82,11 @@ final class DictationController {
         }
     }
 
+    func prepareForShortcut() {
+        guard state == .off || state == .failed else { return }
+        prepare()
+    }
+
     private func prepare() {
         guard let executable, let directory, task == nil else { return }
         state = .preparing
@@ -116,6 +121,7 @@ final class DictationController {
                     switch event {
                     case .stdout(let bytes):
                         for message in try decoder.append(bytes) {
+                            if intentionalStop { continue }
                             switch message.type {
                             case "ready":
                                 shortcutWarning = message.data.shortcut_error

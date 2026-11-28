@@ -3,9 +3,10 @@
 Roadmap milestone 6 is in progress. The meeting CLI now connects shared capture,
 continuous normalization, durable storage, incremental inference, final export,
 and recovery, with adaptive clock alignment. Native system-audio delivery remains
-unverified. Route/format recovery is implemented in the shared service; the
-meeting GUI and native acceptance are still outstanding; this milestone has no stable
-tag. Dictation is independently complete at stable/dictation. Calendar/call detection remains milestone 7.
+unverified. Route/format recovery and the [desktop meeting interface](desktop-meetings.md)
+are implemented through the shared service; native acceptance is still outstanding,
+so this milestone has no stable tag. Dictation is independently complete at
+stable/dictation. Calendar/call detection remains milestone 7.
 
 ## Everyday use and unattended control
 

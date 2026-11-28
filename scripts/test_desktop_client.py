@@ -31,6 +31,10 @@ def main():
     StreamingCLI.setUpClass()
     fixture = StreamingCLI()
     fixture.setUp()
+    worker = fixture.root / 'worker'
+    worker.write_text(worker.read_text().replace(
+        '    if os.environ.get("STREAM_HANG_WORKER"): time.sleep(60)',
+        '    if os.environ.get("STREAM_REQUEST_LOG"):\n        with open(os.environ["STREAM_REQUEST_LOG"], "a") as log: log.write("request\\n")\n    if os.environ.get("STREAM_HANG_WORKER"): time.sleep(60)'))
     try:
         # Compile the opt-in GUI acceptance fixtures without launching or granting them access.
         for name in ('PasteTarget', 'NativePasteCheck'):
@@ -58,7 +62,7 @@ def main():
             writer.writeframes(reader.readframes(reader.getframerate()))
         recording_batch = fixture.root / 'recording-batch.json'
         recording_batch.write_text(json.dumps(fixture.fixture.run_cli(capture)), encoding='utf-8')
-        environment = dict(fixture.env, FSCRIPT_DESKTOP_TEST_CAPTURE=str(capture),
+        environment = dict(fixture.env, FSCRIPT_CAPTURE_TEST_WAV=str(capture), FSCRIPT_SYSTEM_CAPTURE_TEST_WAV=str(source), FSCRIPT_DESKTOP_TEST_CAPTURE=str(capture),
                            FSCRIPT_DESKTOP_TEST_RECORDING_BATCH=str(recording_batch), FSCRIPT_DESKTOP_TEST_CLI=str(binary),
                            FSCRIPT_DESKTOP_TEST_SOURCE=str(source),
                            FSCRIPT_DESKTOP_TEST_BATCH=str(batch))
